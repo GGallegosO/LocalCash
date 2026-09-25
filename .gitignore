@@ -1,0 +1,169 @@
+# =============================================================================
+# .gitignore universal — Plantilla SDD Agnóstica
+# -----------------------------------------------------------------------------
+# Este archivo excluye del control de versiones todo artefacto que NO debe
+# vivir en Git: basura de sistemas operativos, configuración local de editores,
+# dependencias instaladas, entornos virtuales, salidas de compilación y
+# secretos. La regla general: si algo se genera, se instala o es secreto,
+# se ignora; solo se versiona fuente, especificación y documentación.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# SISTEMAS OPERATIVOS
+# Archivos que macOS, Windows y Linux crean para guardar metadatos locales
+# (vistas de carpeta, miniaturas, atributos extendidos). No aportan nada al
+# proyecto y generan conflictos inútiles entre desarrolladores.
+# -----------------------------------------------------------------------------
+# macOS: metadatos de Finder, recursos forked y archivado de AppleDouble
+.DS_Store
+._*
+.AppleDouble
+.LSOverride
+__MACOSX/
+
+# Windows: caché de miniaturas e iconos, configuración de carpeta, enlaces
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux/UNIX: archivos de respaldo de editores y temporales genéricos
+*~
+#.directory
+.Trash-*/
+
+# -----------------------------------------------------------------------------
+# EDITORES E IDEs
+# Cada editor guarda preferencias, historial y estado de sesión POR PERSONA.
+# Si un desarrollador quiere compartir configuración de equipo, debe crear una
+# carpeta dedicada y versionarla explícitamente, no usar los paths por defecto.
+# -----------------------------------------------------------------------------
+# VS Code: configuración y espacio de trabajo local (extensiones, lanzadores)
+.vscode/
+*.code-workspace
+
+# JetBrains (PyCharm, IntelliJ, WebStorm, etc.): proyectos, módulos y salidas
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# Vim / Neovim: archivos de intercambio (swap) y respaldos de sesión
+*.swp
+*.swo
+*.swn
+Session.vim
+.netrwhist
+
+# Sublime Text: espacio de trabajo guardado localmente
+*.sublime-workspace
+# (.sublime-project sí puede versionarse si el equipo lo acuerda: no se ignora)
+
+# Emacs: buffers temporales y de respaldo
+\#*\#
+.\#*
+*.elc
+
+# -----------------------------------------------------------------------------
+# DEPENDENCIAS Y ENTORNOS VIRTUALES (por ecosistema)
+# Las dependencias se REPRODUCEN desde su manifiesto (lockfile/requirements/
+# go.mod/etc.); versionarlas inflaría el repositorio y rompería la trazabilidad.
+# -----------------------------------------------------------------------------
+# Node.js: árbol de dependencias instalado localmente
+node_modules/
+.npm/
+.yarn/
+.pnp.*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Python: entornos virtuales, bytecode compilado y metadatos de empaquetado
+venv/
+.venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Java / JVM: salidas de herramientas de construcción habituales
+target/
+build/
+.gradle/
+*.class
+
+# Go: pines de dependencia opcionales y vendorizado local
+go.sum
+vendor/
+
+# Rust: directorio de compilación e índices de cargo
+target/
+Cargo.lock
+
+# -----------------------------------------------------------------------------
+# ARCHIVOS DE BUILD Y OUTPUT GENÉRICOS
+# Cualquier cosa producible con "COMANDO_BUILD" (ver .agent.md §3) es basura
+# versionable: se regenera, no se commitea.
+# -----------------------------------------------------------------------------
+dist/
+build/
+out/
+bin/
+obj/
+*.log
+logs/
+tmp/
+temp/
+.cache/
+
+# Secretos y configuración local: NUNCA en Git (prohibición 1 de .agent.md §6).
+# Se versiona SOLO .env.example como plantilla de variables requeridas.
+.env
+.env.*
+!.env.example
+
+# -----------------------------------------------------------------------------
+# METADATOS DE HERRAMIENTAS
+# Configuraciones locales de ejecución que dependen de la máquina o contienen
+# rutas/credenciales del entorno privado de cada desarrollador.
+# -----------------------------------------------------------------------------
+# Jupyter: checkpoints automáticos de notebooks (el .ipynb sí se versiona)
+.ipynb_checkpoints/
+
+# Docker: sobreescrituras locales de compose (puertos, volúmenes, credenciales)
+docker-compose.override.yml
+*.local.yml
+
+# Cobertura y resultados de pruebas generados en local
+coverage.xml
+test-results/
+reports/
+
+# -----------------------------------------------------------------------------
+# EXTENSIONES BINARIAS COMUNES DE SALIDA (seguridad adicional)
+# -----------------------------------------------------------------------------
+*.zip
+*.tar.gz
+*.rar
+*.7z
+*.exe
+*.dll
+*.so
+*.dylib
+
+# -----------------------------------------------------------------------------
+# REGLA FINAL
+# Si dudas entre ignorar o versionar un archivo: pregúntate si otra persona
+# podría regenerarlo a partir de lo que YA está en el repositorio. Si la
+# respuesta es sí, va aquí dentro.
+# -----------------------------------------------------------------------------
