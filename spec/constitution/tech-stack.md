@@ -16,87 +16,89 @@
 
 ## 1. Lenguajes
 
-| Uso                  | Candidatas evaluadas   | Selección final  | Versión | Justificación                          |
-|----------------------|------------------------|------------------|---------|----------------------------------------|
-| [LENGUAJE_USO_1]     | [CANDIDATAS_LENGUAJE_1]| [TECNOLOGIA]     | [VERSIÓN] | [JUSTIFICACION_DE_ELECCION]            |
-| [LENGUAJE_USO_2]     | [CANDIDATAS_LENGUAJE_2]| [TECNOLOGIA]     | [VERSIÓN] | [JUSTIFICACION_DE_ELECCION]            |
+| Uso                                            | Candidatas evaluadas          | Selección final | Versión          | Justificación                                                                                                                                                        |
+| ---------------------------------------------- | ----------------------------- | --------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Desarrollo Nativo Móvil (Lógica de Aplicación) | Java, Kotlin, Dart (Flutter)  | Java            | Java 8+ / JDK 11 | Requisito obligatorio del proyecto para desarrollo nativo en Android Studio, asegurando compatibilidad directa con las APIs locales de Android sin capas adicionales |
+| Persistencia de Datos y Consultas              | SQL (SQLite), Room SQL, Realm | SQL (SQLite)    | SQLite 3.x       | Motor relacional ligero integrado nativamente en Android que garantiza la persistencia, autonomía y funcionamiento 100% offline sin servidores                       |
 
-> *Guía:* Los lenguajes se deciden por ecosistema disponible, talento del equipo y requisitos no
+> _Guía:_ Los lenguajes se deciden por ecosistema disponible, talento del equipo y requisitos no
 > funcionales (rendimiento, concurrencia, portabilidad), no por moda.
 
 ---
 
 ## 2. Frameworks
 
-| Rol en el sistema        | Candidatas evaluadas      | Selección final | Versión | Justificación               |
-|--------------------------|---------------------------|-----------------|---------|-----------------------------|
-| [ROL_FRAMEWORK_1]        | [CANDIDATAS_FRAMEWORK_1]  | [TECNOLOGIA]    | [VERSIÓN] | [JUSTIFICACION_DE_ELECCION] |
-| [ROL_FRAMEWORK_2]        | [CANDIDATAS_FRAMEWORK_2]  | [TECNOLOGIA]    | [VERSIÓN] | [JUSTIFICACION_DE_ELECCION] |
+| Rol en el sistema                                 | Candidatas evaluadas                                                                 | Selección final                                              | Versión                       | Justificación                                                                                                                                                                                                    |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------ | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Framework de Interfaz de Usuario y Vistas         | Android SDK (Android View System / Material Components), Jetpack Compose, Flutter    | Android SDK (Android Views &amp; Material Design Components) | AndroidX / Material 1.x / 2.x | Integración nativa directa con **Java** en Android Studio. Se descarta Jetpack Compose por requerir Kotlin y Flutter por romper el enfoque nativo requerido por el proyecto                                      |
+| Framework de Renderizado Geográfico y Mapas       | osmdroid (OpenStreetMap), Google Maps Android SDK, Mapbox SDK                        | osmdroid (OpenStreetMap Android)                             | 6.x                           | Permite almacenar en caché y renderizar mapas de forma **100% offline** sin depender de credenciales ni APIs propietarias en la nube (como Google o Mapbox)                                                      |
+| Framework de Seguridad y Autenticación Biométrica | AndroidX Biometric (`BiometricPrompt`), FingerprintManager (legacy), KeyguardManager | **AndroidX Biometric Library (** **BiometricPrompt** **)**   | 11.0+                         | API estándar oficial de Android Jetpack para validar huellas dactilares con retrocompatibilidad (API 23+) y gestión segura de credenciales por el SO                                                             |
+| RFramework de Abstracción de Persistencia Local   | Room Persistence Library, SQLiteOpenHelper (Nativo API), Realm DB                    | Room Persistence Library                                     | 2.5.+ (o SQLiteOpenHelper)    | Proporciona una capa de abstracción sobre **SQLite** que valida consultas SQL en tiempo de compilación y se integra fluidamente con la arquitectura de la aplicación evitando código repetitivo (_boilerplate_). |
 
-> *Guía:* Evalúa madurez, curva de aprendizaje, coste de salida (¿qué pasa si hay que migrar?) y
+> _Guía:_ Evalúa madurez, curva de aprendizaje, coste de salida (¿qué pasa si hay que migrar?) y
 > compatibilidad con el patrón arquitectónico declarado en `.agent.md` sección 5.1.
 
 ---
 
 ## 3. Base de Datos y Persistencia
 
-| Necesidad de datos     | Candidatas evaluadas     | Selección final | Modelo (relacional/documental/etc.) | Justificación               |
-|------------------------|--------------------------|-----------------|-------------------------------------|-----------------------------|
-| [NECESIDAD_DATOS_1]    | [CANDIDATAS_BD_1]        | [TECNOLOGIA]    | [MODELO_DE_DATOS]                   | [JUSTIFICACION_DE_ELECCION] |
-| [NECESIDAD_DATOS_2]    | [CANDIDATAS_BD_2]        | [TECNOLOGIA]    | [MODELO_DE_DATOS]                   | [JUSTIFICACION_DE_ELECCION] |
+| Necesidad de datos                                                                             | Candidatas evaluadas                                      | Selección final                                         | Modelo (relacional/documental/etc.) | Justificación                                                                                                                                                                                                                                   |
+| ---------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Persistencia Principal del Dominio** _(Cuentas, Transacciones, Compras, Deudas y Contactos)_ | SQLite (Nativo / Room), Realm, Firebase Realtime Database | **SQLite** _(a través de Room o_ _SQLiteOpenHelper_ _)_ | Relacional                          | Cumple con el requisito obligatorio de operar **100% offline y de forma local** sin servidores externos. Su estructura relacional garantiza la integridad referencial entre cuentas, movimientos geolocalizados, contactos y deudas compartidas |
 
-**Decisiones de migración de esquema:** [ESTRATEGIA_DE_MIGRACION]
-**Respaldo y recuperación:** [POLITICA_DE_BACKUP]
-**Datos sensibles y cifrado:** [POLITICA_DE_DATOS_SENSIBLES]
+**Decisiones de migración de esquema:** Gestión centralizada del versionado del esquema mediante los controladores nativos de `SQLiteOpenHelper` (_métodos_ _onCreate_ _y_ _onUpgrade_) o la API de **Room Migrations** (`Migration(startVersion, endVersion)`). Toda modificación en las tablas de cuentas, transacciones o deudas se ejecuta localmente en el dispositivo sin requerir sincronización remota ni comprometer los datos existentes.
 
-> *Guía:* Empieza por el modelo de datos del dominio; la BD se elige después, no al revés.
+**Respaldo y recuperación:** Al tratarse de un sistema con arquitectura 100% autónoma y sin servidores centrales, la política de resguardo se fundamenta en la exportación e importación manual del archivo de base de datos SQLite (`.db`) hacia el almacenamiento interno o externo del dispositivo móvil, previa validación del usuario.
+
+**Datos sensibles y cifrado:** La barrera primaria de seguridad y resguardo de la información financiera se gestiona mediante autenticación biométrica obligatoria por huella dactilar a través de la API `BiometricPrompt`. Las claves y estados de configuración sensibles se protegen a nivel de dispositivo mediante el **Android Keystore System** o almacenamiento local cifrado (`EncryptedSharedPreferences`)
+
+> _Guía:_ Empieza por el modelo de datos del dominio; la BD se elige después, no al revés.
 
 ---
 
 ## 4. Herramientas de Testing
 
-| Nivel de prueba        | Herramienta              | Versión | Qué cubre exactamente                 |
-|------------------------|--------------------------|---------|----------------------------------------|
-| Unitarias              | [TECNOLOGIA_TEST_UNIT]   | [VERSIÓN] | [ALCANCE_TESTS_UNITARIOS]             |
-| Integración            | [TECNOLOGIA_TEST_INT]    | [VERSIÓN] | [ALCANCE_TESTS_INTEGRACION]           |
-| Extremo a extremo (E2E)| [TECNOLOGIA_TEST_E2E]    | [VERSIÓN] | [ALCANCE_TESTS_E2E]                   |
-| Carga / rendimiento    | [TECNOLOGIA_TEST_CARGA]  | [VERSIÓN] | [ALCANCE_PRUEBAS_DE_CARGA]            |
+| Nivel de prueba         | Herramienta                                                | Versión                  | Qué cubre exactamente                                                                                                                                                                     |
+| ----------------------- | ---------------------------------------------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unitarias               | **JUnit 4** / **Mockito**                                  | 4.13.2 / 5.x             | Pruebas de la lógica de negocio pura: algoritmos de división de gastos grupales, cálculo de saldos, validadores de entrada y lógica de agendamiento sin requerir el framework de Android. |
+| Integración             | **Robolectric** / **androidx.test (Room In-Memory)**       | 4.10+ / 1.5+             | Verificación de la persistencia de datos en la base de datos **SQLite** (operaciones CRUD en DAOs, consultas SQL de movimientos y cuentas) sin necesidad de un dispositivo físico.        |
+| Extremo a extremo (E2E) | Espresso (AndroidX Test)                                   | 3.5.1+                   | Automatización de flujos completos de pantalla: flujo de acceso biométrico, navegación por el panel principal, creación de cuentas y registro de transacciones con geolocalización.       |
+| Carga / rendimiento     | **Android Profiler** (Android Studio) / **Macrobenchmark** | Nativo de Android Studio | Medición del consumo de memoria, CPU y tiempos de renderizado al cargar marcas de geolocalización en el mapa[4] y ejecutar consultas con gran cantidad de registros financieros locales   |
 
-**Cobertura mínima exigida:** [PORCENTAJE_COBERTURA_MINIMA]% (ver `.agent.md` sección 5.3)
-**Comando canónico de tests:** [COMANDO_TEST_DEFINITIVO]
+**Cobertura mínima exigida:** **70%** en la capa de lógica de negocio (Dominio/Modelos) y repositorios/DAOs de base de datos SQLite.
+**Comando canónico de tests:** `./gradlew testDebugUnitTest connectedCheck`
 
 ---
 
 ## 5. CI/CD
 
-| Etapa                    | Herramienta / Servicio   | Configuración vive en        | Justificación               |
-|--------------------------|--------------------------|------------------------------|-----------------------------|
-| Integración continua     | [TECNOLOGIA_CI]          | [ARCHIVO_O_RUTA_DE_CONFIG_CI]| [JUSTIFICACION_DE_ELECCION] |
-| Despliegue continuo      | [TECNOLOGIA_CD]          | [ARCHIVO_O_RUTA_DE_CONFIG_CD]| [JUSTIFICACION_DE_ELECCION] |
-| Calidad de código (lint/seguridad) | [TECNOLOGIA_CALIDAD] | [ARCHIVO_DE_CONFIGURACION] | [JUSTIFICACION_DE_ELECCION] |
+| Etapa                              | Herramienta / Servicio    | Configuración vive en                            | Justificación                                                                                                                                                                      |
+| ---------------------------------- | ------------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Integración continua               | GitHub Actions            | .github/workflows/ci.yml                         | Integración nativa con el repositorio Git que permite ejecutar compilaciones automáticas, análisis estático y pruebas en cada _Pull Request_ sin costo de infraestructura externa. |
+| Despliegue continuo                | GitHub Actions + Fastlane | `.github/workflows/cd.yml` / `fastlane/Fastfile` | Automatiza la generación de artefactos firmados (`.apk` y `.aab`) y su publicación en canales de prueba interna (Google Play Internal Testing o GitHub Releases).                  |
+| Calidad de código (lint/seguridad) | Android Lint + Checkstyle | `app/build.gradle` / `config/lint/lint.xml`      | Herramientas estándar e integradas en el pipeline de compilación de Android para detectar errores de código Java, vulnerabilidades de seguridad y desviaciones de estilo.          |
 
-**Pipeline mínima obligatoria:** lint → unit tests → integración → build → despliegue a
-[AMBIENTE_DE_STAGING] → pruebas E2E → [AMBIENTE_DE_PRODUCCION].
+**Pipeline mínima obligatoria:** `lint` → `unit tests` → `integración (Robolectric)` → `build (assembleRelease / bundleRelease)` → despliegue a **Google Play Internal Testing / GitHub Releases (Staging)** → pruebas E2E (Espresso) → **Google Play Production / Release APK (Producción)**.
 
 ---
 
 ## 6. Deploy e Infraestructura
 
-| Aspecto                | Decisión                 | Alternativa considerada | Justificación               |
-|------------------------|--------------------------|-------------------------|-----------------------------|
-| Plataforma de hosting  | [TECNOLOGIA_DEPLOY]      | [ALTERNATIVA_EVALUADA]   | [JUSTIFICACION_DE_ELECCION] |
-| Empaquetado            | [ESTRATEGIA_DE_EMPAQUETADO] | [ALTERNATIVA_EVALUADA] | [JUSTIFICACION_DE_ELECCION] |
-| Gestión de configuración/secreto | [MECANISMO_DE_SECRETOS] | [ALTERNATIVA_EVALUADA] | [JUSTIFICACION_DE_ELECCION] |
-| Observabilidad (logs/métricas/trazas) | [PLATAFORMA_DE_OBSERVABILIDAD] | [ALTERNATIVA_EVALUADA] | [JUSTIFICACION_DE_ELECCION] |
-| Estrategia de versiones | [ESTRATEGIA_DE_VERSIONADO] | N/A                   | [JUSTIFICACION_DE_ELECCION] |
+| Aspecto                               | Decisión                                                                                      | Alternativa considerada                                      | Justificación                                                                                                                                                                |
+| ------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Plataforma de hosting                 | **Aplicación Cliente Móvil Local** _(Distribución vía Google Play Console / GitHub Releases)_ | Servidor Cloud Backend (AWS, Firebase, Heroku)               | Cumplimiento estricto del pilar **100% offline**: el código corre en el dispositivo del usuario y no existe infraestructura o servidor remoto central.                       |
+| Empaquetado                           | **Android App Bundle (** **.aab** **) y APK (** **.apk** **)**                                | APK único monolítico sin optimizar                           | El formato `.aab` optimiza el tamaño de instalación según el dispositivo desde Google Play, mientras que el `.apk` permite la instalación directa y distribución offline.    |
+| Gestión de configuración/secreto      | **Android Keystore System + Gradle** **local.properties** **\+ GitHub Secrets**               | Variables hardcodeadas en código Java / Configuración remota | Mantiene las claves de firma y credenciales fuera del repositorio. Las claves se inyectan en tiempo de compilación vía CI/CD o archivo `local.properties` (ignorado en Git). |
+| Observabilidad (logs/métricas/trazas) | Android Logcat (Local) + StrictMode                                                           | Datadog, Sentry, Firebase Crashlytics                        | Se evitan herramientas de monitoreo en la nube para respetar el principio rector de **privacidad absoluta por defecto** y funcionamiento sin conexión a internet.            |
+| Estrategia de versiones               | **Semantic Versioning (** **MAJOR.MINOR.PATCH** **)**                                         | N/A                                                          | Sincronizado con `versionCode` y `versionName` en `build.gradle` para coordinar de forma transparente las migraciones del esquema de base de datos SQLite.                   |
 
-> *Recordatorio de seguridad:* los secretos NUNCA van al repositorio ni a estos documentos; solo se
+> _Recordatorio de seguridad:_ los secretos NUNCA van al repositorio ni a estos documentos; solo se
 > referencia el mecanismo de obtención (ver `.agent.md` sección 6, prohibición 1).
 
 ---
 
 ## 7. Registro de cambios del stack
 
-| Fecha | Cambio | Motivo | Registro en doc/ |
-|-------|--------|--------|------------------|
-| [FECHA] | [CAMBIO_DE_TECNOLOGIA] | [MOTIVO_DEL_CAMBIO] | [ARCHIVO_DOC_CORRESPONDIENTE] |
+| Fecha      | Cambio                                                                                                 | Motivo                                                                                                   | Registro en doc/  |
+| ---------- | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- | ----------------- |
+| 2026-09-25 | Definición inicial de stack: Java 8+, Android SDK Views, SQLite / Room, AndroidX Biometric y osmdroid. | Definición de la arquitectura base alineada a los requerimientos de la aplicación nativa y 100% offline. | doc/tech-stack.md |
