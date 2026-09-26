@@ -1,4 +1,4 @@
-# doc/002-seleccion-roadmap.md — Registro de Memoria: Inicialización del Proyecto
+# doc/002-selection-roadmap.md — Registro de Memoria: Definición de la Hoja de Ruta y Planificación de Entregas
 
 > **Propósito de este archivo:** Es el EJEMPLO DE REFERENCIA del formato de memoria que exige
 > `.agent.md` §7. Todas las tareas futuras deben crear un registro análogo (`001-...`, `002-...`).
