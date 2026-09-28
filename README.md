@@ -163,9 +163,9 @@ erDiagram
 ## 🚀 Compilación y Ejecución
 
 ### Requisitos Previos
-- **Android Studio:** Ladybug | 2024.2+ o superior.
+- **Android Studio:** Quail 2 | 2026.1.2 o superior.
 - **Android SDK:** v34 (API Level 34).
-- **JDK:** Version 11 instalada y configurada.
+- **JDK:** Java 21 (OpenJDK 64-Bit Server VM por JetBrains).
 
 ### Comandos de Desarrollo (Gradle Wrapper)
 
