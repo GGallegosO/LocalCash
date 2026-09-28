@@ -5,6 +5,8 @@
 > El contenido siguiente es ficticio pero realista: muestra el nivel de detalle esperado.
 > Al iniciar tu proyecto real, conserva este archivo como modelo y numera tus tareas desde 001.
 
+**Propósito de este archivo:** Documentar las decisiones, fases temporales y la estructuración del roadmap del proyecto **LocalCash**, garantizando la trazabilidad de los hitos fijados para las entregas semanales y la entrega final del 19 de octubre.
+
 ---
 
 ## Ficha de la tarea
@@ -21,7 +23,7 @@
 
 ## Tarea Ejecutada (resumen narrativo)
 
-Se definió y estructuró la hoja de ruta del proyecto (**roadmap.md**) para la aplicación móvil **LocalCash** en Android Studio (Java). La planificación se dividió en **4 fases estratégicas** ajustadas a las fechas límite del proyecto (28 de septiembre, 5 de octubre, 12 de octubre y entrega final el 19 de octubre de 2026). Cada fase agrupa funcionalidades verificables que integran los 4 pilares obligatorios del sistema: desarrollo nativo en Java, persistencia local en SQLite, autenticación biométrica y mapa interactivo con `osmdroid`.
+Se definió y estructuró la hoja de ruta del proyecto **`spec/constitution/roadmap.md`** para la aplicación móvil **LocalCash** en Android Studio (Java). La planificación se dividió en **4 fases estratégicas** ajustadas a las fechas límite del proyecto (28 de septiembre, 5 de octubre, 12 de octubre y entrega final el 19 de octubre de 2026). Cada fase agrupa funcionalidades verificables que integran los 4 pilares obligatorios del sistema: desarrollo nativo en Java, persistencia local en SQLite, autenticación biométrica y mapa interactivo con `osmdroid`.
 
 ---
 

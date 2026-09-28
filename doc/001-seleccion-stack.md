@@ -1,9 +1,9 @@
 # doc/001-seleccion-stack.md — Registro de Memoria: Constitución y Selección del Stack Tecnológico
 
-> **Propósito de este archivo:** Es el EJEMPLO DE REFERENCIA del formato de memoria que exige
-> `.agent.md` §7. Todas las tareas futuras deben crear un registro análogo (`001-...`, `002-...`).
-> El contenido siguiente es ficticio pero realista: muestra el nivel de detalle esperado.
-> Al iniciar tu proyecto real, conserva este archivo como modelo y numera tus tareas desde 001.
+> **Propósito de este archivo:** Documentar las decisiones, alternativas evaluadas y
+> justificaciones técnicas para la elección del stack oficial del proyecto **LocalCash**,
+> garantizando que ninguna dependencia o tecnología sea utilizada sin estar previamente
+> oficializada en `tech-stack.md`.
 
 ---
 
@@ -21,7 +21,7 @@
 
 ## Tarea Ejecutada (resumen narrativo)
 
-Se evaluó y oficializó la constitución tecnológica del proyecto en el archivo **tech-stack.md**. En cumplimiento con la regla de oro de agnosticismo y el pilar rector de funcionamiento **100% offline y de privacidad absoluta**, se seleccionaron las herramientas necesarias para cubrir el desarrollo nativo en Android (Java), la persistencia relacional en SQLite, el renderizado de mapas sin servidor (`osmdroid`), la seguridad biométrica (`BiometricPrompt`) y el pipeline de pruebas y calidad.
+Se evaluó y oficializó la constitución tecnológica del proyecto en el archivo **`spec/constitution/tech-stack.md`**. En cumplimiento con la regla de el pilar rector de funcionamiento **100% offline y de privacidad absoluta**, se seleccionaron las herramientas necesarias para cubrir el desarrollo nativo en Android (Java), la persistencia relacional en SQLite, el renderizado de mapas sin servidor (`osmdroid`), la seguridad biométrica (`BiometricPrompt`) y el pipeline de pruebas y calidad.
 
 ---
 
@@ -29,8 +29,8 @@ Se evaluó y oficializó la constitución tecnológica del proyecto en el archiv
 
 **Creados:**
 
-- `spec/constitution/tech-stack.md` — Registro oficial del stack tecnológico con la evaluación de alternativas, justificaciones, herramientas de testing, CI/CD y despliegue.
-- `doc/001-seleccion-stack.md` — Registro formal de memoria (este archivo) para respaldar la toma de decisiones del stack.
+- **`spec/constitution/tech-stack.md`** — Registro oficial del stack tecnológico con la evaluación de alternativas, justificaciones, herramientas de testing, CI/CD y despliegue.
+- **`doc/001-seleccion-stack.md`** — Registro formal de memoria (este archivo) para respaldar la toma de decisiones del stack.
 
 ---
 
@@ -54,5 +54,5 @@ Se evaluó y oficializó la constitución tecnológica del proyecto en el archiv
 
 ## Próximos Pasos
 
-1. Vincular el stack oficializado en `tech-stack.md` con las especificaciones de características de la Fase 1.
-2. Proceder con la creación del archivo de **Arquitectura del Sistema (** **architecture.md** **)** o iniciar el diseño de la especificación `spec/features/001-biometria/spec.md`.
+1. Vincular el stack oficializado en `tech-stack.md` con las especificaciones de entregas en `roadmap.md`
+2. Registrar la hoja de ruta formal en `doc/002-seleccion-roadmap.md`.
