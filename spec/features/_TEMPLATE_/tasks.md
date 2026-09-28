@@ -8,7 +8,8 @@
 >
 > **Convenciones:**
 > - Ejecuta las tareas EN ORDEN: cada una parte de la anterior completada.
-> - Al terminar cada bloque relevante, ejecuta el lint/test con los comandos de `.agent.md` §3.
+> - Al terminar cada bloque relevante, ejecuta el lint/test con los comandos de `.agent.md` §3
+>   (`./gradlew lint`, `./gradlew testDebugUnitTest`).
 > - Si una tarea revela que el plan era incorrecto: DETENTE, actualiza `plan.md` con justificación
 >   y continúa. Nunca implementes "al margen" del plan.
 
@@ -32,7 +33,7 @@
 - [ ] **T3. Crear tests unitarios.**
       Cubrir cada criterio de aceptación (CA-1..CA-N) y los casos borde marcados como críticos en
       `spec.md` §4, incluyendo caminos de error.
-      *Criterio de salida:* tests en rojo → verde documentados; cobertura ≥ [PORCENTAJE_COBERTURA_MINIMA]% en la lógica nueva.
+      *Criterio de salida:* tests en rojo → verde documentados; cobertura ≥ 70% en la lógica nueva.
       Responsable: [RESPONSABLE] | Estimación: [ESTIMACION]
 
 ## Fase 3 — Integración
@@ -56,10 +57,15 @@
 
 ## Verificación final (Definition of Done)
 
-- [ ] Lint sin advertencias: `[COMANDO_LINT]`
-- [ ] Tests completos en verde: `[COMANDO_TEST]`
-- [ ] Build válido: `[COMANDO_BUILD]`
+Los cuatro comandos van en este orden. `connectedCheck` va al final y **requiere dispositivo o
+emulador activo**: si se ejecuta primero y falla, se pierde el ciclo de compilación.
+
+- [ ] Lint sin advertencias: `./gradlew lint`
+- [ ] Tests unitarios en verde: `./gradlew testDebugUnitTest`
+- [ ] Tests de integración y UI en verde: `./gradlew connectedCheck`
+- [ ] Build válido: `./gradlew assembleDebug`
 - [ ] Registro de memoria creado: `doc/[NNN]-[nombre-tarea].md`
+- [ ] `data-model.md` actualizado si la feature tocó el esquema (en el mismo cambio)
 - [ ] Commits con formato de `.agent.md` §5.2, uno por unidad lógica
 
 **Notas de ejecución:** [ESPACIO PARA APUNTES DURANTE LA IMPLEMENTACION]
