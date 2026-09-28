@@ -1,7 +1,7 @@
 # doc/000-initial-setup.md — Registro de Memoria: Inicialización del Proyecto
 
 > **Propósito de este archivo:** Es el EJEMPLO DE REFERENCIA del formato de memoria que exige
-> `.agent.md` §7. Todas las tareas futuras deben crear un registro análogo (`001-...`, `002-...`).
+> `.agent.md`. Todas las tareas futuras deben crear un registro análogo (`001-...`, `002-...`).
 > El contenido siguiente es ficticio pero realista: muestra el nivel de detalle esperado.
 > Al iniciar tu proyecto real, conserva este archivo como modelo y numera tus tareas desde 001.
 
@@ -9,13 +9,13 @@
 
 ## Ficha de la tarea
 
-| Campo              | Valor                                                        |
-|--------------------|--------------------------------------------------------------|
-| **Fecha**          | 2026-09-24                                                   |
-| **Tarea ejecutada**| Inicialización del repositorio con arquitectura SDD y sistema de memoria de agentes |
-| **Responsable**    | [ROL_O_NOMBRE_DEL_EJECUTOR] (en este ejemplo: "Agente de inicialización") |
-| **Duración estimada vs real** | [1 sesión] vs [1 sesión]                          |
-| **Estado**         | Completado                                                   |
+| Campo                         | Valor                                                                               |
+| ----------------------------- | ----------------------------------------------------------------------------------- |
+| **Fecha**                     | 2026-09-24                                                                          |
+| **Tarea ejecutada**           | Inicialización del repositorio con arquitectura SDD y sistema de memoria de agentes |
+| **Responsable**               | [ROL_O_NOMBRE_DEL_EJECUTOR] (en este ejemplo: "Agente de inicialización")           |
+| **Duración estimada vs real** | [1 sesión] vs [1 sesión]                                                            |
+| **Estado**                    | Completado                                                                          |
 
 ---
 
@@ -34,6 +34,7 @@ de stack quedan como placeholders pendientes de la tarea 001.
 ## Archivos Creados / Modificados
 
 **Creados:**
+
 - `.agent.md` — reglas globales, comandos, convenciones, prohibiciones y política de memoria.
 - `spec/constitution/mission.md` — plantilla de misión con guías de redacción.
 - `spec/constitution/tech-stack.md` — plantillas tabulares de decisión tecnológica.
@@ -47,6 +48,7 @@ de stack quedan como placeholders pendientes de la tarea 001.
 - `README.md` — guía de uso de la plantilla.
 
 **Modificados:**
+
 - `README.md` (existía con un título mínimo) → reemplazado por la documentación completa de la plantilla.
 
 ---
@@ -54,17 +56,17 @@ de stack quedan como placeholders pendientes de la tarea 001.
 ## Decisiones Tomadas (con justificación)
 
 1. **Plantilla de feature nombrada `_TEMPLATE_` en lugar de `001-...`.**
-   *Justificación:* evita confundir la carpeta de ejemplo con una feature real ya numerada; el
+   _Justificación:_ evita confundir la carpeta de ejemplo con una feature real ya numerada; el
    prefijo de guion bajo además la ordena primero y señala visualmente que no es contenido operativo.
 2. **Mantener `src/` vacío con `.gitkeep` en vez de generar código de ejemplo.**
-   *Justificación:* el agnosticismo es una regla dura; cualquier archivo de ejemplo sesgaría la
+   _Justificación:_ el agnosticismo es una regla dura; cualquier archivo de ejemplo sesgaría la
    elección futura de lenguaje. Git no rastrea carpetas vacías, de ahí el marcador.
 3. **Numeración de tres dígitos (`000`, `001`, ...) compartida entre `doc/` y `spec/features/`.**
-   *Justificación:* permite trazabilidad directa spec ↔ memoria sin ambigüedad de orden lexicográfico.
+   _Justificación:_ permite trazabilidad directa spec ↔ memoria sin ambigüedad de orden lexicográfico.
 4. **Los placeholders usan exclusivamente el formato `[TEXTO_EN_MAYUSCULAS]`.**
-   *Justificación:* facilita búsqueda y reemplazo automatizado (grep/regex) al adaptar la plantilla.
+   _Justificación:_ facilita búsqueda y reemplazo automatizado (grep/regex) al adaptar la plantilla.
 5. **La selección de stack se pospone a una tarea explícita (001) en lugar de preseleccionar opciones.**
-   *Justificación:* obliga a registrar candidatas y justificaciones antes de escribir código, que es
+   _Justificación:_ obliga a registrar candidatas y justificaciones antes de escribir código, que es
    el espíritu de SDD.
 
 ---

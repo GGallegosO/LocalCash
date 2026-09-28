@@ -48,6 +48,28 @@
 
 **Decisiones de migración de esquema:** Gestión centralizada del versionado del esquema mediante los controladores nativos de `SQLiteOpenHelper` (_métodos_ _onCreate_ _y_ _onUpgrade_) o la API de **Room Migrations** (`Migration(startVersion, endVersion)`). Toda modificación en las tablas de cuentas, transacciones o deudas se ejecuta localmente en el dispositivo sin requerir sincronización remota ni comprometer los datos existentes.
 
+**Capa de acceso y momento de adopción de cada API:** la adopción es progresiva y queda fijada por
+fases para que la Fase 1 no dependa de una decisión todavía no tomada (ver `roadmap.md` §1):
+
+- **Fases 1 y 2 — `SQLiteOpenHelper`:** el esquema se materializa en `onCreate()`/`onUpgrade()` y se
+  expone mediante DAOs que encapsulan el SQL. _Justificación:_ permite validar el modelo de datos
+  (8 tablas, claves foráneas, índices y saldos) sin la dependencia de anotaciones ni el coste de
+  compilación de consultas, y mantiene el control explícito de `PRAGMA foreign_keys = ON`, que es
+  un flag **por conexión** y no se puede activar dentro de una transacción.
+- **Fase 3 en adelante — Room:** los DAOs migran a anotaciones `@Entity`/`@Dao` y se adoptan
+  `Migration(startVersion, endVersion)`. _Justificación:_ la verificación de consultas en tiempo de
+  compilación aporta más valor justo cuando la lógica de división de deudas se vuelve compleja.
+- **Invariante común:** ambas capas consumen el **único DDL canónico** del Apéndice A de
+  `spec/constitution/data-model.md`, que es la fuente de verdad del esquema. La versión vive en un
+  solo lugar por vía: `PRAGMA user_version` con `SQLiteOpenHelper`, el parámetro `version` del
+  `RoomDatabase` con Room. Ninguna de las dos puede divergir de aquel documento, y
+  `fallbackToDestructiveMigration()` queda prohibido por perder información financiera.
+
+**Modelo de datos:** la estructura relacional, los tipos de columna (dinero en centavos `INTEGER`,
+coordenadas en `REAL`), la política de integridad referencial, los índices y el versionado del
+esquema están definidos en **`spec/constitution/data-model.md`**. Ese documento es de lectura
+obligatoria antes de escribir cualquier DAO o migración.
+
 **Respaldo y recuperación:** Al tratarse de un sistema con arquitectura 100% autónoma y sin servidores centrales, la política de resguardo se fundamenta en la exportación e importación manual del archivo de base de datos SQLite (`.db`) hacia el almacenamiento interno o externo del dispositivo móvil, previa validación del usuario.
 
 **Datos sensibles y cifrado:** La barrera primaria de seguridad y resguardo de la información financiera se gestiona mediante autenticación biométrica obligatoria por huella dactilar a través de la API `BiometricPrompt`. Las claves y estados de configuración sensibles se protegen a nivel de dispositivo mediante el **Android Keystore System** o almacenamiento local cifrado (`EncryptedSharedPreferences`)
@@ -102,3 +124,4 @@
 | Fecha      | Cambio                                                                                                 | Motivo                                                                                                   | Registro en doc/  |
 | ---------- | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- | ----------------- |
 | 2026-09-25 | Definición inicial de stack: Java 8+, Android SDK Views, SQLite / Room, AndroidX Biometric y osmdroid. | Definición de la arquitectura base alineada a los requerimientos de la aplicación nativa y 100% offline. | doc/tech-stack.md |
+| 2026-09-28 | Secuencia de la capa de acceso: `SQLiteOpenHelper` en Fases 1-2 y Room desde Fase 3, con un único DDL canónico en `spec/constitution/data-model.md`. | `tech-stack.md` §3 y `roadmap.md` §4 se contradecían sobre cuándo adoptar Room; la ambigüedad podía hacer depender la Fase 1 de una decisión no tomada. | doc/003-modelo-datos.md |
