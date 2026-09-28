@@ -1,139 +1,198 @@
-# LocalCash
+# 📱 LocalCash — Mobile Fintech 100% Offline & Private
 
-> Aplicación móvil **Android nativa en Java** para la gestión financiera personal: cuentas,
-> movimientos geolocalizados en mapas y división de gastos compartidos. Funciona **100% offline** y
-> con **privacidad absoluta**: no hay servidor, ni backend, ni cuenta de usuario. Todos los datos
-> viven en un único archivo SQLite dentro del dispositivo.
+[![Android](https://img.shields.io/badge/Platform-Android_Native-green.svg?style=flat-square&logo=android)](https://developer.android.com/)
+[![Java](https://img.shields.io/badge/Language-Java_8%2B-orange.svg?style=flat-square&logo=java)](https://www.oracle.com/java/)
+[![SQLite](https://img.shields.io/badge/Database-SQLite-blue.svg?style=flat-square&logo=sqlite)](https://www.sqlite.org/)
+[![Methodology](https://img.shields.io/badge/Architecture-Spec--Driven_Development_(SDD)-purple.svg?style=flat-square)](https://github.com/GGallegosO/Template-SSD)
+[![License](https://img.shields.io/badge/License-MIT-lightgrey.svg?style=flat-square)](LICENSE)
 
-- **Contrato maestro del proyecto:** [`.agent.md`](.agent.md) (reglas, comandos, prohibiciones).
-- **Instrucciones resumidas para agentes de IA:** [`AGENTS.md`](AGENTS.md).
-- **Repositorio:** https://github.com/GGallegosO/LocalCash
+**LocalCash** es una aplicación móvil Android nativa desarrollada en **Java** concebida para operar **100% de forma local y offline**. Combina la administración de cuentas financieras personales, el registro georreferenciado de movimientos en mapa, la planificación de compras futuras y un motor avanzado para la división de gastos compartidos y deudas entre contactos.
 
----
-
-## Cómo se trabaja aquí: Spec-Driven Development
-
-Este repositorio separa tres niveles que no deben mezclarse, y cada decisión queda registrada con su
-justificación. La pregunta que decide en qué carpeta escribir es siempre la misma:
-
-| Nivel | Pregunta                                  | Artefacto                          |
-|-------|-------------------------------------------|------------------------------------|
-| QUÉ   | ¿Qué se construye y cómo se valida?      | `spec/features/NNN-nombre/spec.md` |
-| CÓMO  | ¿Cómo se implementa y con qué decisiones? | `spec/features/NNN-nombre/plan.md` |
-| CUÁNDO| ¿En qué orden se ejecuta?                 | `spec/features/NNN-nombre/tasks.md`|
-
-El ciclo de una feature:
-
-1. **Lee `.agent.md` y los últimos registros de `doc/`** antes de decidir nada.
-2. Copia la plantilla y numera con tres dígitos:
-   ```bash
-   cp -r spec/features/_TEMPLATE_ spec/features/004-[nombre-de-la-feature]
-   ```
-3. Rellena `spec.md` → `plan.md` → ejecuta `tasks.md` casilla por casilla.
-4. **Cierra con `doc/NNN-[nombre-de-la-feature].md`.** Sin ese registro la tarea no está terminada.
-
-La numeración de tres dígitos es compartida entre `spec/features/NNN-*` y `doc/NNN-*`, lo que da
-trazabilidad bidireccional: del requisito a lo ejecutado y de lo ejecutado a su justificación.
+El proyecto pone un énfasis crítico en la **privacidad absoluta del usuario** (cero comunicación con servidores externos) y en el rigor de ingeniería mediante la metodología **Spec-Driven Development (SDD)**.
 
 ---
 
-## Estructura
+## 🌟 Características Principales
 
-```
+- 🔐 **Seguridad Biométrica Local:** Acceso protegido mediante la API nativa `BiometricPrompt` (huella dactilar).
+- 💳 **Gestión Multicuenta y Transacciones:** Administración de fuentes de dinero (Efectivo, Tarjetas, Ahorros) e historial de ingresos/egresos.
+- 📍 **Mapa Espacial Interactivo:** Visualización y filtrado offline de movimientos mediante coordenadas GPS (`latitud`, `longitud`) integradas con `osmdroid`.
+- 🗓️ **Planificación de Compras:** Programación de compras e historial con presupuestos estimados.
+- 👥 **Gastos Compartidos y División de Deudas:** Motor de cuentas claras para compras grupales con dos modalidades (División equitativa global o desglose itemizado por producto).
+
+---
+
+## 🏗️ Arquitectura y Pilar de Ingeniería (SDD)
+
+El desarrollo del proyecto no improvisa líneas de código: sigue la metodología **Spec-Driven Development (SDD)** guiada por la plantilla [Template-SSD](https://github.com/GGallegosO/Template-SSD).
+
+```text
 .
-├── .agent.md                      # CONTRATO MAESTRO: reglas, comandos, prohibiciones, memoria
-├── AGENTS.md                      # Resumen operativo para agentes de IA
-├── README.md                      # Este archivo
-├── .gitignore                     # Exclusión universal (SO, IDEs, dependencias, builds, secretos)
-├── spec/                          # CONTRATOS: qué y por qué (antes de cualquier código)
-│   ├── constitution/              # Fundamentos: cambian rara vez, se revisan formalmente
-│   │   ├── mission.md             # Visión, problema, objetivos medibles, público objetivo
-│   │   ├── tech-stack.md          # Decisiones tecnológicas con candidatas evaluadas
-│   │   ├── roadmap.md             # Hitos por fase, estado y prioridad
-│   │   ├── data-model.md          # Esquema oficial: ERD, diccionario, invariantes y DDL canónico
-│   │   └── diagrams/              # Imágenes renderizadas del ERD (complemento del código)
-│   └── features/                  # Una carpeta numerada por funcionalidad
-│       └── _TEMPLATE_/            # Plantilla maestra: cópiala para cada feature nueva
-│           ├── spec.md            # Descripción, contexto, criterios de aceptación, casos borde
-│           ├── plan.md            # Componentes, decisiones, riesgos, dependencias
-│           └── tasks.md           # Checklist secuencial + Definition of Done
-├── doc/                           # MEMORIA del proyecto (un registro por tarea ejecutada)
-│   ├── 000-initial-setup.md       # Ejemplo completo del formato de registro
-│   ├── 001-seleccion-stack.md
-│   ├── 002-seleccion-roadmap.md
-│   ├── 003-modelo-datos.md
-│   └── 004-actualizacion-agente.md
-└── app/                           # Proyecto Gradle Android (se crea en el primer hito de Fase 1)
-    └── src/
-        ├── main/java/com/localcash/{ui,domain,data}/
-        ├── main/res/{layout,values,drawable}/
-        ├── test/java/             # JUnit + Mockito + Robolectric (JVM local)
-        └── androidTest/java/      # Espresso (requiere dispositivo)
+├── .agent.md                      # Contrato maestro de reglas y estándares de código
+├── AGENTS.md                      # Manual operativo y gotchas de SQLite para IA/Devs
+├── spec/                          # CONTRATOS TÉCNICOS (Qué y Por qué)
+│   ├── constitution/              # Misión, Tech Stack, Modelo de Datos y Roadmap
+│   │   ├── mission.md
+│   │   ├── tech-stack.md
+│   │   ├── data-model.md          # ERD y DDL oficial (Single Source of Truth)
+│   │   └── roadmap.md
+│   └── features/                  # Especificaciones por funcionalidad (spec/plan/tasks)
+├── doc/                           # MEMORIA INMUTABLE (Registros de tareas ejecutadas)
+└── app/                           # Código Fuente Android (Clean Architecture: UI, Domain, Data)
+    └── src/main/java/com/localcash/
 ```
 
-> **Estado actual:** el repositorio está en fase de especificación. `app/` todavía no existe; la
-> estructura Java nativa es la convención declarada en `.agent.md` §4, no un árbol de archivos real.
+---
+
+### Decisión de Persistencia y Precisión Financiera
+
+Para garantizar la integridad matemática en los cálculos financieros offline (evitando errores binarios de coma flotante IEEE 754) [1, 13]:
+- 💰 **Montos y Saldos:** Se almacenan estrictamente como números enteros (**`INTEGER`**) en la unidad mínima de moneda (centavos) [1].
+- 🗺️ **Coordenadas GPS:** Se almacenan como **`REAL`** para filtrado por radio geográfico [1, 7].
 
 ---
 
-## Comandos canónicos
+## 📊 Modelo de Datos (ERD)
 
-Definidos en `.agent.md` §3 y usados exclusivamente en el Definition of Done de cada feature.
+El esquema relacional SQLite está compuesto por 8 tablas interconectadas [14, 15]:
 
-| Acción                | Comando                                                    |
-| --------------------- | ---------------------------------------------------------- |
-| Levantar entorno dev  | `./gradlew installDebug`                                   |
-| Tests unitarios       | `./gradlew testDebugUnitTest`                              |
-| Tests de integración y UI | `./gradlew connectedCheck` (requiere dispositivo)       |
-| Lint / calidad        | `./gradlew lint`                                           |
-| Compilar              | `./gradlew assembleDebug`                                  |
+```mermaid
+erDiagram
+    CONTACTOS ||--o{ COMPRAS_PLANIFICADAS : "asociado a"
+    CONTACTOS ||--o{ COMPRAS_GRUPALES : "paga o participa"
+    CONTACTOS ||--o{ DEUDAS_PARTICIPANTES : "mantiene deuda con"
 
-Orden obligatorio antes de cerrar una feature:
-`lint` → `testDebugUnitTest` → `connectedCheck` → `assembleDebug`.
+    CUENTAS ||--o{ TRANSACCIONES : "registra"
+    CATEGORIAS ||--o{ TRANSACCIONES : "clasifica"
+    TRANSACCIONES ||--o| COMPRAS_GRUPALES : "vincula pago de"
 
-Dependencias: **N/A**. El wrapper Gradle las resuelve; tras cambiar el manifiesto basta recompilar.
+    COMPRAS_GRUPALES ||--|{ ITEMS_COMPRA : "desglosa en"
+    COMPRAS_GRUPALES |o--o{ DEUDAS_PARTICIPANTES : "genera"
+    ITEMS_COMPRA |o--o{ DEUDAS_PARTICIPANTES : "asigna elemento a"
+
+    CONTACTOS {
+        INTEGER id PK
+        TEXT nombre
+        TEXT telefono
+        TEXT email
+        TEXT notas
+    }
+
+    CUENTAS {
+        INTEGER id PK
+        TEXT nombre
+        TEXT tipo_cuenta
+        INTEGER saldo_inicial
+        INTEGER saldo_actual
+        TEXT moneda
+    }
+
+    CATEGORIAS {
+        INTEGER id PK
+        TEXT nombre
+        TEXT icono
+        TEXT tipo_transaccion
+    }
+
+    TRANSACCIONES {
+        INTEGER id PK
+        INTEGER cuenta_id FK
+        INTEGER categoria_id FK
+        INTEGER monto
+        TEXT tipo
+        TEXT fecha_hora
+        TEXT descripcion
+        REAL latitud
+        REAL longitud
+        TEXT direccion_lugar
+    }
+
+    COMPRAS_PLANIFICADAS {
+        INTEGER id PK
+        INTEGER contacto_id FK
+        TEXT titulo
+        INTEGER monto_estimado
+        TEXT fecha_agendada
+        TEXT estado
+        TEXT notas
+    }
+
+    COMPRAS_GRUPALES {
+        INTEGER id PK
+        INTEGER transaccion_id FK
+        INTEGER pagado_por_contacto_id FK
+        TEXT titulo
+        INTEGER monto_total
+        TEXT fecha
+        TEXT estado
+    }
+
+    ITEMS_COMPRA {
+        INTEGER id PK
+        INTEGER compra_grupal_id FK
+        TEXT descripcion
+        INTEGER precio_unitario
+        INTEGER cantidad
+        INTEGER monto_subtotal
+    }
+
+    DEUDAS_PARTICIPANTES {
+        INTEGER id PK
+        INTEGER compra_grupal_id FK
+        INTEGER item_id FK
+        INTEGER contacto_id FK
+        INTEGER monto_asignado
+        INTEGER monto_pagado
+        TEXT estado
+    }
+```
+
+## 🛠️ Stack Tecnológico
+
+| Capa / Componente | Tecnología Seleccionada | Justificación Técnica |
+| :--- | :--- | :--- |
+| **Lenguaje** | Java 8+ / JDK 11 | Compatibilidad nativa en Android Studio. |
+| **Persistencia** | SQLite (`SQLiteOpenHelper` → Room) | Persistencia relacional local de alto rendimiento y cero dependencia de servidores. |
+| **Mapas & Geometría** | `osmdroid` 6.x | Renderizado de mapa interactivo 100% offline sin llaves API pagadas. |
+| **Seguridad** | `BiometricPrompt` API | Estándar de la plataforma Android para autenticación biométrica local. |
+| **UI Components** | Material Design Components | Interfaz limpia, responsiva y adaptable. |
+| **Testing** | JUnit, Mockito, Robolectric, Espresso | Cobertura objetivo ≥ 70% en capas de Dominio y DAOs. |
 
 ---
 
-## Stack
+## 🚀 Compilación y Ejecución
 
-Java 8+ / JDK 11 · Android Views + Material Components · SQLite local (`SQLiteOpenHelper` en
-Fases 1-2, `Room` desde la Fase 3) · `osmdroid` 6.x para mapas offline · AndroidX `BiometricPrompt`
-· JUnit, Mockito, Robolectric, Espresso y Android Lint.
+### Requisitos Previos
+- **Android Studio:** Ladybug | 2024.2+ o superior.
+- **Android SDK:** v34 (API Level 34).
+- **JDK:** Version 11 instalada y configurada.
 
-El detalle de cada elección, las alternativas descartadas y su justificación están en
-[`spec/constitution/tech-stack.md`](spec/constitution/tech-stack.md). **Ninguna dependencia nueva se
-agrega sin registrarse ahí primero.**
+### Comandos de Desarrollo (Gradle Wrapper)
+
+```bash
+# Compilar el proyecto en modo Debug
+./gradlew assembleDebug
+
+# Ejecutar Pruebas Unitarias (Robolectric / JUnit)
+./gradlew testDebugUnitTest
+
+# Ejecutar Pruebas de Integración y UI (Dispositivo/Emulador conectado)
+./gradlew connectedCheck
+
+# Instalar APK de desarrollo en emulador/dispositivo
+./gradlew installDebug
+
+# Análisis Estático de Código
+./gradlew lint
+```
 
 ---
 
-## Reglas del proyecto
+## 👤 Autor
 
-1. **100% offline y privado:** ninguna funcionalidad puede exigir backend, conexión permanente ni API
-   en la nube.
-2. **El dinero es `INTEGER` en centavos**, nunca `REAL` ni `double` en la capa de datos; `BigDecimal`
-   solo en `domain/`.
-3. **El esquema está cerrado y documentado:** su fuente de verdad es
-   [`spec/constitution/data-model.md`](spec/constitution/data-model.md) (Apéndice A contiene el DDL
-   ejecutable). Cambiarlo exige actualizar ese documento en el mismo cambio.
-4. **Nada de migraciones destructivas:** la versión del esquema vive en `PRAGMA user_version`.
-5. **Cada tarea cierra con su registro en `doc/`.** Un registro incompleto equivale a una tarea sin
-   terminar.
-
+**Gustavo Gallegos**  
+- **GitHub:** [@GGallegosO](https://github.com/GGallegosO)  
+- **Proyecto:** [LocalCash Repository](https://github.com/GGallegosO/LocalCash)
 ---
 
-## Contribuciones
 
-1. Lee [`.agent.md`](.agent.md) completo antes de proponer cambios: es el contrato, no una sugerencia.
-2. **Todo cambio relevante** (estructura, reglas, proceso, esquema) abre una entrada en `doc/` con su
-   motivación, igual que una feature.
-3. **Coherencia de formato:** documentación en español técnico; identificadores de código en inglés
-   técnico; placeholders de plantilla con formato `[TEXTO_EN_MAYUSCULAS]`; numeración de tres
-   dígitos compartida entre `spec/features/` y `doc/`.
-4. **Cobertura mínima del 70%** en lógica de negocio y repositorios/DAOs, y cero advertencias de
-   lint.
-5. `main` está protegida: el trabajo va en una rama `<tipo>/<descripcion-en-kebab>` y se integra con
-   *pull request*.
-
-> El valor de esta estructura no está en sus archivos, sino en el hábito que impone: especificar
-> antes de construir, y recordar después de decidir.
