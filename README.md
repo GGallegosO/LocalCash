@@ -46,15 +46,15 @@ El desarrollo del proyecto no improvisa líneas de código: sigue la metodologí
 
 ### Decisión de Persistencia y Precisión Financiera
 
-Para garantizar la integridad matemática en los cálculos financieros offline (evitando errores binarios de coma flotante IEEE 754) [1, 13]:
-- 💰 **Montos y Saldos:** Se almacenan estrictamente como números enteros (**`INTEGER`**) en la unidad mínima de moneda (centavos) [1].
-- 🗺️ **Coordenadas GPS:** Se almacenan como **`REAL`** para filtrado por radio geográfico [1, 7].
+Para garantizar la integridad matemática en los cálculos financieros offline (evitando errores binarios de coma flotante IEEE 754):
+- 💰 **Montos y Saldos:** Se almacenan estrictamente como números enteros (**`INTEGER`**) en la unidad mínima de moneda (centavos).
+- 🗺️ **Coordenadas GPS:** Se almacenan como **`REAL`** para filtrado por radio geográfico.
 
 ---
 
 ## 📊 Modelo de Datos (ERD)
 
-El esquema relacional SQLite está compuesto por 8 tablas interconectadas [14, 15]:
+El esquema relacional SQLite está compuesto por 8 tablas interconectadas:
 
 ```mermaid
 erDiagram
