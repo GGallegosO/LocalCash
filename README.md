@@ -3,7 +3,7 @@
 [![Android](https://img.shields.io/badge/Platform-Android_Native-green.svg?style=flat-square&logo=android)](https://developer.android.com/)
 [![Java](https://img.shields.io/badge/Language-Java_8%2B-orange.svg?style=flat-square&logo=java)](https://www.oracle.com/java/)
 [![SQLite](https://img.shields.io/badge/Database-SQLite-blue.svg?style=flat-square&logo=sqlite)](https://www.sqlite.org/)
-[![Methodology](<https://img.shields.io/badge/Architecture-Spec--Driven_Development_(SDD)-purple.svg?style=flat-square>)](https://github.com/GGallegosO/Template-SSD)
+[![Methodology](https://img.shields.io/badge/Architecture-Spec--Driven_Development_(SDD)-purple.svg?style=flat-square)](https://github.com/GGallegosO/Template-SSD)
 [![License](https://img.shields.io/badge/License-MIT-lightgrey.svg?style=flat-square)](LICENSE)
 
 **LocalCash** es una aplicación móvil Android nativa desarrollada en **Java** concebida para operar **100% de forma local y offline**. Combina la administración de cuentas financieras personales, el registro georreferenciado de movimientos en mapa, la planificación de compras futuras y un motor avanzado para la división de gastos compartidos y deudas entre contactos.
@@ -47,7 +47,6 @@ El desarrollo del proyecto no improvisa líneas de código: sigue la metodologí
 ### Decisión de Persistencia y Precisión Financiera
 
 Para garantizar la integridad matemática en los cálculos financieros offline (evitando errores binarios de coma flotante IEEE 754):
-
 - 💰 **Montos y Saldos:** Se almacenan estrictamente como números enteros (**`INTEGER`**) en la unidad mínima de moneda (centavos).
 - 🗺️ **Coordenadas GPS:** Se almacenan como **`REAL`** para filtrado por radio geográfico.
 
@@ -150,21 +149,20 @@ erDiagram
 
 ## 🛠️ Stack Tecnológico
 
-| Capa / Componente     | Tecnología Seleccionada               | Justificación Técnica                                                               |
-| :-------------------- | :------------------------------------ | :---------------------------------------------------------------------------------- |
-| **Lenguaje**          | Java 8+ / JDK 11                      | Compatibilidad nativa en Android Studio.                                            |
-| **Persistencia**      | SQLite (`SQLiteOpenHelper` → Room)    | Persistencia relacional local de alto rendimiento y cero dependencia de servidores. |
-| **Mapas & Geometría** | `osmdroid` 6.x                        | Renderizado de mapa interactivo 100% offline sin llaves API pagadas.                |
-| **Seguridad**         | `BiometricPrompt` API                 | Estándar de la plataforma Android para autenticación biométrica local.              |
-| **UI Components**     | Material Design Components            | Interfaz limpia, responsiva y adaptable.                                            |
-| **Testing**           | JUnit, Mockito, Robolectric, Espresso | Cobertura objetivo ≥ 70% en capas de Dominio y DAOs.                                |
+| Capa / Componente | Tecnología Seleccionada | Justificación Técnica |
+| :--- | :--- | :--- |
+| **Lenguaje** | Java 8+ / JDK 11 | Compatibilidad nativa en Android Studio. |
+| **Persistencia** | SQLite (`SQLiteOpenHelper` → Room) | Persistencia relacional local de alto rendimiento y cero dependencia de servidores. |
+| **Mapas & Geometría** | `osmdroid` 6.x | Renderizado de mapa interactivo 100% offline sin llaves API pagadas. |
+| **Seguridad** | `BiometricPrompt` API | Estándar de la plataforma Android para autenticación biométrica local. |
+| **UI Components** | Material Design Components | Interfaz limpia, responsiva y adaptable. |
+| **Testing** | JUnit, Mockito, Robolectric, Espresso | Cobertura objetivo ≥ 70% en capas de Dominio y DAOs. |
 
 ---
 
 ## 🚀 Compilación y Ejecución
 
 ### Requisitos Previos
-
 - **Android Studio:** Quail 2 | 2026.1.2 o superior.
 - **Android SDK:** v34 (API Level 34).
 - **JDK:** Java 21 (OpenJDK 64-Bit Server VM por JetBrains).
@@ -192,9 +190,9 @@ erDiagram
 
 ## 👤 Autor
 
-**Gustavo Gallegos**
-
-- **GitHub:** [@GGallegosO](https://github.com/GGallegosO)
+**Gustavo Gallegos**  
+- **GitHub:** [@GGallegosO](https://github.com/GGallegosO)  
 - **Proyecto:** [LocalCash Repository](https://github.com/GGallegosO/LocalCash)
-
 ---
+
+
