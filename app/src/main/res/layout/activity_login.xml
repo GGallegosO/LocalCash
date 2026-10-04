@@ -26,7 +26,10 @@
         android:id="@+id/cardLogin"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="24dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="48dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginBottom="48dp"
         app:cardBackgroundColor="?attr/colorSurface"
         app:cardElevation="4dp"
         app:cardCornerRadius="24dp"
@@ -44,11 +47,13 @@
 
             <!-- Logo oficial: pin verde neón con huella dactilar -->
             <ImageView
-                android:layout_width="140dp"
-                android:layout_height="140dp"
+                android:layout_width="120dp"
+                android:layout_height="120dp"
                 android:layout_gravity="center_horizontal"
                 android:layout_marginBottom="16dp"
+                android:adjustViewBounds="true"
                 android:contentDescription="Logo de LocalCash"
+                android:scaleType="fitCenter"
                 android:src="@mipmap/ic_launcher" />
 
             <TextView
@@ -109,6 +114,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:layout_marginBottom="16dp"
+                android:layout_marginTop="8dp"
                 android:text="Ingresar"
                 android:textSize="16sp"
                 android:textStyle="bold"
@@ -127,6 +133,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
+                android:layout_marginTop="16dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
