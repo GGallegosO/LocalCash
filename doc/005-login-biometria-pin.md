@@ -81,3 +81,36 @@ La Feature 005 define una pantalla de inicio de sesión con seguridad híbrida 1
 3. **Dependencias:** Agregar `androidx.biometric:biometric` y `androidx.security:security-crypto` a `app/build.gradle`.
 4. **Verificación:** Al finalizar la implementación, ejecutar el Definition of Done: `lint` → `testDebugUnitTest` → `connectedCheck` → `assembleDebug`.
 5. **Registro de memoria de implementación:** Crear `doc/005-login-biometria-pin-implementacion.md` (o similar) con las lecciones aprendidas durante la codificación.
+
+---
+
+## Actualización: Implementación Básica de Login (2026-10-04)
+
+### Tarea Ejecutada
+
+Se implementó una versión básica y funcional de la pantalla de login con validación hardcodeada (usuario: admin, contraseña: 123456). Esta implementación usa Material Design 3, ViewBinding y soporta temas claro/oscuro.
+
+### Archivos Creados/Modificados
+
+**Creados:**
+- `app/src/main/java/com/localcash/ui/login/LoginActivity.java` — Activity de login con ViewBinding, validación simple y mensajes de error/éxito.
+- `app/src/main/res/layout/activity_login.xml` — Layout con MaterialCardView, TextInputLayout, MaterialButton y TextView para mensajes.
+
+**Modificados:**
+- `app/src/main/res/values/themes.xml` — Configurado Theme.Material3.Light.NoActionBar con colores M3.
+- `app/src/main/res/values-night/themes.xml` — Configurado Theme.Material3.Dark.NoActionBar con colores M3.
+- `app/src/main/res/values/colors.xml` — Agregados colores de Material Design 3 para tema claro y oscuro.
+- `app/src/main/AndroidManifest.xml` — Registrada LoginActivity como LAUNCHER con el nuevo tema.
+
+### Decisiones Tomadas
+
+1. **Validación hardcodeada por ahora.** _Justificación:_ El objetivo de hoy es tener una pantalla funcional mañana se conectará a EncryptedSharedPreferences.
+2. **ViewBinding en lugar de findViewById.** _Justificación:_ Más seguro, más limpio y es el estándar moderno de Android.
+3. **MaterialCardView como contenedor principal.** _Justificación:_ Proporciona elevación y esquinas redondeadas siguiendo las guías de Material Design 3.
+
+### Próximos Pasos (Mañana)
+
+1. **Biometría:** Integrar BiometricPrompt con fallback a PIN.
+2. **Persistencia:** Migrar de validación hardcodeada a EncryptedSharedPreferences.
+3. **PIN de 6 dígitos:** Implementar teclado numérico y validación.
+4. **Bloqueo temporal:** Agregar lógica de bloqueo tras intentos fallidos.
