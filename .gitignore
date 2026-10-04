@@ -167,3 +167,30 @@ reports/
 # podría regenerarlo a partir de lo que YA está en el repositorio. Si la
 # respuesta es sí, va aquí dentro.
 # -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# ANDROID ESPECÍFICO
+# -----------------------------------------------------------------------------
+# Configuración local del SDK (ruta absoluta de tu máquina)
+local.properties
+
+# Archivos de compilación Android
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Archivos de firma (¡NUNCA subir a Git!)
+*.jks
+*.keystore
+*.keystore.tmp
+
+# Carpetas de build nativo
+.externalNativeBuild/
+.cxx/
+
+# Capturas de pantalla del emulador
+captures/
+
+# Archivos de memoria heap dump
+*.hprof
