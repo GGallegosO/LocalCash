@@ -4,15 +4,15 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?attr/colorSurface"
+    android:background="@drawable/gradient_background"
     tools:context="com.localcash.ui.login.LoginActivity">
 
     <com.google.android.material.card.MaterialCardView
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="24dp"
-        app:cardCornerRadius="24dp"
-        app:cardElevation="12dp"
+        android:layout_marginHorizontal="32dp"
+        app:cardCornerRadius="28dp"
+        app:cardElevation="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -21,14 +21,15 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="?attr/colorSurface"
             android:orientation="vertical"
-            android:padding="24dp">
+            android:padding="32dp">
 
             <ImageView
                 android:layout_width="96dp"
                 android:layout_height="96dp"
                 android:layout_gravity="center_horizontal"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="24dp"
                 android:contentDescription="Logo de LocalCash"
                 android:src="@mipmap/ic_launcher" />
 
@@ -36,7 +37,6 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
-                android:layout_marginBottom="8dp"
                 android:text="LocalCash"
                 android:textAppearance="?attr/textAppearanceHeadlineLarge"
                 android:textColor="?attr/colorOnSurface" />
@@ -91,14 +91,13 @@
                 android:layout_height="56dp"
                 android:layout_marginBottom="16dp"
                 android:text="Ingresar"
-                android:textSize="16sp"
-                app:cornerRadius="16dp" />
+                android:textSize="18sp"
+                app:cornerRadius="22dp" />
 
             <TextView
                 android:id="@+id/tvMessage"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
                 android:gravity="center"
                 android:textAppearance="?attr/textAppearanceBodyMedium"
                 android:textColor="?attr/colorError"
@@ -112,8 +111,8 @@
                 android:orientation="horizontal">
 
                 <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
                     android:layout_marginEnd="8dp"
                     android:contentDescription="Ícono de seguridad"
                     android:src="@drawable/ic_security"
