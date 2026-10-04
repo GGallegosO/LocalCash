@@ -34,12 +34,31 @@ La Feature 005 define una pantalla de inicio de sesión con seguridad híbrida 1
 - `spec/features/005-login-biometria-pin/plan.md` — Plan técnico con componentes, decisiones de arquitectura (BiometricPrompt, EncryptedSharedPreferences, PBKDF2, temas M3, fuente OpenDyslexica), riesgos y estrategia de persistencia.
 - `spec/features/005-login-biometria-pin/tasks.md` — Checklist secuencial de 20 tareas organizadas en 7 fases (contratos, persistencia, lógica, UI/accesibilidad, pruebas, verificación de calidad, cierre).
 - `doc/005-login-biometria-pin.md` — ESTE registro de memoria.
+- `app/src/main/java/com/localcash/ui/theme/ThemeManager.java` — Gestor de temas persistente (SharedPreferences, light/dark/system).
+- `app/src/main/java/com/localcash/ui/BaseActivity.java` — Activity base que aplica tema automáticamente antes de inflar.
+- `app/src/main/res/values/strings.xml` — Recursos de texto con convención `aLogin_` para LoginActivity.
+- `app/src/main/res/drawable/ic_brightness_medium.xml` — Ícono nativo Material Design para tema claro (sol).
+- `app/src/main/res/drawable/ic_brightness_low.xml` — Ícono nativo Material Design para tema oscuro (luna).
 
 **Modificados:**
 
 - `.agent.md` — Sección 3: actualizada la "Nota de estado" para reflejar que el proyecto Gradle ya existe y los comandos son ejecutables. Sección 2: actualizado `minSdk` de 23 a 28.
 - `AGENTS.md` — Sección "Estado real del repositorio": actualizada para reflejar que la estructura base de Android está creada y lista para recibir la Feature 005.
 - `spec/constitution/data-model.md` — Actualizadas las referencias a `minSdk` de 23 a 28 en las líneas 23, 721 y 735.
+- `app/build.gradle` — Namespace y applicationId migrados a `com.localcash`.
+- `app/src/main/java/com/localcash/ui/login/LoginActivity.java` — Extiende `BaseActivity`, implementa toggle de tema con íconos nativos, usa strings externalizadas.
+- `app/src/main/res/layout/activity_login.xml` — Logo 120dp fitCenter, CardView con padding 32dp / margin 48dp vertical, todos los textos externalizados a @string/.
+- `app/src/main/res/values/themes.xml` / `values-night/themes.xml` — Heredan de `Theme.Material3.DayNight.NoActionBar` con paleta oficial.
+- `app/src/main/AndroidManifest.xml` — LoginActivity como LAUNCHER, Theme.LocalCash.
+
+**Eliminados:**
+
+- `app/src/main/java/com/example/templocalcash/MainActivity.java` — Activity template obsoleta.
+- `app/src/main/res/layout/activity_main.xml` — Layout template obsoleto.
+- `app/src/main/res/drawable/ic_moon.xml` — Vector innecesario (ícono de luna personalizado).
+- `app/src/main/res/drawable/ic_sun.xml` — Vector innecesario (ícono de sol personalizado).
+- `app/src/test/java/com/example/templocalcash/ExampleUnitTest.java` — Test template obsoleto.
+- `app/src/androidTest/java/com/example/templocalcash/ExampleInstrumentedTest.java` — Test template obsoleto.
 
 ---
 
@@ -60,8 +79,20 @@ La Feature 005 define una pantalla de inicio de sesión con seguridad híbrida 1
 5. **Fuente OpenDyslexica aplicada globalmente sobrescribiendo Typography en MaterialTheme.**
    _Justificación:_ Centraliza la aplicación de la fuente y respeta el tema activo. Si falta el archivo .ttf, se usa la fuente del sistema como fallback.
 
-6. **Namespace actual `com.example.templocalcash` se migrará a `com.localcash` durante la implementación.**
-   _Justificación:_ La estructura de paquetes declarada en `.agent.md` §4 es `com/localcash/{ui,domain,data}/`. La migración se realizará como parte de las tareas de implementación de la Feature 005.
+6. **Namespace actual `com.example.templocalcash` se migró a `com.localcash`.**
+   _Justificación:_ La estructura de paquetes declarada en `.agent.md` §4 es `com/localcash/{ui,domain,data}/`. La migración se realizó en `app/build.gradle` y todos los imports Java.
+
+7. **Uso de íconos nativos Material Design (`ic_brightness_medium` / `ic_brightness_low`) en lugar de vectores personalizados.**
+   _Justificación:_ Elimina archivos XML innecesarios, reduce mantenimiento, garantiza consistencia visual con el sistema y mejor accesibilidad. Los íconos nativos se adaptan automáticamente al tema (tint `?attr/colorOnSurface`).
+
+8. **Externalización total de textos a `strings.xml` con prefijo `aLogin_`.**
+   _Justificación:_ Facilita mantenimiento, traducciones futuras y revisión de textos. Convención `aLogin_` (Activity Login) permite identificar rápidamente qué textos pertenecen a esta pantalla.
+
+9. **Eliminación de vectores personalizados `ic_moon.xml` e `ic_sun.xml`.**
+   _Justificación:_ Eran redundantes al existir íconos nativos equivalentes en Material Design. Mantener el proyecto limpio evita confusión y reduce tamaño del APK.
+
+10. **Arquitectura BaseActivity + ThemeManager reutilizable.**
+    _Justificación:_ `BaseActivity` aplica tema automáticamente antes de inflar vistas. `ThemeManager` encapsula lógica de persistencia y aplicación de tema. Cualquier Activity futura solo necesita extender `BaseActivity` para heredar esta funcionalidad.
 
 ---
 
@@ -71,46 +102,17 @@ La Feature 005 define una pantalla de inicio de sesión con seguridad híbrida 1
 - **Las decisiones de configuración (como `minSdk`) deben documentarse.** El cambio de `minSdk` 23 a 28 es una decisión de diseño que debe registrarse para futuras referencias.
 - **El ciclo SDD (spec → plan → tasks) es esencial antes de codificar.** La redacción de los tres documentos permitió identificar casos borde, riesgos y dependencias que no serían evidentes al escribir código directamente.
 - **La accesibilidad es un requisito, no un añadido.** Los requisitos de Light/Dark Mode, Alto Contraste y fuente OpenDyslexica deben estar presentes desde la especificación, no como mejoras posteriores.
+- **Es fundamental externalizar todos los textos a `strings.xml` desde el inicio** para facilitar mantenimiento y traducciones. No dejar textos hardcodeados en layouts XML.
+- **Los íconos nativos de Material Design son preferibles a crear vectores personalizados** cuando están disponibles. Reducen código, mantenimiento y garantizan consistencia.
+- **La limpieza de archivos innecesarios debe ser parte del Definition of Done.** Archivos obsoletos (`MainActivity`, vectores personalizados, tests template) confunden y ensucian el proyecto.
+- **La arquitectura reutilizable (BaseActivity + ThemeManager) escala mejor** que implementar lógica de tema en cada Activity.
 
 ---
 
 ## Próximos Pasos
 
-1. **Implementación de la Feature 005:** Ejecutar las 20 tareas definidas en `tasks.md` en orden secuencial, comenzando por la creación de la estructura de paquetes `com/localcash/{ui,domain,data}/`.
-2. **Migración de namespace:** Cambiar `com.example.templocalcash` a `com.localcash` en `app/build.gradle` y en todos los archivos Java.
-3. **Dependencias:** Agregar `androidx.biometric:biometric` y `androidx.security:security-crypto` a `app/build.gradle`.
-4. **Verificación:** Al finalizar la implementación, ejecutar el Definition of Done: `lint` → `testDebugUnitTest` → `connectedCheck` → `assembleDebug`.
-5. **Registro de memoria de implementación:** Crear `doc/005-login-biometria-pin-implementacion.md` (o similar) con las lecciones aprendidas durante la codificación.
-
----
-
-## Actualización: Implementación Básica de Login (2026-10-04)
-
-### Tarea Ejecutada
-
-Se implementó una versión básica y funcional de la pantalla de login con validación hardcodeada (usuario: admin, contraseña: 123456). Esta implementación usa Material Design 3, ViewBinding y soporta temas claro/oscuro.
-
-### Archivos Creados/Modificados
-
-**Creados:**
-- `app/src/main/java/com/localcash/ui/login/LoginActivity.java` — Activity de login con ViewBinding, validación simple y mensajes de error/éxito.
-- `app/src/main/res/layout/activity_login.xml` — Layout con MaterialCardView, TextInputLayout, MaterialButton y TextView para mensajes.
-
-**Modificados:**
-- `app/src/main/res/values/themes.xml` — Configurado Theme.Material3.Light.NoActionBar con colores M3.
-- `app/src/main/res/values-night/themes.xml` — Configurado Theme.Material3.Dark.NoActionBar con colores M3.
-- `app/src/main/res/values/colors.xml` — Agregados colores de Material Design 3 para tema claro y oscuro.
-- `app/src/main/AndroidManifest.xml` — Registrada LoginActivity como LAUNCHER con el nuevo tema.
-
-### Decisiones Tomadas
-
-1. **Validación hardcodeada por ahora.** _Justificación:_ El objetivo de hoy es tener una pantalla funcional mañana se conectará a EncryptedSharedPreferences.
-2. **ViewBinding en lugar de findViewById.** _Justificación:_ Más seguro, más limpio y es el estándar moderno de Android.
-3. **MaterialCardView como contenedor principal.** _Justificación:_ Proporciona elevación y esquinas redondeadas siguiendo las guías de Material Design 3.
-
-### Próximos Pasos (Mañana)
-
-1. **Biometría:** Integrar BiometricPrompt con fallback a PIN.
-2. **Persistencia:** Migrar de validación hardcodeada a EncryptedSharedPreferences.
+1. **Biometría:** Integrar `BiometricPrompt` con fallback a PIN.
+2. **Persistencia:** Migrar de validación hardcodeada a `EncryptedSharedPreferences`.
 3. **PIN de 6 dígitos:** Implementar teclado numérico y validación.
 4. **Bloqueo temporal:** Agregar lógica de bloqueo tras intentos fallidos.
+5. **Verificación:** Ejecutar Definition of Done: `lint` → `testDebugUnitTest` → `connectedCheck` → `assembleDebug`.

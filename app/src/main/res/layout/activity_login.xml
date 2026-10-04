@@ -7,17 +7,17 @@
     android:background="?attr/colorSurface"
     tools:context="com.localcash.ui.login.LoginActivity">
 
-    <!-- Botón de cambio de tema en esquina superior derecha -->
+    <!-- Botón de cambio de tema en esquina superior derecha - ícono nativo Material Design -->
     <ImageButton
         android:id="@+id/btnThemeToggle"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:layout_margin="16dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Cambiar tema"
+        android:contentDescription="@string/aLogin_theme_toggle_desc"
         android:padding="12dp"
         android:scaleType="centerInside"
-        android:src="@drawable/ic_moon"
+        android:src="@drawable/ic_brightness_medium"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:tint="?attr/colorOnSurface" />
@@ -52,7 +52,7 @@
                 android:layout_gravity="center_horizontal"
                 android:layout_marginBottom="16dp"
                 android:adjustViewBounds="true"
-                android:contentDescription="Logo de LocalCash"
+                android:contentDescription="@string/aLogin_logo_desc"
                 android:scaleType="fitCenter"
                 android:src="@mipmap/ic_launcher" />
 
@@ -60,7 +60,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
-                android:text="LocalCash"
+                android:text="@string/aLogin_title"
                 android:textAppearance="?attr/textAppearanceHeadlineLarge"
                 android:textColor="?attr/colorOnSurface"
                 android:textStyle="bold" />
@@ -70,7 +70,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
                 android:layout_marginBottom="32dp"
-                android:text="Fintech"
+                android:text="@string/aLogin_subtitle"
                 android:textAppearance="?attr/textAppearanceBodyMedium"
                 android:textColor="?attr/colorOnSurfaceVariant" />
 
@@ -80,7 +80,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                android:hint="Usuario"
+                android:hint="@string/aLogin_hint_user"
                 app:startIconDrawable="@drawable/ic_person">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -97,7 +97,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
-                android:hint="Contraseña"
+                android:hint="@string/aLogin_hint_password"
                 app:endIconMode="password_toggle"
                 app:startIconDrawable="@drawable/ic_lock">
 
@@ -115,7 +115,7 @@
                 android:layout_height="56dp"
                 android:layout_marginBottom="16dp"
                 android:layout_marginTop="8dp"
-                android:text="Ingresar"
+                android:text="@string/aLogin_btn_enter"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 app:cornerRadius="16dp" />
@@ -148,7 +148,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="100% Offline y Privado"
+                    android:text="@string/aLogin_footer_privacy"
                     android:textAppearance="?attr/textAppearanceBodySmall"
                     android:textColor="?attr/colorOnSurfaceVariant" />
 

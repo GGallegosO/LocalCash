@@ -18,7 +18,7 @@ import com.localcash.ui.theme.ThemeManager;
 /**
  * Pantalla de inicio de sesión de LocalCash.
  * Extiende BaseActivity para aplicar automáticamente el tema guardado.
- * Incluye toggle de tema manual (claro/oscuro) persistente.
+ * Incluye toggle de tema manual (claro/oscuro) con íconos nativos de Material Design.
  */
 public class LoginActivity extends BaseActivity {
 
@@ -70,15 +70,15 @@ public class LoginActivity extends BaseActivity {
     }
 
     /**
-     * Actualiza el ícono del botón de tema según el modo actual.
+     * Actualiza el ícono del botón de tema según el modo actual usando íconos nativos de Material Design.
+     * - Tema claro: ic_brightness_medium (sol)
+     * - Tema oscuro: ic_brightness_low (luna)
      */
     private void updateThemeToggleIcon() {
         boolean isDark = ThemeManager.isDarkMode(this);
-        int iconRes = isDark ? R.drawable.ic_sun : R.drawable.ic_moon;
+        int iconRes = isDark ? R.drawable.ic_brightness_low : R.drawable.ic_brightness_medium;
         btnThemeToggle.setImageResource(iconRes);
-        btnThemeToggle.setContentDescription(isDark
-                ? getString(R.string.content_desc_theme_light)
-                : getString(R.string.content_desc_theme_dark));
+        btnThemeToggle.setContentDescription(getString(R.string.aLogin_theme_toggle_desc));
     }
 
     private void attemptLogin() {
@@ -89,20 +89,20 @@ public class LoginActivity extends BaseActivity {
             Log.d(TAG, "Intento de login - usuario: " + usuario);
 
             if (usuario.isEmpty() || password.isEmpty()) {
-                showMessage("Por favor ingrese usuario y contraseña");
+                showMessage(getString(R.string.aLogin_error_empty));
                 return;
             }
 
             if (SEED_USER.equals(usuario) && SEED_PASSWORD.equals(password)) {
                 Log.d(TAG, "Login exitoso");
-                binding.tvMessage.setText("¡Bienvenido admin!");
+                binding.tvMessage.setText(getString(R.string.aLogin_success_welcome));
                 binding.tvMessage.setTextColor(getColor(android.R.color.holo_green_dark));
                 binding.tvMessage.setVisibility(View.VISIBLE);
-                Toast.makeText(this, "¡Bienvenido admin!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, getString(R.string.aLogin_success_welcome), Toast.LENGTH_SHORT).show();
                 new Handler(Looper.getMainLooper()).postDelayed(this::finish, 500);
             } else {
                 Log.d(TAG, "Login fallido");
-                showMessage("Usuario o contraseña incorrectos");
+                showMessage(getString(R.string.aLogin_error_invalid));
             }
         } catch (Exception e) {
             Log.e(TAG, "Error: " + e.getMessage(), e);
