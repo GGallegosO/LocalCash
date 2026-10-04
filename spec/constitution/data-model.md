@@ -20,7 +20,7 @@
 
 | Campo                        | Valor                                        |
 |------------------------------|----------------------------------------------|
-| Motor de persistencia        | SQLite 3.8+ (`minSdk` 23), vía `SQLiteOpenHelper` en Fases 1-2 y `Room` desde la Fase 3 (referencia a su fila en `tech-stack.md`) |
+| Motor de persistencia        | SQLite 3.8+ (`minSdk` 28), vía `SQLiteOpenHelper` en Fases 1-2 y `Room` desde la Fase 3 (referencia a su fila en `tech-stack.md`) |
 | Modelo de datos              | RELACIONAL |
 | Fecha de aprobación          | 2026-09-28                                  |
 | Aprobado por                 | GG (`doc/000-initial-setup.md` §1)           |
@@ -718,7 +718,7 @@ UPDATE DEUDAS_PARTICIPANTES
   - Verificación obligatoria de cada migración: se prueba con `MigrationTestHelper` (esquema
     exportado en `schemas/` de Room) y con un test que siembre datos, migre y compruebe que siguen
     intactos más `PRAGMA foreign_key_check` limpio.
-  - Restricción de compatibilidad: solo construcciones disponibles en **SQLite 3.8+** (`minSdk` 23),
+  - Restricción de compatibilidad: solo construcciones disponibles en **SQLite 3.8+** (`minSdk` 28),
     es decir, nada de `STRICT` (3.37+), índices de expresión (3.9+), `RETURNING` (3.35+) ni columnas
     generadas (3.31+).
 
@@ -732,7 +732,7 @@ UPDATE DEUDAS_PARTICIPANTES
   misma transacción que crea el esquema, con `INSERT OR IGNORE` sobre el índice único
   `(nombre, tipo_transaccion)` para que reejecutar el arranque sea idempotente. Se usa `OR IGNORE` y
   no `ON CONFLICT DO NOTHING` porque la sintaxis de _upsert_ requiere SQLite 3.24 y el proyecto
-  declara compatibilidad 3.8+ (`minSdk` 23). Las cuentas y los contactos los crea el usuario: no hay
+  declara compatibilidad 3.8+ (`minSdk` 28). Las cuentas y los contactos los crea el usuario: no hay
   datos de prueba en producción. Para desarrollo y test se usa la base en memoria de Room,
   sembrada desde el mismo script de §A.1.
 

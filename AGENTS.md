@@ -7,15 +7,16 @@
 
 ## Estado real del repositorio (antes de tocar nada)
 
-- Esto es un repositorio **de especificación, sin código todavía**: no existe `build.gradle`, ni
-  wrapper `gradlew`, ni `app/`, ni `.github/`. No busques entrypoints: aún no hay.
-- **Los comandos de la tabla siguiente no son ejecutables hoy.** Son la declaración canónica que se
-  cumplirá en cuanto exista el proyecto Gradle (primer hito de Fase 1). No los "verifiques"
-  ejecutándolos: no hay nada que compilar todavía.
+- El proyecto Gradle **ya existe** y está inicializado: `app/`, `gradle/` y los wrappers (`gradlew`)
+  están presentes. Los comandos canónicos de la tabla siguiente son **totalmente ejecutables**.
+- La estructura base de Android (Java) está creada y lista para recibir la Feature 005
+  (`005-login-biometria-pin`). El namespace actual es `com.example.templocalcash` y debe migrarse
+  a `com.localcash` según la estructura de `.agent.md` §4.
 - El único esquema de base de datos es el que está **escrito y validado** en
   `spec/constitution/data-model.md` (Apéndice A). Ese DDL es la fuente de verdad; el código de
   persistencia debe reproducirlo, no inventar un esquema paralelo.
-- `spec/features/` solo contiene `_TEMPLATE_`. Ninguna feature real ha salido todavía.
+- `spec/features/` solo contiene `_TEMPLATE_`. La Feature 005 será la primera feature real del
+  proyecto.
 
 ## Flujo obligatorio de trabajo (SDD)
 
@@ -62,7 +63,7 @@ Estas son las que cuestan un bug de producción si se ignoran:
 - **`CUENTAS.saldo_actual` es una proyección, no la fuente de verdad.** `TRANSACCIONES` lo es. Se
   actualiza solo con aritmética atómica (`SET saldo_actual = saldo_actual ± :monto`); nunca con
   leer-restar-escribir, que tiene condición de carrera.
-- **Solo construcciones de SQLite 3.8+ (`minSdk` 23):** nada de `STRICT`, índices de expresión,
+- **Solo construcciones de SQLite 3.8+ (`minSdk` 28):** nada de `STRICT`, índices de expresión,
   `RETURNING`, columnas generadas ni `ON CONFLICT DO NOTHING` (ese es _upsert_, 3.24+). Para la
   semilla usa `INSERT OR IGNORE`.
 - **Migraciones:** `PRAGMA user_version` es la versión del esquema. `fallbackToDestructiveMigration()`
