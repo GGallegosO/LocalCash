@@ -7,6 +7,21 @@
     android:background="?attr/colorSurface"
     tools:context="com.localcash.ui.login.LoginActivity">
 
+    <!-- Botón de cambio de tema en esquina superior derecha -->
+    <ImageButton
+        android:id="@+id/btnThemeToggle"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_margin="16dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Cambiar tema"
+        android:padding="12dp"
+        android:scaleType="centerInside"
+        android:src="@drawable/ic_moon"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="?attr/colorOnSurface" />
+
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/cardLogin"
         android:layout_width="0dp"
@@ -27,14 +42,14 @@
             android:orientation="vertical"
             android:padding="32dp">
 
+            <!-- Logo oficial: pin verde neón con huella dactilar -->
             <ImageView
-                android:layout_width="80dp"
-                android:layout_height="80dp"
+                android:layout_width="140dp"
+                android:layout_height="140dp"
                 android:layout_gravity="center_horizontal"
                 android:layout_marginBottom="16dp"
                 android:contentDescription="Logo de LocalCash"
-                android:src="@mipmap/ic_launcher"
-                app:tint="?attr/colorPrimary" />
+                android:src="@mipmap/ic_launcher" />
 
             <TextView
                 android:layout_width="wrap_content"

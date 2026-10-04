@@ -5,32 +5,80 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.view.View;
+import android.widget.ImageButton;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 
 import com.localcash.R;
 import com.localcash.databinding.ActivityLoginBinding;
+import com.localcash.ui.BaseActivity;
+import com.localcash.ui.theme.ThemeManager;
 
 /**
- * Pantalla de inicio de sesión de LocalCash con diseño moderno.
- * Validación hardcodeada (usuario: admin, contraseña: 123456).
+ * Pantalla de inicio de sesión de LocalCash.
+ * Extiende BaseActivity para aplicar automáticamente el tema guardado.
+ * Incluye toggle de tema manual (claro/oscuro) persistente.
  */
-public class LoginActivity extends AppCompatActivity {
+public class LoginActivity extends BaseActivity {
 
     private static final String TAG = "LoginActivity";
+
     private ActivityLoginBinding binding;
+    private ImageButton btnThemeToggle;
 
     private static final String SEED_USER = "admin";
     private static final String SEED_PASSWORD = "123456";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // ThemeManager.applyTheme(this) se llama automáticamente en BaseActivity.onCreate()
         super.onCreate(savedInstanceState);
+
         binding = ActivityLoginBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        // Referencia al botón de cambio de tema
+        btnThemeToggle = binding.btnThemeToggle;
+
+        // Configurar ícono inicial del botón según tema actual
+        updateThemeToggleIcon();
+
+        setupClickListeners();
+    }
+
+    private void setupClickListeners() {
+        // Botón de login
         binding.btnLogin.setOnClickListener(v -> attemptLogin());
+
+        // Botón de cambio de tema
+        btnThemeToggle.setOnClickListener(v -> toggleTheme());
+    }
+
+    /**
+     * Alterna entre tema claro y oscuro, guarda la preferencia y recrea la Activity.
+     */
+    private void toggleTheme() {
+        boolean isCurrentlyDark = ThemeManager.isDarkMode(this);
+        boolean newDarkMode = !isCurrentlyDark;
+
+        ThemeManager.setDarkMode(this, newDarkMode);
+        updateThemeToggleIcon();
+
+        // Recrear la Activity para aplicar el nuevo tema visualmente
+        recreate();
+    }
+
+    /**
+     * Actualiza el ícono del botón de tema según el modo actual.
+     */
+    private void updateThemeToggleIcon() {
+        boolean isDark = ThemeManager.isDarkMode(this);
+        int iconRes = isDark ? R.drawable.ic_sun : R.drawable.ic_moon;
+        btnThemeToggle.setImageResource(iconRes);
+        btnThemeToggle.setContentDescription(isDark
+                ? getString(R.string.content_desc_theme_light)
+                : getString(R.string.content_desc_theme_dark));
     }
 
     private void attemptLogin() {

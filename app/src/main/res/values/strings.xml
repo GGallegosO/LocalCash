@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">LocalCash</string>
+    <string name="content_desc_theme_dark">Cambiar a tema oscuro</string>
+    <string name="content_desc_theme_light">Cambiar a tema claro</string>
 </resources>
