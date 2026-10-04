@@ -1,29 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- App -->
     <string name="app_name">LocalCash</string>
-
-    <!-- LoginActivity - Textos generales -->
     <string name="aLogin_app_name">LocalCash</string>
     <string name="aLogin_title">LocalCash</string>
     <string name="aLogin_subtitle">Fintech</string>
-
-    <!-- LoginActivity - Inputs -->
     <string name="aLogin_hint_user">Ingresa tu usuario</string>
     <string name="aLogin_hint_password">Ingresa tu contraseña</string>
-
-    <!-- LoginActivity - Botones -->
     <string name="aLogin_btn_enter">Ingresar</string>
-
-    <!-- LoginActivity - Mensajes -->
     <string name="aLogin_error_invalid">Usuario o contraseña incorrectos</string>
     <string name="aLogin_error_empty">Por favor ingresa usuario y contraseña</string>
     <string name="aLogin_success_welcome">¡Bienvenido!</string>
-
-    <!-- LoginActivity - Footer -->
     <string name="aLogin_footer_privacy">100% Offline y Privado</string>
-
-    <!-- LoginActivity - Accesibilidad -->
     <string name="aLogin_theme_toggle_desc">Cambiar tema claro/oscuro</string>
     <string name="aLogin_logo_desc">Logo LocalCash</string>
+    <string name="aLogin_input_user_desc">Campo de usuario</string>
+    <string name="aLogin_input_password_desc">Campo de contraseña</string>
 </resources>

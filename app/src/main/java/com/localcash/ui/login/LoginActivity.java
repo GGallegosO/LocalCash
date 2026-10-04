@@ -5,7 +5,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.view.View;
-import android.widget.ImageButton;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatDelegate;
@@ -18,14 +17,13 @@ import com.localcash.ui.theme.ThemeManager;
 /**
  * Pantalla de inicio de sesión de LocalCash.
  * Extiende BaseActivity para aplicar automáticamente el tema guardado.
- * Incluye toggle de tema manual (claro/oscuro) con íconos nativos de Material Design.
+ * Incluye toggle de tema manual (claro/oscuro) con ícono nativo Material Design.
  */
 public class LoginActivity extends BaseActivity {
 
     private static final String TAG = "LoginActivity";
 
     private ActivityLoginBinding binding;
-    private ImageButton btnThemeToggle;
 
     private static final String SEED_USER = "admin";
     private static final String SEED_PASSWORD = "123456";
@@ -38,12 +36,6 @@ public class LoginActivity extends BaseActivity {
         binding = ActivityLoginBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        // Referencia al botón de cambio de tema
-        btnThemeToggle = binding.btnThemeToggle;
-
-        // Configurar ícono inicial del botón según tema actual
-        updateThemeToggleIcon();
-
         setupClickListeners();
     }
 
@@ -52,33 +44,21 @@ public class LoginActivity extends BaseActivity {
         binding.btnLogin.setOnClickListener(v -> attemptLogin());
 
         // Botón de cambio de tema
-        btnThemeToggle.setOnClickListener(v -> toggleTheme());
+        binding.btnThemeToggle.setOnClickListener(v -> toggleTheme());
     }
 
     /**
      * Alterna entre tema claro y oscuro, guarda la preferencia y recrea la Activity.
+     * El ícono ic_brightness_medium ya muestra sol y luna combinados, no requiere cambio dinámico.
      */
     private void toggleTheme() {
         boolean isCurrentlyDark = ThemeManager.isDarkMode(this);
         boolean newDarkMode = !isCurrentlyDark;
 
         ThemeManager.setDarkMode(this, newDarkMode);
-        updateThemeToggleIcon();
 
         // Recrear la Activity para aplicar el nuevo tema visualmente
         recreate();
-    }
-
-    /**
-     * Actualiza el ícono del botón de tema según el modo actual usando íconos nativos de Material Design.
-     * - Tema claro: ic_brightness_medium (sol)
-     * - Tema oscuro: ic_brightness_low (luna)
-     */
-    private void updateThemeToggleIcon() {
-        boolean isDark = ThemeManager.isDarkMode(this);
-        int iconRes = isDark ? R.drawable.ic_brightness_low : R.drawable.ic_brightness_medium;
-        btnThemeToggle.setImageResource(iconRes);
-        btnThemeToggle.setContentDescription(getString(R.string.aLogin_theme_toggle_desc));
     }
 
     private void attemptLogin() {

@@ -7,27 +7,27 @@
     android:background="?attr/colorSurface"
     tools:context="com.localcash.ui.login.LoginActivity">
 
-    <!-- Botón de cambio de tema en esquina superior derecha - ícono nativo Material Design -->
-    <ImageButton
+    <!-- Botón de cambio de tema en esquina superior derecha - FUERA de la CardView -->
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnThemeToggle"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_margin="16dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
+        style="@style/Widget.Material3.Button.IconButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="24dp"
         android:contentDescription="@string/aLogin_theme_toggle_desc"
-        android:padding="12dp"
-        android:scaleType="centerInside"
-        android:src="@drawable/ic_brightness_medium"
+        android:elevation="8dp"
+        app:icon="@drawable/ic_brightness_medium"
+        app:iconTint="?attr/colorOnSurface"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:tint="?attr/colorOnSurface" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/cardLogin"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="24dp"
-        android:layout_marginTop="48dp"
+        android:layout_marginTop="80dp"
         android:layout_marginEnd="24dp"
         android:layout_marginBottom="48dp"
         app:cardBackgroundColor="?attr/colorSurface"
@@ -69,7 +69,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
-                android:layout_marginBottom="32dp"
+                android:layout_marginBottom="24dp"
                 android:text="@string/aLogin_subtitle"
                 android:textAppearance="?attr/textAppearanceBodyMedium"
                 android:textColor="?attr/colorOnSurfaceVariant" />
@@ -81,7 +81,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
                 android:hint="@string/aLogin_hint_user"
-                app:startIconDrawable="@drawable/ic_person">
+                app:startIconDrawable="@drawable/ic_person"
+                app:startIconContentDescription="@string/aLogin_input_user_desc">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etUsuario"
@@ -99,7 +100,8 @@
                 android:layout_marginBottom="24dp"
                 android:hint="@string/aLogin_hint_password"
                 app:endIconMode="password_toggle"
-                app:startIconDrawable="@drawable/ic_lock">
+                app:startIconDrawable="@drawable/ic_lock"
+                app:startIconContentDescription="@string/aLogin_input_password_desc">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etPassword"
