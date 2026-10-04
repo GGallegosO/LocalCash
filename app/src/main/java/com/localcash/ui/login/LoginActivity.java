@@ -9,8 +9,8 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.templocalcash.R;
-import com.example.templocalcash.databinding.ActivityLoginBinding;
+import com.localcash.R;
+import com.localcash.databinding.ActivityLoginBinding;
 
 /**
  * Pantalla de inicio de sesión de LocalCash con diseño moderno.
