@@ -7,13 +7,13 @@
 
 ## Ficha de la tarea
 
-| Campo                         | Valor                                                                     |
-| ----------------------------- | ------------------------------------------------------------------------- |
-| **Fecha**                     | 2026-09-28                                                                |
-| **Tarea ejecutada**           | Configuración del contrato maestro: `.agent.md` + `AGENTS.md`             |
-| **Responsable**               | GG                                                                        |
-| **Duración estimada vs real** | [1 sesión] vs [1 sesión]                                                  |
-| **Estado**                    | Completado                                                                |
+| Campo                         | Valor                                                         |
+| ----------------------------- | ------------------------------------------------------------- |
+| **Fecha**                     | 2026-09-28                                                    |
+| **Tarea ejecutada**           | Configuración del contrato maestro: `.agent.md` + `AGENTS.md` |
+| **Responsable**               | GG                                                            |
+| **Duración estimada vs real** | [1 sesión] vs [1 sesión]                                      |
+| **Estado**                    | Completado                                                    |
 
 ---
 
@@ -34,7 +34,7 @@ El diagnóstico previo detectó tres trampas que un agente habría pasado por al
 2. **La prohibición 4 de `.agent.md` §6 estaba obsoleta**: decía "prohibido generar código
    dependiente de un lenguaje mientras `tech-stack.md` tenga placeholders", pero `tech-stack.md`
    quedó cerrado en la tarea 001. Se reescribió en el sentido correcto: lo prohibido es usar tecnología
-   *no registrada*.
+   _no registrada_.
 3. **`spec/features/_TEMPLATE_/tasks.md` conservaba los placeholders de comandos**, y toda feature
    futura los copia literalmente en su Definition of Done. Dejaban comandos irresolubles justo donde
    se verifica la feature.
