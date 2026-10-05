@@ -23,6 +23,12 @@
             </intent-filter>
         </activity>
 
+        <!-- CuentasActivity: Vista dummy del Módulo 1 (destino tras login exitoso) -->
+        <activity
+            android:name="com.localcash.ui.cuentas.CuentasActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
     </application>
 
 </manifest>

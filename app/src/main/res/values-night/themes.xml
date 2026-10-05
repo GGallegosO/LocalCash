@@ -30,6 +30,11 @@
         <item name="textAppearanceLabelLarge">@style/TextAppearance.LabelLarge</item>
         <!-- Shapes -->
         <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.LargeComponent</item>
+        <!-- Status Bar & Navigation Bar: Dark mode = light icons -->
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:statusBarColor">?attr/colorSurface</item>
+        <item name="android:navigationBarColor">?attr/colorSurface</item>
     </style>
 
     <!-- Typography -->

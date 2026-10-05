@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">LocalCash</string>
+
+    <!-- Strings de LoginActivity (prefijo aLogin_) -->
     <string name="aLogin_app_name">LocalCash</string>
     <string name="aLogin_title">LocalCash</string>
     <string name="aLogin_subtitle">Fintech</string>
@@ -15,4 +17,23 @@
     <string name="aLogin_logo_desc">Logo LocalCash</string>
     <string name="aLogin_input_user_desc">Campo de usuario</string>
     <string name="aLogin_input_password_desc">Campo de contraseña</string>
+
+    <!-- Strings para bloqueo temporal (prefijo aLogin_) -->
+    <string name="aLogin_error_locked">Demasiados intentos fallidos. Intenta en %d segundos.</string>
+    <string name="aLogin_error_locked_short">Intenta en %d...</string>
+
+    <!-- Strings para Biometría (prefijo aLogin_) -->
+    <string name="aLogin_btn_biometric">Ingresar con Biometría</string>
+    <string name="aLogin_biometric_title">Autenticación Requerida</string>
+    <string name="aLogin_biometric_subtitle">Usa tu huella dactilar o rostro para ingresar a LocalCash</string>
+    <string name="aLogin_biometric_negative_button">Usar PIN</string>
+    <string name="aLogin_biometric_error_failed">Huella/Rostro no reconocido</string>
+    <string name="aLogin_biometric_error_generic">Error de autenticación biométrica</string>
+
+    <!-- Strings de CuentasActivity (prefijo aCuentas_) -->
+    <string name="aCuentas_title">Módulo 1: Cuentas y Movimientos</string>
+    <string name="aCuentas_subtitle">(En desarrollo - Próximamente con osmdroid y SQLite)</string>
+    <string name="aCuentas_btn_logout">Cerrar sesión</string>
+    <string name="aCuentas_theme_toggle_desc">Cambiar tema claro/oscuro</string>
+    <string name="aCuentas_logo_desc">Logo Módulo Cuentas</string>
 </resources>
