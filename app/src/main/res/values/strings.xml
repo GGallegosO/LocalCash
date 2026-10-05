@@ -29,9 +29,49 @@
     <string name="aLogin_biometric_negative_button">Usar PIN</string>
     <string name="aLogin_biometric_error_failed">Huella/Rostro no reconocido</string>
     <string name="aLogin_biometric_error_generic">Error de autenticación biométrica</string>
+    <string name="aLogin_link_text">¿No tienes cuenta? Regístrate aquí</string>
+
+    <!-- Strings de Registro de Usuarios (prefijo aRegister_) -->
+    <string name="aRegister_title">Crear Cuenta</string>
+    <string name="aRegister_subtitle">Regístrate para personalizar tu experiencia</string>
+    <string name="aRegister_credentials_subtitle">Crea tus credenciales de acceso</string>
+    <string name="aRegister_hint_region">Región</string>
+    <string name="aRegister_hint_city">Ciudad</string>
+    <string name="aRegister_hint_username">Usuario</string>
+    <string name="aRegister_hint_password">Contraseña</string>
+    <string name="aRegister_link_text">¿No tienes cuenta? Regístrate aquí</string>
+    <string name="aRegister_step_1">Paso 1 de 3</string>
+    <string name="aRegister_step_2">Paso 2 de 3</string>
+    <string name="aRegister_step_3">Paso 3 de 3</string>
+    <string name="aRegister_btn_back">Atrás</string>
+    <string name="aRegister_btn_next">Continuar</string>
+    <string name="aRegister_btn_cancel">Cancelar</string>
+    <string name="aRegister_btn_finish">Finalizar</string>
+    <string name="aRegister_confirm_question">¿Está seguro que desea registrarse?</string>
+    <string name="aRegister_confirm_subtitle">Al finalizar se creará su cuenta de forma segura y local.</string>
+    <string name="aRegister_confirm_desc">Icono de confirmación</string>
+    <string name="aRegister_error_empty_field">Por favor completa todos los campos</string>
+    <string name="aRegister_error_empty_region">Por favor ingresa tu región</string>
+    <string name="aRegister_error_empty_city">Por favor ingresa tu ciudad</string>
+    <string name="aRegister_error_empty_username">Por favor ingresa un usuario</string>
+    <string name="aRegister_error_empty_password">Por favor ingresa una contraseña</string>
+    <string name="aRegister_error_reserved_user">El usuario \'admin\' está reservado para demostración</string>
+    <string name="aRegister_error_user_exists">Este usuario ya está registrado. Por favor elige otro nombre.</string>
+    <string name="aRegister_error_internal">Error interno. Intente nuevamente.</string>
+    <string name="aRegister_success_toast">Cuenta creada exitosamente</string>
+    <string name="aRegister_footer_privacy">100% Offline y Privado</string>
+    <string name="aRegister_theme_toggle_desc">Cambiar tema claro/oscuro</string>
+    <string name="aRegister_logo_desc">Logo LocalCash</string>
+    <string name="aRegister_password_toggle_desc">Mostrar/ocultar contraseña</string>
+    <string name="aRegister_input_region_desc">Campo de región</string>
+    <string name="aRegister_input_city_desc">Campo de ciudad</string>
+    <string name="aRegister_input_user_desc">Campo de usuario</string>
+    <string name="aRegister_input_password_desc">Campo de contraseña</string>
+    <string name="aRegister_security_icon_desc">Ícono de seguridad</string>
+
 
     <!-- Strings de CuentasActivity (prefijo aCuentas_) -->
-    <string name="aCuentas_title">Módulo 1: Cuentas y Movimientos</string>
+    <string name="aCuentas_title">Cuentas y Movimientos</string>
     <string name="aCuentas_subtitle">(En desarrollo - Próximamente con osmdroid y SQLite)</string>
     <string name="aCuentas_btn_logout">Cerrar sesión</string>
     <string name="aCuentas_theme_toggle_desc">Cambiar tema claro/oscuro</string>

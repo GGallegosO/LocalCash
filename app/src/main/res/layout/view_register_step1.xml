@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Vista paso 1/3 del registro: Región y Ciudad. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <!-- Indicador de progreso: barra 1 de 3 -->
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/progressStep1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:max="3"
+        android:progress="1"
+        app:trackCornerRadius="4dp"
+        app:trackThickness="6dp" />
+
+    <!-- Etiqueta de progreso: "Paso 1 de 3" -->
+    <TextView
+        android:id="@+id/tvProgressStep1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="16dp"
+        android:text="@string/aRegister_step_1"
+        android:textAppearance="?attr/textAppearanceLabelMedium"
+        android:textColor="?attr/colorOnSurfaceVariant" />
+
+    <!-- Subtítulo del paso -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="24dp"
+        android:text="@string/aRegister_subtitle"
+        android:textAppearance="?attr/textAppearanceBodyMedium"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:gravity="center" />
+
+    <!-- Campo región -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilRegisterRegion"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:hint="@string/aRegister_hint_region"
+        app:startIconDrawable="@drawable/ic_map"
+        app:startIconContentDescription="@string/aRegister_input_region_desc">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etRegisterRegion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Campo ciudad -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilRegisterCity"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:hint="@string/aRegister_hint_city"
+        app:startIconDrawable="@drawable/ic_map"
+        app:startIconContentDescription="@string/aRegister_input_city_desc">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etRegisterCity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- TextView para mensajes de error (inicialmente GONE) -->
+    <TextView
+        android:id="@+id/tvMessageStep1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:layout_marginBottom="8dp"
+        android:textAppearance="?attr/textAppearanceBodyMedium"
+        android:textColor="?attr/colorError"
+        android:visibility="gone" />
+
+    <!-- Botones horizontales: Atrás / Continuar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:baselineAligned="false">
+
+        <!-- Botón "Atrás" (Outlined, 45% del ancho) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnStep1Back"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="@string/aRegister_btn_back"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:cornerRadius="16dp" />
+
+        <!-- Botón "Continuar" (Filled, 55% del ancho) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnStep1Next"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1.5"
+            android:text="@string/aRegister_btn_next"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:cornerRadius="16dp" />
+
+    </LinearLayout>
+
+</LinearLayout>

@@ -153,6 +153,19 @@
                     android:visibility="gone"
                     app:cornerRadius="16dp" />
 
+                <!-- TextView enlace "¿No tienes cuenta? Regístrate aquí" -->
+                <TextView
+                    android:id="@+id/tvRegisterLink"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="8dp"
+                    android:autoLink="none"
+                    android:text="@string/aLogin_link_text"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="?attr/colorOnSurface"
+                    android:visibility="gone" />
+
                 <!-- TextView para mensajes de error/éxito (inicialmente GONE) -->
                 <TextView
                     android:id="@+id/tvMessage"
