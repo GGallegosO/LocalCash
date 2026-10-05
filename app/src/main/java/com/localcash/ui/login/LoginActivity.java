@@ -20,6 +20,7 @@ import com.localcash.data.security.SecureAuthManager;
 import com.localcash.databinding.ActivityLoginBinding;
 import com.localcash.ui.BaseActivity;
 import com.localcash.ui.cuentas.CuentasActivity;
+import com.localcash.ui.register.RegisterActivity;
 import com.localcash.ui.theme.ThemeManager;
 
 import java.util.concurrent.Executor;
@@ -88,6 +89,9 @@ public class LoginActivity extends BaseActivity {
 
         setupClickListeners();
         setupBiometricButtonVisibility();
+
+        // Inicializar enlace de registro
+        binding.tvRegisterLink.setVisibility(View.VISIBLE);
     }
 
     @Override
@@ -223,6 +227,12 @@ public class LoginActivity extends BaseActivity {
 
         // Botón de cambio de tema
         binding.btnThemeToggle.setOnClickListener(v -> toggleTheme());
+
+        // Enlace "¿No tienes cuenta? Regístrate aquí" debajo del botón biométrico
+        binding.tvRegisterLink.setOnClickListener(v -> {
+            Intent intent = new Intent(this, RegisterActivity.class);
+            startActivity(intent);
+        });
     }
 
     /**

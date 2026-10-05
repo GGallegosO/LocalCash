@@ -29,6 +29,13 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
+        <!-- RegisterActivity: Pantalla de registro de usuarios (no exportado) -->
+        <activity
+            android:name="com.localcash.ui.register.RegisterActivity"
+            android:exported="false"
+            android:parentActivityName="com.localcash.ui.login.LoginActivity"
+            android:windowSoftInputMode="adjustResize" />
+
     </application>
 
 </manifest>

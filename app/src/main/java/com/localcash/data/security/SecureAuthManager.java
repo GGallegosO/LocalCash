@@ -39,9 +39,15 @@ public class SecureAuthManager {
     private static final String ENCRYPTED_PREFS_NAME = "secure_auth_prefs";
     private static final String MASTER_KEY_ALIAS = "localcash_master_key";
 
-    // Claves dentro de EncryptedSharedPreferences
+    // Claves dentro de EncryptedSharedPreferences (seed data admin)
     private static final String KEY_USERNAME = "enc_username";
     private static final String KEY_PASSWORD_HASH = "enc_password_hash";
+
+    // Prefijos para claves dinámicas de usuarios registrados
+    private static final String PREFIX_USER_PASSWORD_HASH = "user_";
+    private static final String SUFFIX_PASSWORD_HASH = "_password_hash";
+    private static final String SUFFIX_REGION = "_region";
+    private static final String SUFFIX_CITY = "_city";
 
     // SharedPreferences normal (no cifrado) solo para flag de inicialización
     private static final String INIT_PREFS_NAME = "auth_init_prefs";
@@ -181,10 +187,189 @@ public class SecureAuthManager {
     }
 
     /**
-     * Registra un nuevo usuario (para uso futuro).
+     * Registra un nuevo usuario con datos personales completos.
      * <p>
-     * Sobrescribe las credenciales existentes. En una app multi-usuario real,
-     * esto se migraría a base de datos con tabla de usuarios.
+     * Guarda las credenciales cifradas usando claves dinámicas basadas en el nombre de usuario.
+     * Las claves dentro de EncryptedSharedPreferences tienen el formato:
+     * - `user_<username>_password_hash` para la contraseña
+     * - `user_<username>_name` para el nombre
+     * - `user_<username>_region` para la región
+     * - `user_<username>_city` para la ciudad
+     * </p>
+     *
+     * @param context   Contexto de la aplicación/activity
+     * @param username  Nombre de usuario (no puede ser "admin", case-insensitive)
+     * @param password  Contraseña en texto plano (se hasheará y cifrará)
+     * @param region    Región geográfica
+     * @param city      Ciudad
+     * @throws GeneralSecurityException Error criptográfico
+     * @throws IOException              Error de I/O
+     */
+    public static void registerUser(Context context, String username, String password,
+                                    String region, String city)
+            throws GeneralSecurityException, IOException {
+        // Bloquear registro del usuario "admin" (case-insensitive)
+        if (username.equalsIgnoreCase(DEFAULT_USERNAME)) {
+            Log.w(TAG, "Intento de registro del usuario reservado: " + username);
+            throw new IllegalArgumentException("El usuario 'admin' está reservado para demostración");
+        }
+
+        Log.d(TAG, "Registrando nuevo usuario: " + username);
+
+        // Guardar contraseña con clave dinámica
+        saveUserCredentials(context, username, password);
+
+        // Guardar datos personales con claves dinámicas
+        saveUserField(context, username, region, SUFFIX_REGION);
+        saveUserField(context, username, city, SUFFIX_CITY);
+
+        Log.d(TAG, "Usuario registrado exitosamente: " + username);
+    }
+
+    /**
+     * Valida credenciales de un usuario registrado (no el seed "admin").
+     *
+     * @param context Contexto
+     * @param username Usuario ingresado
+     * @param password Contraseña ingresada
+     * @return true si las credenciales son válidas, false en otro caso
+     */
+    public static boolean validateUser(Context context, String username, String password) {
+        try {
+            SharedPreferences encryptedPrefs = getEncryptedSharedPreferences(context);
+
+            // Usar la clave dinámica: user_<username>_password_hash
+            String key = PREFIX_USER_PASSWORD_HASH + username + SUFFIX_PASSWORD_HASH;
+            String storedValue = encryptedPrefs.getString(key, null);
+
+            if (storedValue == null) {
+                Log.d(TAG, "No hay credenciales registradas para el usuario: " + username);
+                return false;
+            }
+
+            // Extraer salt y hash almacenado
+            String[] parts = storedValue.split(":");
+            if (parts.length != 2) {
+                Log.e(TAG, "Formato de hash almacenado inválido para usuario: " + username);
+                return false;
+            }
+
+            byte[] salt = Base64.decode(parts[0], Base64.NO_WRAP);
+            String storedHash = parts[1];
+
+            // Calcular hash del password ingresado con el mismo salt
+            String computedHash = hashPassword(password, salt);
+
+            // Comparación en tiempo constante para evitar timing attacks
+            boolean result = MessageDigest.isEqual(storedHash.getBytes(StandardCharsets.UTF_8),
+                    computedHash.getBytes(StandardCharsets.UTF_8));
+
+            if (result) {
+                Log.d(TAG, "Validación exitosa para usuario registrado: " + username);
+            } else {
+                Log.d(TAG, "Validación fallida para usuario registrado: " + username + " - hash no coincide");
+            }
+
+            return result;
+
+        } catch (GeneralSecurityException | IOException e) {
+            Log.e(TAG, "Error al validar usuario registrado: " + e.getMessage(), e);
+            return false;
+        } catch (Exception e) {
+            Log.e(TAG, "Error inesperado validando usuario registrado: " + e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * Verifica si un usuario ya existe en el almacenamiento.
+     *
+     * @param context Contexto
+     * @param username Nombre de usuario a verificar
+     * @return true si el usuario existe, false en otro caso
+     */
+    public static boolean userExists(Context context, String username) {
+        try {
+            SharedPreferences encryptedPrefs = getEncryptedSharedPreferences(context);
+
+            // Verificar la clave dinámica: user_<username>_password_hash
+            String key = PREFIX_USER_PASSWORD_HASH + username + SUFFIX_PASSWORD_HASH;
+            return encryptedPrefs.contains(key);
+        } catch (GeneralSecurityException | IOException e) {
+            Log.e(TAG, "Error al verificar existencia de usuario: " + e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * Guarda credenciales de usuario usando una clave dinámica.
+     *
+     * @param context Contexto
+     * @param username Nombre de usuario
+     * @param password Contraseña en texto plano (se hasheará)
+     * @throws GeneralSecurityException Error criptográfico
+     * @throws IOException              Error de I/O
+     */
+    private static void saveUserCredentials(Context context, String username, String password)
+            throws GeneralSecurityException, IOException {
+        // Generar salt aleatorio (16 bytes = 128 bits)
+        byte[] salt = new byte[16];
+        new java.security.SecureRandom().nextBytes(salt);
+
+        // Calcular hash SHA-256(password + salt)
+        String passwordHash = hashPassword(password, salt);
+
+        // Codificar salt + hash en Base64 para almacenamiento
+        String saltBase64 = Base64.encodeToString(salt, Base64.NO_WRAP);
+        String storedValue = saltBase64 + ":" + passwordHash;
+
+        // Obtener EncryptedSharedPreferences
+        SharedPreferences encryptedPrefs = getEncryptedSharedPreferences(context);
+
+        // Guardar usando clave dinámica: user_<username>_password_hash
+        String key = PREFIX_USER_PASSWORD_HASH + username + SUFFIX_PASSWORD_HASH;
+        encryptedPrefs.edit().putString(key, storedValue).apply();
+
+        Log.d(TAG, "Credenciales guardadas para usuario dinámico: " + username);
+    }
+
+    /**
+     * Guarda un campo de usuario (nombre, región, ciudad) usando clave dinámica.
+     *
+     * @param context Contexto
+     * @param username Nombre de usuario
+     * @param value    Valor a guardar
+     * @param suffix   Sufijo de la clave (SUFFIX_REGION, SUFFIX_CITY)
+     * @throws GeneralSecurityException Error criptográfico
+     * @throws IOException              Error de I/O
+     */
+    private static void saveUserField(Context context, String username, String value, String suffix)
+            throws GeneralSecurityException, IOException {
+        // Obtener EncryptedSharedPreferences
+        SharedPreferences encryptedPrefs = getEncryptedSharedPreferences(context);
+
+        // Guardar usando clave dinámica: user_<username>_<suffix>
+        String key = PREFIX_USER_PASSWORD_HASH + username + suffix;
+        encryptedPrefs.edit().putString(key, value).apply();
+
+        Log.d(TAG, "Campo de usuario guardado: " + key + " = " + value);
+    }
+
+    /**
+     * Método existente que mantiene compatibilidad con el seed "admin/123456".
+     * Sobrescribe todas las credenciales (seed).
+     *
+     * @param context   Contexto
+     * @param username  Nombre de usuario
+     * @param password  Contraseña
+     * @throws GeneralSecurityException Error criptográfico
+     * @throws IOException              Error de I/O
+     */
+    /**
+     * Registra un nuevo usuario (método legacy de 3 parámetros).
+     * <p>
+     * Sobrescribe las credenciales existentes. Este método bloquea el registro
+     * del usuario "admin" (case-insensitive) y delega al método de 5 parámetros.
      * </p>
      *
      * @param context   Contexto
@@ -195,8 +380,18 @@ public class SecureAuthManager {
      */
     public static void registerUser(Context context, String newUser, String newPass)
             throws GeneralSecurityException, IOException {
-        Log.d(TAG, "Registrando nuevo usuario: " + newUser);
-        saveCredentials(context, newUser, newPass);
+        // Bloquear registro del usuario "admin" (case-insensitive)
+        if (newUser.equalsIgnoreCase(DEFAULT_USERNAME)) {
+            Log.w(TAG, "Intento de registro del usuario reservado: " + newUser);
+            throw new IllegalArgumentException("El usuario 'admin' está reservado para demostración");
+        }
+
+        // Delegar al método de 5 parámetros con datos por defecto
+        try {
+            registerUser(context, newUser, newPass, "", "");
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("El usuario 'admin' está reservado para demostración");
+        }
     }
 
     /**
