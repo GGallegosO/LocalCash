@@ -7,13 +7,13 @@
 
 ## Fichas de tarea
 
-| Campo | T1 | T2 |
-| --- | --- | --- |
-| **Fecha** | 2026-10-07 | 2026-10-07 |
-| **Tarea ejecutada** | Configurar Room en el proyecto | Crear entidades Room en `data/entities/` |
-| **Responsable** | GG | GG |
-| **Duración estimada vs real** | 15 min vs ~5 min | 30 min vs ~10 min |
-| **Estado** | Completado | Completado |
+| Campo | T1 | T2 | T3 |
+| --- | --- | --- | --- |
+| **Fecha** | 2026-10-07 | 2026-10-07 | 2026-10-07 |
+| **Tarea ejecutada** | Configurar Room en el proyecto | Crear entidades Room en `data/entities/` | Crear DAOs en `data/dao/` |
+| **Responsable** | GG | GG | GG |
+| **Duración estimada vs real** | 15 min vs ~5 min | 30 min vs ~10 min | 30 min vs ~10 min |
+| **Estado** | Completado | Completado | Completado |
 
 ---
 
@@ -23,14 +23,18 @@
 
 **T2 — Crear entidades Room:** Se crearon las dos entidades que definen el núcleo financiero del esquema: `Cuenta` (patrimonio del usuario) y `Transaccion` (movimiento ingreso/egreso). Ambas almacenan dinero como `long` en **pesos CLP directos** (sin centavos, `.agent.md` §6.10, `data-model.md` §3.2/§3.4). `Transaccion` declara clave foránea a `Cuenta` con `ON DELETE CASCADE` e índice sobre la columna hija `cuentaId`.
 
+**T3 — Crear DAOs:** Se crearon las interfaces de acceso a datos `CuentaDao` y `TransaccionDao` con las operaciones de inserción, consulta observable (`LiveData`), actualización de saldo y borrado. Los DAOs solo persisten: no deciden reglas de negocio (la validación de saldo vive en `domain/service`, pendiente T7). Room valida los literales SQL de los `@Query` en compilación.
+
 ---
 
 ## Archivos Creados / Modificados
 
 **Creados:**
 
-- `app/src/main/java/com/localcash/data/entities/Cuenta.java` — `@Entity(tableName = "cuentas")`: `id` (long, `autoGenerate`), `nombre` (String), `tipo` (String: EFECTIVO/AHORRO/TARJETA), `saldo` (long, pesos CLP), `moneda` (String, `@ColumnInfo(defaultValue = "CLP")`). Incluye constructor vacío (requerido por Room) y constructor completo con saldo de apertura.
-- `app/src/main/java/com/localcash/data/entities/Transaccion.java` — `@Entity(tableName = "transacciones")` con `@ForeignKey(entity = Cuenta.class, parentColumns = "id", childColumns = "cuentaId", onDelete = ForeignKey.CASCADE)` e `@Index("cuentaId")`: `id` (long, `autoGenerate`), `cuentaId` (long), `tipo` (String: INGRESO/EGRESO), `monto` (long, pesos CLP, siempre positivo), `concepto` (String), `fecha` (long, timestamp epoch millis). Incluye constructor vacío y constructor completo.
+- `app/src/main/java/com/localcash/data/entities/Cuenta.java` (T2) — `@Entity(tableName = "cuentas")`: `id` (long, `autoGenerate`), `nombre` (String), `tipo` (String: EFECTIVO/AHORRO/TARJETA), `saldo` (long, pesos CLP), `moneda` (String, `@ColumnInfo(defaultValue = "CLP")`). Incluye constructor vacío (requerido por Room) y constructor completo con saldo de apertura.
+- `app/src/main/java/com/localcash/data/entities/Transaccion.java` (T2) — `@Entity(tableName = "transacciones")` con `@ForeignKey(entity = Cuenta.class, parentColumns = "id", childColumns = "cuentaId", onDelete = ForeignKey.CASCADE)` e `@Index("cuentaId")`: `id` (long, `autoGenerate`), `cuentaId` (long), `tipo` (String: INGRESO/EGRESO), `monto` (long, pesos CLP, siempre positivo), `concepto` (String), `fecha` (long, timestamp epoch millis). Incluye constructor vacío y constructor completo.
+- `app/src/main/java/com/localcash/data/dao/CuentaDao.java` (T3) — `@Dao` interface: `@Insert insert(Cuenta)`, `@Query("SELECT * FROM cuentas") LiveData<List<Cuenta>> getAll()`, `@Query("UPDATE cuentas SET saldo = :saldo WHERE id = :cuentaId") updateSaldo(long, long)`, `@Delete delete(Cuenta)`.
+- `app/src/main/java/com/localcash/data/dao/TransaccionDao.java` (T3) — `@Dao` interface: `@Insert insert(Transaccion)`, `@Query("SELECT * FROM transacciones WHERE cuentaId = :cuentaId ORDER BY fecha DESC") LiveData<List<Transaccion>> getByCuentaId(long)`, `@Query("SELECT * FROM transacciones ORDER BY fecha DESC") LiveData<List<Transaccion>> getAll()`.
 
 **Modificados:**
 
@@ -71,6 +75,12 @@
 9. **Esquema de la feature es un subconjunto del esquema canónico**
    _Justificación:_ `Cuenta` no incluye `saldo_inicial` ni `tipo_cuenta`/`CHECK`; `Transaccion` no incluye `categoria_id` ni geolocalización. `plan.md` §1 define el alcance reducido de T2-T19 (mapas y categorías son features posteriores: 008/009). La divergencia con `data-model.md` debe reconciliarse en T19 (tarea DoD: "`data-model.md` actualizado si la feature tocó el esquema").
 
+10. **`updateSaldo(cuentaId, saldo)` persiste un valor absoluto calculado en dominio**
+    _Justificación:_ El cálculo del nuevo saldo (`saldo actual ± monto`) ocurre en `domain/service/TransaccionService.calcularNuevoSaldo()` con `BigDecimal`; el DAO solo escribe el resultado. Cumple `.agent.md` §5.1: `data/` implementa lo que `domain/` define y no decide reglas propias. La escritura por transacción (insert de movimiento + update de saldo) se orquestará en T16.
+
+11. **Consultas devuelven `LiveData` (no `List` directo)**
+    _Justificación:_ Room exige que las consultas que devuelven colecciones se ejecuten fuera del hilo principal; `LiveData` resuelve eso y notifica automáticamente a la UI ante cada cambio (DoD: actualización visible en <500ms). Consistente con el patrón de `tasks.md` T3.
+
 ---
 
 ## Lecciones Aprendidas
@@ -82,22 +92,22 @@
 - **T2:** Room exige que la columna hija de toda `@ForeignKey` esté indexada (`LR_ROOM_FOREIGN_KEY_INDEX`); se declaró `@Index("cuentaId")` preventivamente en la entidad para evitar el warning y acelerar el `WHERE cuentaId = ?` del historial.
 - **T2:** Las entidades llevan constructor vacío público + constructor completo con parámetros; Room usa el vacío y asigna por setters (compilado y verificado con `assembleDebug` exitoso).
 - **T2:** El esquema aprobado de la feature es un subconjunto del esquema canónico de `data-model.md` (falta `saldo_inicial`, `categoria_id`, geolocalización, `fecha_hora TEXT`); la reconciliación documental queda pendiente para T19 — si no se hace, hay "bug de documentación" según la regla de sincronización del propio `data-model.md`.
+- **T3:** Los literales de tabla dentro de `@Query` son seguros: Room los valida **en compilación** (si la tabla no existe, no compila). La advertencia de AGENTS.md sobre "literales dispersos" aplica a SQLiteOpenHelper puro, no a Room.
+- **T3:** `LiveData<List<T>>` es la forma de que Room ejecute en background y notifique a la UI; los métodos síncronos (`insert`, `updateSaldo`, `delete`) deben invocarse desde el `Executor` del `AppDatabase` (T4) para no bloquear el hilo principal.
 
 ---
 
 ## Próximos Pasos
 
-1. **T3 — Crear DAOs en `data/dao/`:**
-   - `CuentaDao.java`: @Insert, @Query("SELECT * FROM cuentas") LiveData<List<Cuenta>> getAll(), @Query("UPDATE cuentas SET saldo = :saldo WHERE id = :cuentaId") updateSaldo, @Delete
-   - `TransaccionDao.java`: @Insert, @Query getByCuentaId (LiveData, ORDER BY fecha DESC), @Query getAll (LiveData)
-   - Recordar: nombres de tabla por constante, no literales dispersos (AGENTS.md)
+1. **T4 — Crear `AppDatabase.java` en `data/db/`:**
+   - Abstract class RoomDatabase, `@Database(entities = {Cuenta.class, Transaccion.class}, version = 1, exportSchema = true)`
+   - Métodos abstractos `cuentaDao()` y `transaccionDao()`
+   - Singleton con `Executors.newSingleThreadExecutor()` para las operaciones síncronas de los DAOs (insert/updateSaldo/delete)
+   - Registrar `SeedDataInitializer` como callback (T10)
 
-2. **T4 — Crear `AppDatabase.java` en `data/db/`:**
-   - Abstract class RoomDatabase, @Database(entities = {Cuenta.class, Transaccion.class}, version = 1, exportSchema = true), singleton con Executors.newSingleThreadExecutor(), callback SeedDataInitializer (T10)
+2. Ejecutar `./gradlew assembleDebug` tras cada fase para validar compilación.
 
-3. Ejecutar `./gradlew assembleDebug` tras cada fase para validar compilación.
-
-4. **Pendiente documental (T19):** reconciliar el esquema de la feature con `data-model.md` (subconjunto de entidades, `fecha long` vs `fecha_hora TEXT`) — regla de sincronización del propio documento.
+3. **Pendiente documental (T19):** reconciliar el esquema de la feature con `data-model.md` (subconjunto de entidades, `fecha long` vs `fecha_hora TEXT`) — regla de sincronización del propio documento.
 
 ---
 
@@ -107,7 +117,7 @@
 |-------|-------------|--------|-------|
 | T1 | Configurar Room en el proyecto | ✅ Completado | 2026-10-07 |
 | T2 | Crear entidades Room en `data/entities/` | ✅ Completado | 2026-10-07 |
-| T3 | Crear DAOs en `data/dao/` | ⬜ Pendiente | — |
+| T3 | Crear DAOs en `data/dao/` | ✅ Completado | 2026-10-07 |
 | T4 | Crear `AppDatabase.java` en `data/db/` | ⬜ Pendiente | — |
 | T5 | Crear modelos de dominio en `domain/model/` | ⬜ Pendiente | — |
 | T6 | Crear códigos de error en `domain/error/ErrorCode.java` | ⬜ Pendiente | — |
