@@ -30,6 +30,7 @@
 | `app/src/main/java/com/localcash/domain/model/Transaccion.java` | Modelo de dominio con BigDecimal para cálculos | CREAR | BAJA |
 | `app/src/main/java/com/localcash/domain/service/TransaccionService.java` | Lógica de negocio: validar saldo, calcular totales | CREAR | ALTA |
 | `app/src/main/java/com/localcash/domain/error/ErrorCode.java` | Códigos de error: SALDO_INSUFICIENTE, MONTO_INVALIDO, CUENTA_VACIA | CREAR | BAJA |
+| `app/src/main/java/com/localcash/domain/error/BusinessRuleException.java` | Excepción unchecked que transporta un ErrorCode a la UI (exigida por tasks.md T7) | CREAR | BAJA |
 | `app/src/main/java/com/localcash/ui/cuentas/CuentasActivity.java` | Activity principal del Módulo 1 | CREAR | ALTA |
 | `app/src/main/res/layout/activity_cuentas.xml` | Layout con BottomNav + ViewFlipper | CREAR | MEDIA |
 | `app/src/main/res/layout/view_cuentas.xml` | Vista 1: Resumen de cuentas con RecyclerView | CREAR | MEDIA |
