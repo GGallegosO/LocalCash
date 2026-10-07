@@ -8,25 +8,25 @@
 ## Estado de la sesión (retomada tras /compact)
 
 - **Alcance actual:** SOLO capa de Datos y Dominio (T1 → T10). **PROHIBIDO tocar UI** (layouts, activities, adapters) hasta la próxima sesión.
-- **Completadas:** T1 (Config Room), T2 (Entidades), T3 (DAOs), T4 (AppDatabase Singleton), T5 (Modelos de dominio con BigDecimal y Enums), T6 (ErrorCode), T7 (TransaccionService + BusinessRuleException), T8 (Tests de TransaccionService: 8/8 en verde).
+- **Completadas:** T1 (Config Room), T2 (Entidades), T3 (DAOs), T4 (AppDatabase Singleton), T5 (Modelos de dominio con BigDecimal y Enums), T6 (ErrorCode), T7 (TransaccionService + BusinessRuleException), T8 (Tests de TransaccionService: 8/8), T9 (Tests de DAOs con Robolectric: 5/5 → total 13/13 en verde).
 - **Reglas no negociables:**
   1. Dinero: `long` en entidades Room (pesos CLP directos, NO centavos, NO double). `BigDecimal` en modelos de dominio.
   2. Arquitectura: `domain/` NO importa `androidx.room` ni Android SDK (solo `java.*`).
   3. Testing: cobertura ≥70% en `data/` y `domain/` (`.agent.md` §5.3).
   4. Memoria: un `doc/007-cuentas.md` único va actualizado tras cada tarea (§7 del contrato).
-- **Siguiente tarea inmediata:** **T9** — tests de DAOs: `CuentaDaoTest.java` y `TransaccionDaoTest.java` en `app/src/test/java/com/localcash/data/dao/` con `Room.inMemoryDatabaseBuilder()`; cobertura ≥70% en DAOs.
+- **Siguiente tarea inmediata:** **T10** — `data/db/SeedDataInitializer.java` (callback `RoomDatabase.Callback.onCreate` que inserta la cuenta "Efectivo Demo" con 1_000_000L) y registrarlo en `AppDatabase` (quitar el `// TODO`). Última tarea de la capa de datos antes de UI.
 
 ---
 
 ## Fichas de tarea
 
-| Campo | T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **Fecha** | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 |
-| **Tarea ejecutada** | Configurar Room en el proyecto | Crear entidades Room en `data/entities/` | Crear DAOs en `data/dao/` | Crear `AppDatabase.java` en `data/db/` | Crear modelos de dominio en `domain/model/` | Crear códigos de error en `domain/error/ErrorCode.java` | Crear `TransaccionService.java` en `domain/service/` | Crear tests unitarios de `TransaccionService` |
-| **Responsable** | GG | GG | GG | GG | GG | GG | GG | GG |
-| **Duración estimada vs real** | 15 min vs ~5 min | 30 min vs ~10 min | 30 min vs ~10 min | 30 min vs ~15 min | 30 min vs ~15 min | 10 min vs ~5 min | 45 min vs ~15 min | 45 min vs ~15 min |
-| **Estado** | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado |
+| Campo | T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| **Fecha** | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 |
+| **Tarea ejecutada** | Configurar Room en el proyecto | Crear entidades Room en `data/entities/` | Crear DAOs en `data/dao/` | Crear `AppDatabase.java` en `data/db/` | Crear modelos de dominio en `domain/model/` | Crear códigos de error en `domain/error/ErrorCode.java` | Crear `TransaccionService.java` en `domain/service/` | Crear tests unitarios de `TransaccionService` | Crear tests de DAOs (`CuentaDaoTest`, `TransaccionDaoTest`) |
+| **Responsable** | GG | GG | GG | GG | GG | GG | GG | GG | GG |
+| **Duración estimada vs real** | 15 min vs ~5 min | 30 min vs ~10 min | 30 min vs ~10 min | 30 min vs ~15 min | 30 min vs ~15 min | 10 min vs ~5 min | 45 min vs ~15 min | 45 min vs ~15 min | 60 min vs ~40 min |
+| **Estado** | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado |
 
 ---
 
@@ -48,6 +48,8 @@
 
 **T8 — Crear tests de TransaccionService:** Se creó `TransaccionServiceTest.java` (JUnit 4.13.2, JVM pura, sin Robolectric ni Android) con los 4 tests mínimos de `tasks.md` (`testIngresoAumentaSaldo`, `testEgresoDisminuyeSaldo`, `testEgresoConSaldoInsuficienteLanzaExcepcion`, `testMontoInvalidoLanzaExcepcion`) más 4 complementarios de nulos, frontera y dominio para garantizar la cobertura ≥70% del criterio de salida. Resultado: **8 tests, 0 fallos, 0 errores** (`testDebugUnitTest` verde) y `assembleDebug` sin warnings. Todo el dinero en `BigDecimal` con literales String; aserciones por `compareTo` (mismo criterio que el servicio).
 
+**T9 — Crear tests de DAOs:** La tarea empezó con un **hallazgo de plan**: se sondeó empíricamente (test temporal, después borrado) que `Room.inMemoryDatabaseBuilder()` **no puede** correr en JVM pura — falla con `Method getCacheDir ... not mocked` porque Room necesita `Context`/SQLite reales de Android. La premisa de `tasks.md` T9 ("sin dispositivo" en JVM local) era falsa sin Robolectric. Consultado el usuario (SDD: detente, corrige el plan con justificación), se eligió **Robolectric**, tecnología **ya preaprobada** en `tech-stack.md` §4 (fila "Integración": Robolectric 4.10+); se registró la adopción concreta en §7 (candidatas evaluadas) y se añadió `org.robolectric:robolectric:4.17` + `testOptions.unitTests.includeAndroidResources = true` (con `--add-exports java.base/jdk.internal.access` para el daemon JDK 21). Se crearon `CuentaDaoTest` (insert/getAll, updateSaldo, delete) y `TransaccionDaoTest` (insert/getByCuentaId, getAll con orden `fecha DESC`) con `Room.inMemoryDatabaseBuilder` en memoria + helper `LiveDataTestUtil` (patrón observe + `idle()` del looper + condición con timeout). **Resultado: 13/13 tests en verde** (8 de T8 + 5 de T9) en JVM local, sin emulador, y `assembleDebug` sin warnings.
+
 ---
 
 ## Archivos Creados / Modificados
@@ -68,6 +70,9 @@
 - `app/src/main/java/com/localcash/domain/error/BusinessRuleException.java` (T7) — excepción `extends RuntimeException` que transporta `ErrorCode` (`getErrorCode()`); mensaje técnico por defecto `"Regla de negocio violada: <CODIGO>"`; sin dependencias Android.
 - `app/src/main/java/com/localcash/domain/service/TransaccionService.java` (T7) — servicio `final` con constructor privado y métodos `static`: `validarTransaccion(Transaccion, Cuenta)` lanza `BusinessRuleException` con `MONTO_INVALIDO` (monto nulo o ≤ 0), `CUENTA_NO_ENCONTRADA` (cuenta nula) o `SALDO_INSUFICIENTE` (EGRESO con `saldo < monto`, vía `compareTo`); `calcularNuevoSaldo(Cuenta, Transaccion)` retorna `BigDecimal` (add para INGRESO, subtract para EGRESO) y lanza `IllegalStateException` si el tipo está fuera del dominio cerrado.
 - `app/src/test/java/com/localcash/domain/service/TransaccionServiceTest.java` (T8) — JUnit 4 puro (JVM, sin Android): 8 tests — los 4 mínimos de `tasks.md` (ingreso suma 1_000_000 + 50_000 = 1_050_000; egreso resta → 950_000; egreso > saldo → `SALDO_INSUFICIENTE`; monto 0 y negativo → `MONTO_INVALIDO`) + `testCuentaNulaLanzaExcepcion` (`CUENTA_NO_ENCONTRADA` en validar y calcular), `testTransaccionNulaLanzaExcepcion` (`MONTO_INVALIDO` en validar y calcular), `testEgresoIgualAlSaldoPermitido` (frontera `>=` → saldo 0) y `testTipoFueraDeDominioLanzaIllegalState` (dominio cerrado). Helpers con `BigDecimal` literales String; aserciones por `compareTo`.
+- `app/src/test/java/com/localcash/testing/LiveDataTestUtil.java` (T9) — helper de test: `awaitValue(LiveData)` / `awaitValue(LiveData, Predicate)` con `observeForever` + `idle()` del looper principal de Robolectric en bucle con timeout de 5s; sin dependencias adicionales.
+- `app/src/test/java/com/localcash/data/dao/CuentaDaoTest.java` (T9) — `@RunWith(RobolectricTestRunner.class)`, Room in-memory: `testInsertAndGetAll()` (1 cuenta, nombre/tipo/saldo/moneda), `testUpdateSaldo()` (500_000 → 750_000 vía `updateSaldo`), `testDelete()` (getAll queda vacío).
+- `app/src/test/java/com/localcash/data/dao/TransaccionDaoTest.java` (T9) — `@RunWith(RobolectricTestRunner.class)`, Room in-memory: `testInsertAndGetByCuentaId()` (1 movimiento con FK, tipo, monto, concepto, fecha) y `testGetAll()` (3 movimientos insertados fuera de orden con fechas 1000/3000/2000 → retorno `fecha DESC` = 3000, 2000, 1000).
 
 **Modificados:**
 
@@ -79,6 +84,10 @@
 - `app/src/main/java/com/localcash/data/entities/Cuenta.java` (corregido en T4) — constructor con parámetros anotado con `@Ignore` (elimina warning "multiple good constructors").
 - `app/src/main/java/com/localcash/data/entities/Transaccion.java` (corregido en T4) — constructor con parámetros anotado con `@Ignore` (misma corrección).
 - `spec/features/007-cuentas/007-cuentas-plan.md` (T7) — inventario de archivos: agregada la fila de `domain/error/BusinessRuleException.java` (CREAR, BAJA). Sincronización exigida por `.agent.md`/SDD: `tasks.md` T7 pide "excepciones personalizadas con ErrorCode" y el inventario del plan no la listaba; se corrige el plan, no se ejecuta algo al margen.
+- `app/build.gradle` (T9) — modificaciones:
+  - Agregado `testImplementation "org.robolectric:robolectric:4.17"` (tests de DAO en JVM)
+  - Agregado `testOptions { unitTests { includeAndroidResources = true; all { jvmArgs '--add-exports=java.base/jdk.internal.access=ALL-UNNAMED' } } }` (Robolectric necesita recursos fusionados y el export del paquete interno de `java.base` en el daemon JDK 21)
+- `spec/constitution/tech-stack.md` (T9) — §7 "Registro de cambios del stack": fila de adopción concreta de Robolectric 4.17 para los tests de DAO de la Feature 007, con motivo (sondeo empírico) y candidatas evaluadas. La fila §4 "Integración" ya preaprobaba Robolectric 4.10+.
 
 ---
 
@@ -165,6 +174,18 @@
 27. **Aserciones monetarias por `compareTo` y montos con literales String en `BigDecimal`**
     _Justificación:_ `assertEquals(BigDecimal, BigDecimal)` usa `equals` (sensible a escala) y puede fallar en verde por una diferencia de formato, no de valor: `assertEquals(..., 0, esperado.compareTo(obtenido))` compara valor, coherente con la decisión #25 del servicio. `new BigDecimal("50000")` (String) en vez de `new BigDecimal(50000.0)`/`double`: evita el error de representación binaria prohibido por `.agent.md` §6.10.
 
+28. **T9 corregido en caliente: Robolectric 4.17 en lugar de "JVM pura sin dependencias"**
+    _Contexto:_ El sondeo empírico demostró que `Room.inMemoryDatabaseBuilder()` lanza `Method getCacheDir ... not mocked` en JVM pura: Room exige `Context`/SQLite reales. Opciones presentadas al usuario (SDD: detener y corregir el plan): instrumentados `androidTest/` (requiere emulador), Robolectric (dependencia nueva registrable) o posponer T9. _Elección del usuario:_ **Robolectric** — cumple literalmente el criterio de `tasks.md` T9 ("sin dispositivo", `testDebugUnitTest`). _Justificación de no requerir registro nuevo de candidatas:_ `tech-stack.md` §4 fila "Integración" ya aprobaba Robolectric 4.10+ para exactamente este caso ("CRUD en DAOs sin dispositivo"); se registró la adopción concreta en §7 antes de tocar el build.
+
+29. **`--add-exports=java.base/jdk.internal.access=ALL-UNNAMED` en los workers de test**
+    _Justificación:_ El daemon Gradle corre en JDK 21 (`gradle-daemon-jvm.properties`), donde `java.base` no exporta `jdk.internal.access`; Robolectric lo necesita para interceptar `FileDescriptor` (`ApplicationSharedMemory.create` en el arranque del entorno SDK 36). Sin el flag, los 5 tests fallan con `IllegalAccessException ... module java.base does not export jdk.internal.access`. Es configuración de build, no una dependencia nueva.
+
+30. **Helper propio `LiveDataTestUtil` en lugar de `androidx.arch.core:core-testing`**
+    _Justificación:_ Las lecturas de los DAO devuelven `LiveData`; para consumirlas en JVM se usa el patrón estándar `observeForever` + `idle()` del looper principal de Robolectric + condición con timeout de 5s. `core-testing` (`InstantTaskExecutorRule`) no está registrado en `tech-stack.md`, y el helper (~70 líneas, solo test) resuelve lo mismo sin añadir dependencia. Si en el futuro se adopta `core-testing`, registrarla primero (regla dura §6).
+
+31. **`RuntimeEnvironment.getApplication()` como `Context` de los tests de DAO**
+    _Justificación:_ API oficial de Robolectric ya incluida en la dependencia elegida: evita añadir `androidx.test:core` solo por `ApplicationProvider`. La fila §4 de `tech-stack.md` preaprueba `androidx.test 1.5+` por si se necesita, pero aquí no hace falta.
+
 ---
 
 ## Lecciones Aprendidas
@@ -189,22 +210,24 @@
 - **T8:** El resultado verificable de los tests está en `app/build/test-results/testDebugUnitTest/TEST-<class>.xml` (`tests=... failures=... errors=...`): leer ese atributo es la prueba dura de "en verde", más fiable que confiar en el resumen de la consola. Aquí: `tests="8" skipped="0" failures="0" errors="0"`.
 - **T8:** `assertThrows` existe desde JUnit 4.13 (el proyecto usa 4.13.2 vía `libs.junit` del catálogo de versiones): permite asertar el `ErrorCode` del fallo sin try/catch + `fail()`, escribiendo tests más legibles.
 - **T8:** Los tests de JVM pura no requieren `connectedCheck` ni emulador: `testDebugUnitTest` compila y ejecuta todo en ~4s, ideal como puerta de calidad rápida en cada iteración.
+- **T9 (hallazgo de proceso):** `tasks.md` T9 prometía "tests de DAO sin dispositivo en JVM pura" — **premisa falsa verificada empíricamente**: un sondeo temporal (borrado después) mostró `Method getCacheDir ... not mocked`. Método para futuras tareas: antes de ejecutar una casilla que depende de un supuesto técnico, sondearlo con un test mínimo; si el plan está mal, detenerse y corregirlo (SDD), no improvisar en silencio.
+- **T9:** `tech-stack.md` §4 ya preaprobaba Robolectric ("Integración: CRUD en DAOs sin dispositivo") — **leer la Constitución antes de proponer dependencias nuevas** evitó trámite de candidatas; solo hizo falta registrar la adopción concreta en §7.
+- **T9:** Mensajes engañosos de Robolectric: `"Failed to interact with raw FileDescriptor internals; perhaps JRE has changed?"` **no** es una incompatibilidad de versión de JDK — la cadena `Caused by` real era `module java.base does not export jdk.internal.access` (falta `--add-exports` en los workers de test). Lección: leer siempre el `Caused by` completo del XML de resultados antes de cambiar de versión de JDK.
+- **T9:** Robolectric descarga `android-all-instrumented` (~SDK 36) en la primera ejecución desde Maven Central; ejecuciones siguientes son rápidas (~6s). Requiere red en el primer `testDebugUnitTest`.
 
 ---
 
 ## Próximos Pasos
 
-1. **T9 — Tests unitarios de DAOs:** crear `app/src/test/java/com/localcash/data/dao/CuentaDaoTest.java` y `TransaccionDaoTest.java`:
-   - Usar `Room.inMemoryDatabaseBuilder()` (`room-testing` ya está en `testImplementation`, T1)
-   - `CuentaDaoTest`: insertar cuenta → `getAll()` la retorna; `updateSaldo` → verificación de actualización
-   - `TransaccionDaoTest`: insertar transacción → `getByCuentaId()` la retorna
-   - Criterio: tests en verde, cobertura ≥70% en DAOs
+1. **T10 — `data/db/SeedDataInitializer.java`:**
+   - Extender `RoomDatabase.Callback` con `onCreate(db)` 
+   - Insertar cuenta demo "Efectivo Demo", tipo EFECTIVO, saldo `1_000_000L` (=$1.000.000 CLP) —SQL directo con `execSQL` o vía `ContentValues` (Room no permite DAOs dentro del callback)
+   - Registrar en `AppDatabase` con `.addCallback(new SeedDataInitializer())` y **quitar el `// TODO`**
+   - Ejecutar `testDebugUnitTest` (13 tests deben seguir en verde) + `assembleDebug`
 
-2. **T10 — `SeedDataInitializer.java`** (callback `onCreate` con cuenta "Efectivo Demo" 1_000_000L) y registrarlo en `AppDatabase` (quitar el `// TODO`)
+2. **Cierre de la capa de datos/dominio (T1 → T10):** con T10 terminada se cumple el alcance de esta sesión (UI prohibida hasta la próxima sesión). Opcional: correr `./gradlew lint` para adelantar el DoD de T19.
 
-3. Ejecutar `./gradlew testDebugUnitTest assembleDebug` tras cada fase. **No tocar UI hasta la próxima sesión.**
-
-4. **Pendiente documental (T19):** reconciliar el esquema de la feature con `data-model.md` (subconjunto de entidades, `fecha long` vs `fecha_hora TEXT`) — regla de sincronización del propio documento. También en T19: medir cobertura real (Jacoco) de `data/` y `domain/` para confirmar ≥70%.
+3. **Pendiente documental (T19):** reconciliar el esquema de la feature con `data-model.md` (subconjunto de entidades, `fecha long` vs `fecha_hora TEXT`) — regla de sincronización del propio documento. Medir cobertura real (Jacoco) de `data/` y `domain/` para confirmar ≥70%.
 
 ---
 
@@ -220,7 +243,7 @@
 | T6 | Crear códigos de error en `domain/error/ErrorCode.java` | ✅ Completado | 2026-10-07 |
 | T7 | Crear `TransaccionService.java` en `domain/service/` | ✅ Completado | 2026-10-07 |
 | T8 | Tests unitarios para `TransaccionService` | ✅ Completado | 2026-10-07 |
-| T9 | Tests unitarios para DAOs | ⬜ Pendiente | — |
+| T9 | Tests unitarios para DAOs | ✅ Completado | 2026-10-07 |
 | T10 | Crear `SeedDataInitializer.java` en `data/db/` | ⬜ Pendiente | — |
 | T11 | Crear menú `bottom_nav_menu.xml` | ⬜ Pendiente | — |
 | T12 | Crear layout `activity_cuentas.xml` | ⬜ Pendiente | — |
