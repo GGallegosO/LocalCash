@@ -7,13 +7,13 @@
 
 ## Fichas de tarea
 
-| Campo | T1 | T2 | T3 | T4 |
-| --- | --- | --- | --- | --- |
-| **Fecha** | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 |
-| **Tarea ejecutada** | Configurar Room en el proyecto | Crear entidades Room en `data/entities/` | Crear DAOs en `data/dao/` | Crear `AppDatabase.java` en `data/db/` |
-| **Responsable** | GG | GG | GG | GG |
-| **Duración estimada vs real** | 15 min vs ~5 min | 30 min vs ~10 min | 30 min vs ~10 min | 30 min vs ~15 min |
-| **Estado** | Completado | Completado | Completado | Completado |
+| Campo | T1 | T2 | T3 | T4 | T5 |
+| --- | --- | --- | --- | --- | --- |
+| **Fecha** | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 |
+| **Tarea ejecutada** | Configurar Room en el proyecto | Crear entidades Room en `data/entities/` | Crear DAOs en `data/dao/` | Crear `AppDatabase.java` en `data/db/` | Crear modelos de dominio en `domain/model/` |
+| **Responsable** | GG | GG | GG | GG | GG |
+| **Duración estimada vs real** | 15 min vs ~5 min | 30 min vs ~10 min | 30 min vs ~10 min | 30 min vs ~15 min | 30 min vs ~15 min |
+| **Estado** | Completado | Completado | Completado | Completado | Completado |
 
 ---
 
@@ -27,6 +27,8 @@
 
 **T4 — Crear AppDatabase:** Se creó la clase abstracta `AppDatabase` (`RoomDatabase`) con `@Database(entities = {Cuenta, Transaccion}, version = 1, exportSchema = true)`, los métodos abstractos `cuentaDao()`/`transaccionDao()`, un **singleton thread-safe** (doble verificación con `volatile`) y un `ExecutorService` de un solo hilo para las operaciones síncronas de los DAOs. El registro de `SeedDataInitializer` queda pendiente a propósito (`// TODO: Registrar SeedDataInitializer en T10`). Bonus: la primera compilación con `@Database` reveló 4 warnings de constructores duplicados en las entidades; se corrigieron con `@Ignore` y se exportó el schema en `app/schemas/`.
 
+**T5 — Crear modelos de dominio:** Se crearon los modelos de negocio inmutables `Cuenta` y `Transaccion` (con `BigDecimal` para dinero) más los enums `TipoCuenta` (EFECTIVO/AHORRO/TARJETA) y `TipoTransaccion` (INGRESO/EGRESO). Cada modelo incluye el único par de conversión `long` ↔ `BigDecimal` vía `toEntity()` / `fromEntity()` (factor 1: pesos CLP directos). La capa `domain/` no importa clases de Room ni de Android: solo `java.math.BigDecimal`.
+
 ---
 
 ## Archivos Creados / Modificados
@@ -39,6 +41,10 @@
 - `app/src/main/java/com/localcash/data/dao/TransaccionDao.java` (T3) — `@Dao` interface: `@Insert insert(Transaccion)`, `@Query("SELECT * FROM transacciones WHERE cuentaId = :cuentaId ORDER BY fecha DESC") LiveData<List<Transaccion>> getByCuentaId(long)`, `@Query("SELECT * FROM transacciones ORDER BY fecha DESC") LiveData<List<Transaccion>> getAll()`.
 - `app/src/main/java/com/localcash/data/db/AppDatabase.java` (T4) — `@Database(entities = {Cuenta.class, Transaccion.class}, version = 1, exportSchema = true)`, abstract class `RoomDatabase`: singleton thread-safe (doble verificación + `volatile`), `Executors.newSingleThreadExecutor()` compartido (`getExecutor()`), `getInstance(Context)` con `applicationContext`, `// TODO: Registrar SeedDataInitializer en T10`, métodos abstractos `cuentaDao()` y `transaccionDao()`.
 - `app/schemas/com.localcash.data.db.AppDatabase/1.json` (T4, generado) — schema SQLite exportado por Room (DoD T19).
+- `app/src/main/java/com/localcash/domain/model/TipoCuenta.java` (T5) — enum EFECTIVO, AHORRO, TARJETA (dominio cerrado; `name()` = String persistido en la entidad).
+- `app/src/main/java/com/localcash/domain/model/TipoTransaccion.java` (T5) — enum INGRESO, EGRESO (sin `transferencia`, fuera de alcance según `mission.md` §3).
+- `app/src/main/java/com/localcash/domain/model/Cuenta.java` (T5) — modelo de dominio inmutable: `id` (long), `nombre` (String), `tipo` (TipoCuenta), `saldo` (BigDecimal); constante `MONEDA_CLP`; `toEntity()` / `fromEntity()` con `longValueExact()` / `BigDecimal.valueOf(long)`; `toString()` para logs.
+- `app/src/main/java/com/localcash/domain/model/Transaccion.java` (T5) — modelo de dominio inmutable: `id`, `cuentaId` (long), `tipo` (TipoTransaccion), `monto` (BigDecimal), `concepto` (String), `fecha` (long); `toEntity()` / `fromEntity()` con el mismo par de conversión; `toString()` para logs.
 
 **Modificados:**
 
@@ -99,6 +105,18 @@
 15. **`@Ignore` en los constructores con parámetros de ambas entidades (corrección detectada en T4)**
     _Justificación:_ La primera compilación con `@Database` activo emitió 4 warnings ("multiple good constructors"); el DoD exige cero warnings. `@Ignore` le dice a Room que use solo el constructor vacío. Corrección registrada aquí por ser un hallazgo de T4 sobre archivos de T2.
 
+16. **Modelos de dominio inmutables (campos `final`, sin setters)**
+    _Justificación:_ Un saldo ya calculado no puede ser mutado por referencia compartida; cada estado nuevo es una instancia nueva. Simplifica los tests de `TransaccionService` (T8) y elimina estados intermedios inválidos en memoria.
+
+17. **Referencia a las entidades Room por nombre completo (FQN) en `toEntity()`/`fromEntity()`, sin `import`**
+    _Justificación:_ El simple name de `domain.model.Cuenta` y `data.entities.Cuenta` es idéntico: Java prohíbe importar un tipo con el mismo nombre que la clase declarada en la unidad de compilación (JLS §7.5.1). Con FQN se cumple el requisito de `toEntity()`/`fromEntity()` sin importar anotaciones de Room — `domain/` no importa `androidx.*`, solo `java.math.BigDecimal`.
+
+18. **Conversión exacta: `longValueExact()` en `BigDecimal → long` y `BigDecimal.valueOf(long)` en `long → BigDecimal`**
+    _Justificación:_ Factor 1 (pesos CLP directos, sin centavos). `longValueExact()` lanza `ArithmeticException` si el valor tuviera fracción: una fracción en CLP es error de programación y debe fallar ruidosamente (`.agent.md` §5.4: nunca silenciar un error) en lugar de truncar en silencio.
+
+19. **Enums en Java como representación de dominio cerrado, persistidos por `name()`**
+    _Justificación:_ `TipoCuenta`/`TipoTransaccion` viven en `domain/` sin dependencias; `name()` produce exactamente el String que espera la entidad ("EFECTIVO", "INGRESO"). `valueOf()` en `fromEntity()` valida el dominio al leer: un valor desconocido en BD lanza `IllegalArgumentException` en lugar de propagarse.
+
 ---
 
 ## Lecciones Aprendidas
@@ -115,19 +133,21 @@
 - **T4:** Los warnings de Room sobre constructores **solo aparecen cuando hay una clase `@Database`** que procesa las entidades; en T2 el build fue limpio porque el annotation processor no había activado la validación completa. Lección: verificar warnings en la tarea que activa el `@Database`, no antes.
 - **T4:** `exportSchema = true` solo genera el JSON si `room.schemaLocation` está bien configurado; verificado: `app/schemas/com.localcash.data.db.AppDatabase/1.json` creado tras el build.
 - **T4:** Corregido con `@Ignore` en constructores con parámetros: 4 warnings → 0 (DoD de cero warnings cumplido).
+- **T5:** Dos clases con el mismo simple name en paquetes distintos (`domain.model.Cuenta` vs `data.entities.Cuenta`) no pueden resolverse con `import` en Java — hay que usar FQN en las firmas de conversión. Alternativa descartada: renombrar los modelos de dominio (rompería la terminología del dominio y los nombres pedidos en `tasks.md` T5).
+- **T5:** Verificar la independencia de `domain/`: `grep -r "androidx" app/src/main/java/com/localcash/domain/` debe dar cero resultados (regla de arquitectura `.agent.md` §5.1).
 
 ---
 
 ## Próximos Pasos
 
-1. **T5 — Crear modelos de dominio en `domain/model/`:**
-   - `Cuenta.java` (dominio, NO entidad Room): `id`, `nombre`, `tipo` (Enum), `saldo` (BigDecimal)
-   - `Transaccion.java` (dominio): `id`, `cuentaId`, `tipo` (Enum INGRESO/EGRESO), `monto` (BigDecimal), `concepto`, `fecha`
-   - Métodos de conversión `long` ↔ `BigDecimal` (factor 1: pesos CLP directos) — único par de funciones de conversión
+1. **T6 — Crear `domain/error/ErrorCode.java`:** enum o constantes CUENTA_VACIA, MONTO_INVALIDO, SALDO_INSUFICIENTE, CUENTA_NO_ENCONTRADA (el código `CONTACTO_EN_USO` ya está definido en `data-model.md` §4.2 para features posteriores).
 
-2. **T6 — `domain/error/ErrorCode.java`:** CUENTA_VACIA, MONTO_INVALIDO, SALDO_INSUFICIENTE, CUENTA_NO_ENCONTRADA
+2. **T7 — Crear `domain/service/TransaccionService.java`:**
+   - `validarTransaccion(Transaccion, Cuenta)`: monto > 0, cuenta no nula, y si EGRESO entonces `cuenta.saldo >= transaccion.monto`
+   - `calcularNuevoSaldo(Cuenta, Transaccion)`: BigDecimal con saldo actualizado
+   - Excepciones personalizadas con `ErrorCode` (cero dependencias Android)
 
-3. **T7 — `domain/service/TransaccionService.java`:** validarTransaccion + calcularNuevoSaldo (cero dependencias Android)
+3. **T8 — Tests unitarios de `TransaccionService`** (ingreso suma, egreso resta, saldo insuficiente lanza excepción, monto inválido lanza excepción)
 
 4. Ejecutar `./gradlew assembleDebug` tras cada fase para validar compilación.
 
@@ -143,6 +163,7 @@
 | T2 | Crear entidades Room en `data/entities/` | ✅ Completado | 2026-10-07 |
 | T3 | Crear DAOs en `data/dao/` | ✅ Completado | 2026-10-07 |
 | T4 | Crear `AppDatabase.java` en `data/db/` | ✅ Completado | 2026-10-07 |
+| T5 | Crear modelos de dominio en `domain/model/` | ✅ Completado | 2026-10-07 |
 | T4 | Crear `AppDatabase.java` en `data/db/` | ⬜ Pendiente | — |
 | T5 | Crear modelos de dominio en `domain/model/` | ⬜ Pendiente | — |
 | T6 | Crear códigos de error en `domain/error/ErrorCode.java` | ⬜ Pendiente | — |
