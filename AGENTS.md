@@ -50,27 +50,15 @@ Ejecuta `connectedCheck` al final, no al principio: si falla, ya perdiste el cic
 
 Estas son las que cuestan un bug de producción si se ignoran:
 
-- **Dinero siempre `INTEGER` en centavos.** Nunca `REAL`, nunca `double` en la capa de datos: un
-  saldo es una suma acumulada y en IEEE 754 la deriva aparece justo en el número que ve el usuario.
-  `BigDecimal` solo en `domain/`, y la conversión a centavos vive en **un único** par de funciones.
-- **`PRAGMA foreign_keys = ON` es un flag por conexión, no una propiedad del archivo.** Si la app
-  abre la base por una vía que no lo activa, todo el `ON DELETE CASCADE` del DDL deja de ocurrir en
-  silencio. Actívalo en `onConfigure()` (o verifica que Room lo haga) y ten un test que lo compruebe.
-- **El `CHECK` de estado en deudas valida la fila, no el historial.** SQLite aceptaría escribir
-  `estado = 'pendiente', monto_pagado = 0` sobre una fila que estaba `parcial`. La máquina de estados
-  la hace cumplir el repositorio: el DAO no expone "rebajar abono" ni "reabrir deuda", y eso
-  necesita test propio.
-- **`CUENTAS.saldo_actual` es una proyección, no la fuente de verdad.** `TRANSACCIONES` lo es. Se
-  actualiza solo con aritmética atómica (`SET saldo_actual = saldo_actual ± :monto`); nunca con
-  leer-restar-escribir, que tiene condición de carrera.
-- **Solo construcciones de SQLite 3.8+ (`minSdk` 28):** nada de `STRICT`, índices de expresión,
-  `RETURNING`, columnas generadas ni `ON CONFLICT DO NOTHING` (ese es _upsert_, 3.24+). Para la
-  semilla usa `INSERT OR IGNORE`.
-- **Migraciones:** `PRAGMA user_version` es la versión del esquema. `fallbackToDestructiveMigration()`
-  y cualquier `DROP TABLE` como estrategia de actualización están prohibidos: perderían información
-  financiera sin que el usuario lo decida.
-- **Nombres de tabla por constante del DAO**, nunca literales dispersos: un error tipográfico en un
-  literal es un fallo en tiempo de ejecución, no de compilación.
+- **Dinero siempre `INTEGER` (tipo `long` en Java).** Nunca `REAL`, nunca `double` en la capa de datos: un saldo es una suma acumulada y en IEEE 754 la deriva aparece justo en el número que ve el usuario. `BigDecimal` solo en `domain/`, y la conversión vive en **un único** par de funciones.
+  - **Contexto local (CLP):** Los pesos chilenos no tienen centavos en circulación (desde 1984). La unidad mínima es 1 peso. Por lo tanto, se almacena directamente en pesos (no centavos). Ejemplo: $1.000.000 CLP = `1000000L` (no `100000000L`).
+  - **Excepción documentada:** Esta decisión se registró en `doc/007-cuentas.md` y `spec/features/007-cuentas/plan.md` (Decisión #2).
+- **`PRAGMA foreign_keys = ON` es un flag por conexión, no una propiedad del archivo.** Si la app abre la base por una vía que no lo activa, todo el `ON DELETE CASCADE` del DDL deja de ocurrir en silencio. Actívalo en `onConfigure()` (o verifica que Room lo haga) y ten un test que lo compruebe.
+- **El `CHECK` de estado en deudas valida la fila, no el historial.** SQLite aceptaría escribir `estado = 'pendiente', monto_pagado = 0` sobre una fila que estaba `parcial`. La máquina de estados la hace cumplir el repositorio: el DAO no expone "rebajar abono" ni "reabrir deuda", y eso necesita test propio.
+- **`CUENTAS.saldo` es una proyección, no la fuente de verdad.** `TRANSACCIONES` lo es. Se actualiza solo con aritmética atómica (`SET saldo = saldo ± :monto`); nunca con leer-restar-escribir, que tiene condición de carrera.
+- **Solo construcciones de SQLite 3.8+ (`minSdk` 28):** nada de `STRICT`, índices de expresión, `RETURNING`, columnas generadas ni `ON CONFLICT DO NOTHING` (ese es _upsert_, 3.24+). Para la semilla usa `INSERT OR IGNORE`.
+- **Migraciones:** `PRAGMA user_version` es la versión del esquema. `fallbackToDestructiveMigration()` y cualquier `DROP TABLE` como estrategia de actualización están prohibidos: perderían información financiera sin que el usuario lo decida.
+- **Nombres de tabla por constante del DAO**, nunca literales dispersos: un error tipográfico en un literal es un fallo en tiempo de ejecución, no de compilación.
 
 ## Trampa de proceso: el ERD y el DDL se desalinean en silencio
 
