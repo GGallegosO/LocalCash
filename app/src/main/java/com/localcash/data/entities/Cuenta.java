@@ -2,6 +2,7 @@ package com.localcash.data.entities;
 
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 /**
@@ -44,6 +45,7 @@ public class Cuenta {
     }
 
     /** Constructor completo para crear una cuenta con saldo de apertura. */
+    @Ignore
     public Cuenta(String nombre, String tipo, long saldo, String moneda) {
         this.nombre = nombre;
         this.tipo = tipo;

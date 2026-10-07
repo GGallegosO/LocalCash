@@ -7,13 +7,13 @@
 
 ## Fichas de tarea
 
-| Campo | T1 | T2 | T3 |
-| --- | --- | --- | --- |
-| **Fecha** | 2026-10-07 | 2026-10-07 | 2026-10-07 |
-| **Tarea ejecutada** | Configurar Room en el proyecto | Crear entidades Room en `data/entities/` | Crear DAOs en `data/dao/` |
-| **Responsable** | GG | GG | GG |
-| **Duración estimada vs real** | 15 min vs ~5 min | 30 min vs ~10 min | 30 min vs ~10 min |
-| **Estado** | Completado | Completado | Completado |
+| Campo | T1 | T2 | T3 | T4 |
+| --- | --- | --- | --- | --- |
+| **Fecha** | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 |
+| **Tarea ejecutada** | Configurar Room en el proyecto | Crear entidades Room en `data/entities/` | Crear DAOs en `data/dao/` | Crear `AppDatabase.java` en `data/db/` |
+| **Responsable** | GG | GG | GG | GG |
+| **Duración estimada vs real** | 15 min vs ~5 min | 30 min vs ~10 min | 30 min vs ~10 min | 30 min vs ~15 min |
+| **Estado** | Completado | Completado | Completado | Completado |
 
 ---
 
@@ -25,6 +25,8 @@
 
 **T3 — Crear DAOs:** Se crearon las interfaces de acceso a datos `CuentaDao` y `TransaccionDao` con las operaciones de inserción, consulta observable (`LiveData`), actualización de saldo y borrado. Los DAOs solo persisten: no deciden reglas de negocio (la validación de saldo vive en `domain/service`, pendiente T7). Room valida los literales SQL de los `@Query` en compilación.
 
+**T4 — Crear AppDatabase:** Se creó la clase abstracta `AppDatabase` (`RoomDatabase`) con `@Database(entities = {Cuenta, Transaccion}, version = 1, exportSchema = true)`, los métodos abstractos `cuentaDao()`/`transaccionDao()`, un **singleton thread-safe** (doble verificación con `volatile`) y un `ExecutorService` de un solo hilo para las operaciones síncronas de los DAOs. El registro de `SeedDataInitializer` queda pendiente a propósito (`// TODO: Registrar SeedDataInitializer en T10`). Bonus: la primera compilación con `@Database` reveló 4 warnings de constructores duplicados en las entidades; se corrigieron con `@Ignore` y se exportó el schema en `app/schemas/`.
+
 ---
 
 ## Archivos Creados / Modificados
@@ -35,6 +37,8 @@
 - `app/src/main/java/com/localcash/data/entities/Transaccion.java` (T2) — `@Entity(tableName = "transacciones")` con `@ForeignKey(entity = Cuenta.class, parentColumns = "id", childColumns = "cuentaId", onDelete = ForeignKey.CASCADE)` e `@Index("cuentaId")`: `id` (long, `autoGenerate`), `cuentaId` (long), `tipo` (String: INGRESO/EGRESO), `monto` (long, pesos CLP, siempre positivo), `concepto` (String), `fecha` (long, timestamp epoch millis). Incluye constructor vacío y constructor completo.
 - `app/src/main/java/com/localcash/data/dao/CuentaDao.java` (T3) — `@Dao` interface: `@Insert insert(Cuenta)`, `@Query("SELECT * FROM cuentas") LiveData<List<Cuenta>> getAll()`, `@Query("UPDATE cuentas SET saldo = :saldo WHERE id = :cuentaId") updateSaldo(long, long)`, `@Delete delete(Cuenta)`.
 - `app/src/main/java/com/localcash/data/dao/TransaccionDao.java` (T3) — `@Dao` interface: `@Insert insert(Transaccion)`, `@Query("SELECT * FROM transacciones WHERE cuentaId = :cuentaId ORDER BY fecha DESC") LiveData<List<Transaccion>> getByCuentaId(long)`, `@Query("SELECT * FROM transacciones ORDER BY fecha DESC") LiveData<List<Transaccion>> getAll()`.
+- `app/src/main/java/com/localcash/data/db/AppDatabase.java` (T4) — `@Database(entities = {Cuenta.class, Transaccion.class}, version = 1, exportSchema = true)`, abstract class `RoomDatabase`: singleton thread-safe (doble verificación + `volatile`), `Executors.newSingleThreadExecutor()` compartido (`getExecutor()`), `getInstance(Context)` con `applicationContext`, `// TODO: Registrar SeedDataInitializer en T10`, métodos abstractos `cuentaDao()` y `transaccionDao()`.
+- `app/schemas/com.localcash.data.db.AppDatabase/1.json` (T4, generado) — schema SQLite exportado por Room (DoD T19).
 
 **Modificados:**
 
@@ -43,6 +47,8 @@
   - Agregado `annotationProcessor "androidx.room:room-compiler:2.6.1"` (procesador de anotaciones)
   - Agregado `testImplementation "androidx.room:room-testing:2.6.1"` (testing de Room)
   - Configurado `room.schemaLocation` en `defaultConfig.javaCompileOptions.annotationProcessorOptions.arguments` → `"$projectDir/schemas"`
+- `app/src/main/java/com/localcash/data/entities/Cuenta.java` (corregido en T4) — constructor con parámetros anotado con `@Ignore` (elimina warning "multiple good constructors").
+- `app/src/main/java/com/localcash/data/entities/Transaccion.java` (corregido en T4) — constructor con parámetros anotado con `@Ignore` (misma corrección).
 
 ---
 
@@ -81,6 +87,18 @@
 11. **Consultas devuelven `LiveData` (no `List` directo)**
     _Justificación:_ Room exige que las consultas que devuelven colecciones se ejecuten fuera del hilo principal; `LiveData` resuelve eso y notifica automáticamente a la UI ante cada cambio (DoD: actualización visible en <500ms). Consistente con el patrón de `tasks.md` T3.
 
+12. **Singleton con doble verificación + `volatile` (no synchronized en todo el método)**
+    _Justificación:_ Thread-safe bajo concurrencia sin el coste de bloquear `getInstance()` en cada llamada; `volatile` garantiza la publicación segura de la instancia entre hilos. El `applicationContext` evita leaks si una Activity consultara la BD.
+
+13. **Un solo `ExecutorService` estático (`newSingleThreadExecutor`) compartido por la app**
+    _Justificación:_ Serializa todas las escrituras de la BD: imposibilita la condición de carrera "leer-restar-escribir" del saldo porque nunca hay dos escrituras simultáneas (refuerzo en capa de código de la regla `data-model.md` §4.2 de aritmética atómica). Exponerlo vía `getExecutor()` centraliza el punto de ejecución en background para `ui/`.
+
+14. **`SeedDataInitializer` NO registrado en T4 (solo `// TODO` en T10)**
+    _Justificación:_ Instrucción explícita de ejecución: mantener commits pequeños y revisables, una tarea a la vez. El callback se añadirá con `.addCallback(new SeedDataInitializer())` en T10.
+
+15. **`@Ignore` en los constructores con parámetros de ambas entidades (corrección detectada en T4)**
+    _Justificación:_ La primera compilación con `@Database` activo emitió 4 warnings ("multiple good constructors"); el DoD exige cero warnings. `@Ignore` le dice a Room que use solo el constructor vacío. Corrección registrada aquí por ser un hallazgo de T4 sobre archivos de T2.
+
 ---
 
 ## Lecciones Aprendidas
@@ -94,20 +112,26 @@
 - **T2:** El esquema aprobado de la feature es un subconjunto del esquema canónico de `data-model.md` (falta `saldo_inicial`, `categoria_id`, geolocalización, `fecha_hora TEXT`); la reconciliación documental queda pendiente para T19 — si no se hace, hay "bug de documentación" según la regla de sincronización del propio `data-model.md`.
 - **T3:** Los literales de tabla dentro de `@Query` son seguros: Room los valida **en compilación** (si la tabla no existe, no compila). La advertencia de AGENTS.md sobre "literales dispersos" aplica a SQLiteOpenHelper puro, no a Room.
 - **T3:** `LiveData<List<T>>` es la forma de que Room ejecute en background y notifique a la UI; los métodos síncronos (`insert`, `updateSaldo`, `delete`) deben invocarse desde el `Executor` del `AppDatabase` (T4) para no bloquear el hilo principal.
+- **T4:** Los warnings de Room sobre constructores **solo aparecen cuando hay una clase `@Database`** que procesa las entidades; en T2 el build fue limpio porque el annotation processor no había activado la validación completa. Lección: verificar warnings en la tarea que activa el `@Database`, no antes.
+- **T4:** `exportSchema = true` solo genera el JSON si `room.schemaLocation` está bien configurado; verificado: `app/schemas/com.localcash.data.db.AppDatabase/1.json` creado tras el build.
+- **T4:** Corregido con `@Ignore` en constructores con parámetros: 4 warnings → 0 (DoD de cero warnings cumplido).
 
 ---
 
 ## Próximos Pasos
 
-1. **T4 — Crear `AppDatabase.java` en `data/db/`:**
-   - Abstract class RoomDatabase, `@Database(entities = {Cuenta.class, Transaccion.class}, version = 1, exportSchema = true)`
-   - Métodos abstractos `cuentaDao()` y `transaccionDao()`
-   - Singleton con `Executors.newSingleThreadExecutor()` para las operaciones síncronas de los DAOs (insert/updateSaldo/delete)
-   - Registrar `SeedDataInitializer` como callback (T10)
+1. **T5 — Crear modelos de dominio en `domain/model/`:**
+   - `Cuenta.java` (dominio, NO entidad Room): `id`, `nombre`, `tipo` (Enum), `saldo` (BigDecimal)
+   - `Transaccion.java` (dominio): `id`, `cuentaId`, `tipo` (Enum INGRESO/EGRESO), `monto` (BigDecimal), `concepto`, `fecha`
+   - Métodos de conversión `long` ↔ `BigDecimal` (factor 1: pesos CLP directos) — único par de funciones de conversión
 
-2. Ejecutar `./gradlew assembleDebug` tras cada fase para validar compilación.
+2. **T6 — `domain/error/ErrorCode.java`:** CUENTA_VACIA, MONTO_INVALIDO, SALDO_INSUFICIENTE, CUENTA_NO_ENCONTRADA
 
-3. **Pendiente documental (T19):** reconciliar el esquema de la feature con `data-model.md` (subconjunto de entidades, `fecha long` vs `fecha_hora TEXT`) — regla de sincronización del propio documento.
+3. **T7 — `domain/service/TransaccionService.java`:** validarTransaccion + calcularNuevoSaldo (cero dependencias Android)
+
+4. Ejecutar `./gradlew assembleDebug` tras cada fase para validar compilación.
+
+5. **Pendiente documental (T19):** reconciliar el esquema de la feature con `data-model.md` (subconjunto de entidades, `fecha long` vs `fecha_hora TEXT`) — regla de sincronización del propio documento.
 
 ---
 
@@ -118,6 +142,7 @@
 | T1 | Configurar Room en el proyecto | ✅ Completado | 2026-10-07 |
 | T2 | Crear entidades Room en `data/entities/` | ✅ Completado | 2026-10-07 |
 | T3 | Crear DAOs en `data/dao/` | ✅ Completado | 2026-10-07 |
+| T4 | Crear `AppDatabase.java` en `data/db/` | ✅ Completado | 2026-10-07 |
 | T4 | Crear `AppDatabase.java` en `data/db/` | ⬜ Pendiente | — |
 | T5 | Crear modelos de dominio en `domain/model/` | ⬜ Pendiente | — |
 | T6 | Crear códigos de error en `domain/error/ErrorCode.java` | ⬜ Pendiente | — |
