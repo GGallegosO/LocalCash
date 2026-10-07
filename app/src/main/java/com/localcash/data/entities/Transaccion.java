@@ -2,6 +2,7 @@ package com.localcash.data.entities;
 
 import androidx.room.Entity;
 import androidx.room.ForeignKey;
+import androidx.room.Ignore;
 import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
@@ -59,6 +60,7 @@ public class Transaccion {
     }
 
     /** Constructor completo para registrar un movimiento. */
+    @Ignore
     public Transaccion(long cuentaId, String tipo, long monto, String concepto, long fecha) {
         this.cuentaId = cuentaId;
         this.tipo = tipo;
