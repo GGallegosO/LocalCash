@@ -5,15 +5,28 @@
 
 ---
 
+## Estado de la sesión (retomada tras /compact)
+
+- **Alcance actual:** SOLO capa de Datos y Dominio (T1 → T10). **PROHIBIDO tocar UI** (layouts, activities, adapters) hasta la próxima sesión.
+- **Completadas:** T1 (Config Room), T2 (Entidades), T3 (DAOs), T4 (AppDatabase Singleton), T5 (Modelos de dominio con BigDecimal y Enums), T6 (ErrorCode).
+- **Reglas no negociables:**
+  1. Dinero: `long` en entidades Room (pesos CLP directos, NO centavos, NO double). `BigDecimal` en modelos de dominio.
+  2. Arquitectura: `domain/` NO importa `androidx.room` ni Android SDK (solo `java.*`).
+  3. Testing: cobertura ≥70% en `data/` y `domain/` (`.agent.md` §5.3).
+  4. Memoria: un `doc/007-cuentas.md` único va actualizado tras cada tarea (§7 del contrato).
+- **Siguiente tarea inmediata:** **T7** — `domain/service/TransaccionService.java` con `validarTransaccion()` y `calcularNuevoSaldo()`, lanzando excepciones con `ErrorCode`.
+
+---
+
 ## Fichas de tarea
 
-| Campo | T1 | T2 | T3 | T4 | T5 |
-| --- | --- | --- | --- | --- | --- |
-| **Fecha** | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 |
-| **Tarea ejecutada** | Configurar Room en el proyecto | Crear entidades Room en `data/entities/` | Crear DAOs en `data/dao/` | Crear `AppDatabase.java` en `data/db/` | Crear modelos de dominio en `domain/model/` |
-| **Responsable** | GG | GG | GG | GG | GG |
-| **Duración estimada vs real** | 15 min vs ~5 min | 30 min vs ~10 min | 30 min vs ~10 min | 30 min vs ~15 min | 30 min vs ~15 min |
-| **Estado** | Completado | Completado | Completado | Completado | Completado |
+| Campo | T1 | T2 | T3 | T4 | T5 | T6 |
+| --- | --- | --- | --- | --- | --- | --- |
+| **Fecha** | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 |
+| **Tarea ejecutada** | Configurar Room en el proyecto | Crear entidades Room en `data/entities/` | Crear DAOs en `data/dao/` | Crear `AppDatabase.java` en `data/db/` | Crear modelos de dominio en `domain/model/` | Crear códigos de error en `domain/error/ErrorCode.java` |
+| **Responsable** | GG | GG | GG | GG | GG | GG |
+| **Duración estimada vs real** | 15 min vs ~5 min | 30 min vs ~10 min | 30 min vs ~10 min | 30 min vs ~15 min | 30 min vs ~15 min | 10 min vs ~5 min |
+| **Estado** | Completado | Completado | Completado | Completado | Completado | Completado |
 
 ---
 
@@ -28,6 +41,8 @@
 **T4 — Crear AppDatabase:** Se creó la clase abstracta `AppDatabase` (`RoomDatabase`) con `@Database(entities = {Cuenta, Transaccion}, version = 1, exportSchema = true)`, los métodos abstractos `cuentaDao()`/`transaccionDao()`, un **singleton thread-safe** (doble verificación con `volatile`) y un `ExecutorService` de un solo hilo para las operaciones síncronas de los DAOs. El registro de `SeedDataInitializer` queda pendiente a propósito (`// TODO: Registrar SeedDataInitializer en T10`). Bonus: la primera compilación con `@Database` reveló 4 warnings de constructores duplicados en las entidades; se corrigieron con `@Ignore` y se exportó el schema en `app/schemas/`.
 
 **T5 — Crear modelos de dominio:** Se crearon los modelos de negocio inmutables `Cuenta` y `Transaccion` (con `BigDecimal` para dinero) más los enums `TipoCuenta` (EFECTIVO/AHORRO/TARJETA) y `TipoTransaccion` (INGRESO/EGRESO). Cada modelo incluye el único par de conversión `long` ↔ `BigDecimal` vía `toEntity()` / `fromEntity()` (factor 1: pesos CLP directos). La capa `domain/` no importa clases de Room ni de Android: solo `java.math.BigDecimal`.
+
+**T6 — Crear códigos de error:** Se creó el enum `ErrorCode` en `domain/error/` con los cuatro códigos de negocio de la feature (`CUENTA_VACIA`, `MONTO_INVALIDO`, `SALDO_INSUFICIENTE`, `CUENTA_NO_ENCONTRADA`). El dominio propaga códigos, nunca texto: la traducción a mensajes accionables es responsabilidad de `ui/` (`.agent.md` §5.4).
 
 ---
 
@@ -45,6 +60,7 @@
 - `app/src/main/java/com/localcash/domain/model/TipoTransaccion.java` (T5) — enum INGRESO, EGRESO (sin `transferencia`, fuera de alcance según `mission.md` §3).
 - `app/src/main/java/com/localcash/domain/model/Cuenta.java` (T5) — modelo de dominio inmutable: `id` (long), `nombre` (String), `tipo` (TipoCuenta), `saldo` (BigDecimal); constante `MONEDA_CLP`; `toEntity()` / `fromEntity()` con `longValueExact()` / `BigDecimal.valueOf(long)`; `toString()` para logs.
 - `app/src/main/java/com/localcash/domain/model/Transaccion.java` (T5) — modelo de dominio inmutable: `id`, `cuentaId` (long), `tipo` (TipoTransaccion), `monto` (BigDecimal), `concepto` (String), `fecha` (long); `toEntity()` / `fromEntity()` con el mismo par de conversión; `toString()` para logs.
+- `app/src/main/java/com/localcash/domain/error/ErrorCode.java` (T6) — enum con `CUENTA_VACIA`, `MONTO_INVALIDO`, `SALDO_INSUFICIENTE`, `CUENTA_NO_ENCONTRADA`; Javadoc por constante; cero dependencias externas (solo `java.*` implícitas).
 
 **Modificados:**
 
@@ -117,6 +133,12 @@
 19. **Enums en Java como representación de dominio cerrado, persistidos por `name()`**
     _Justificación:_ `TipoCuenta`/`TipoTransaccion` viven en `domain/` sin dependencias; `name()` produce exactamente el String que espera la entidad ("EFECTIVO", "INGRESO"). `valueOf()` en `fromEntity()` valida el dominio al leer: un valor desconocido en BD lanza `IllegalArgumentException` en lugar de propagarse.
 
+20. **`ErrorCode` como enum (no constantes `String`)**
+    _Justificación:_ Tipado fuerte y estático exigido por `.agent.md` §5.3: un `switch` sobre enum se valida en compilación al añadir un código nuevo; los `String` fallan en tiempo de ejecución. El `Javadoc` por constante documenta qué caso de negocio representa cada uno, y la traducción a texto queda delegada a `ui/` (§5.4: el dominio no produce mensajes).
+
+21. **Alcance de `ErrorCode`: solo los 4 códigos de esta feature**
+    _Justificación:_ `tasks.md` T6 define exactamente `CUENTA_VACIA`, `MONTO_INVALIDO`, `SALDO_INSUFICIENTE`, `CUENTA_NO_ENCONTRADA`. `CONTACTO_EN_USO` (ya canónico en `data-model.md` §4.2) se agrega con la Feature 009 de contactos/deudas, no aquí (prohibición de modificar fuera de scope, `.agent.md` §6.3).
+
 ---
 
 ## Lecciones Aprendidas
@@ -135,23 +157,26 @@
 - **T4:** Corregido con `@Ignore` en constructores con parámetros: 4 warnings → 0 (DoD de cero warnings cumplido).
 - **T5:** Dos clases con el mismo simple name en paquetes distintos (`domain.model.Cuenta` vs `data.entities.Cuenta`) no pueden resolverse con `import` en Java — hay que usar FQN en las firmas de conversión. Alternativa descartada: renombrar los modelos de dominio (rompería la terminología del dominio y los nombres pedidos en `tasks.md` T5).
 - **T5:** Verificar la independencia de `domain/`: `grep -r "androidx" app/src/main/java/com/localcash/domain/` debe dar cero resultados (regla de arquitectura `.agent.md` §5.1).
+- **T6:** Un enum sin dependencias es la forma más barata de código de error tipado: cero costo en runtime, validación en compilación y Javadoc por constante como documentación viva de los casos de negocio.
 
 ---
 
 ## Próximos Pasos
 
-1. **T6 — Crear `domain/error/ErrorCode.java`:** enum o constantes CUENTA_VACIA, MONTO_INVALIDO, SALDO_INSUFICIENTE, CUENTA_NO_ENCONTRADA (el código `CONTACTO_EN_USO` ya está definido en `data-model.md` §4.2 para features posteriores).
-
-2. **T7 — Crear `domain/service/TransaccionService.java`:**
+1. **T7 — Crear `domain/service/TransaccionService.java`:**
    - `validarTransaccion(Transaccion, Cuenta)`: monto > 0, cuenta no nula, y si EGRESO entonces `cuenta.saldo >= transaccion.monto`
-   - `calcularNuevoSaldo(Cuenta, Transaccion)`: BigDecimal con saldo actualizado
-   - Excepciones personalizadas con `ErrorCode` (cero dependencias Android)
+   - `calcularNuevoSaldo(Cuenta, Transaccion)`: BigDecimal con saldo actualizado (suma para INGRESO, resta para EGRESO)
+   - Excepción personalizada que transporte `ErrorCode` (p. ej. `DomainException`); cero dependencias Android
 
-3. **T8 — Tests unitarios de `TransaccionService`** (ingreso suma, egreso resta, saldo insuficiente lanza excepción, monto inválido lanza excepción)
+2. **T8 — Tests unitarios de `TransaccionService`:** `testIngresoAumentaSaldo()`, `testEgresoDisminuyeSaldo()`, `testEgresoConSaldoInsuficienteLanzaExcepcion()`, `testMontoInvalidoLanzaExcepcion()` — cobertura ≥70%
 
-4. Ejecutar `./gradlew assembleDebug` tras cada fase para validar compilación.
+3. **T9 — Tests unitarios de DAOs:** `CuentaDaoTest` y `TransaccionDaoTest` con `Room.inMemoryDatabaseBuilder()`
 
-5. **Pendiente documental (T19):** reconciliar el esquema de la feature con `data-model.md` (subconjunto de entidades, `fecha long` vs `fecha_hora TEXT`) — regla de sincronización del propio documento.
+4. **T10 — `SeedDataInitializer.java`** (callback `onCreate` con cuenta "Efectivo Demo" 1_000_000L) y registrarlo en `AppDatabase` (quitar el `// TODO`)
+
+5. Ejecutar `./gradlew assembleDebug` tras cada fase. **No tocar UI hasta la próxima sesión.**
+
+6. **Pendiente documental (T19):** reconciliar el esquema de la feature con `data-model.md` (subconjunto de entidades, `fecha long` vs `fecha_hora TEXT`) — regla de sincronización del propio documento.
 
 ---
 
@@ -164,6 +189,7 @@
 | T3 | Crear DAOs en `data/dao/` | ✅ Completado | 2026-10-07 |
 | T4 | Crear `AppDatabase.java` en `data/db/` | ✅ Completado | 2026-10-07 |
 | T5 | Crear modelos de dominio en `domain/model/` | ✅ Completado | 2026-10-07 |
+| T6 | Crear códigos de error en `domain/error/ErrorCode.java` | ✅ Completado | 2026-10-07 |
 | T4 | Crear `AppDatabase.java` en `data/db/` | ⬜ Pendiente | — |
 | T5 | Crear modelos de dominio en `domain/model/` | ⬜ Pendiente | — |
 | T6 | Crear códigos de error en `domain/error/ErrorCode.java` | ⬜ Pendiente | — |
