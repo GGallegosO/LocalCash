@@ -8,25 +8,25 @@
 ## Estado de la sesión (retomada tras /compact)
 
 - **Alcance actual:** SOLO capa de Datos y Dominio (T1 → T10). **PROHIBIDO tocar UI** (layouts, activities, adapters) hasta la próxima sesión.
-- **Completadas:** T1 (Config Room), T2 (Entidades), T3 (DAOs), T4 (AppDatabase Singleton), T5 (Modelos de dominio con BigDecimal y Enums), T6 (ErrorCode), T7 (TransaccionService + BusinessRuleException).
+- **Completadas:** T1 (Config Room), T2 (Entidades), T3 (DAOs), T4 (AppDatabase Singleton), T5 (Modelos de dominio con BigDecimal y Enums), T6 (ErrorCode), T7 (TransaccionService + BusinessRuleException), T8 (Tests de TransaccionService: 8/8 en verde).
 - **Reglas no negociables:**
   1. Dinero: `long` en entidades Room (pesos CLP directos, NO centavos, NO double). `BigDecimal` en modelos de dominio.
   2. Arquitectura: `domain/` NO importa `androidx.room` ni Android SDK (solo `java.*`).
   3. Testing: cobertura ≥70% en `data/` y `domain/` (`.agent.md` §5.3).
   4. Memoria: un `doc/007-cuentas.md` único va actualizado tras cada tarea (§7 del contrato).
-- **Siguiente tarea inmediata:** **T8** — `app/src/test/java/com/localcash/domain/service/TransaccionServiceTest.java` con los 4 tests de `tasks.md` T8 (ingreso suma, egreso resta, saldo insuficiente lanza excepción, monto inválido lanza excepción); cobertura ≥70%.
+- **Siguiente tarea inmediata:** **T9** — tests de DAOs: `CuentaDaoTest.java` y `TransaccionDaoTest.java` en `app/src/test/java/com/localcash/data/dao/` con `Room.inMemoryDatabaseBuilder()`; cobertura ≥70% en DAOs.
 
 ---
 
 ## Fichas de tarea
 
-| Campo | T1 | T2 | T3 | T4 | T5 | T6 | T7 |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| **Fecha** | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 |
-| **Tarea ejecutada** | Configurar Room en el proyecto | Crear entidades Room en `data/entities/` | Crear DAOs en `data/dao/` | Crear `AppDatabase.java` en `data/db/` | Crear modelos de dominio en `domain/model/` | Crear códigos de error en `domain/error/ErrorCode.java` | Crear `TransaccionService.java` en `domain/service/` |
-| **Responsable** | GG | GG | GG | GG | GG | GG | GG |
-| **Duración estimada vs real** | 15 min vs ~5 min | 30 min vs ~10 min | 30 min vs ~10 min | 30 min vs ~15 min | 30 min vs ~15 min | 10 min vs ~5 min | 45 min vs ~15 min |
-| **Estado** | Completado | Completado | Completado | Completado | Completado | Completado | Completado |
+| Campo | T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| **Fecha** | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 |
+| **Tarea ejecutada** | Configurar Room en el proyecto | Crear entidades Room en `data/entities/` | Crear DAOs en `data/dao/` | Crear `AppDatabase.java` en `data/db/` | Crear modelos de dominio en `domain/model/` | Crear códigos de error en `domain/error/ErrorCode.java` | Crear `TransaccionService.java` en `domain/service/` | Crear tests unitarios de `TransaccionService` |
+| **Responsable** | GG | GG | GG | GG | GG | GG | GG | GG |
+| **Duración estimada vs real** | 15 min vs ~5 min | 30 min vs ~10 min | 30 min vs ~10 min | 30 min vs ~15 min | 30 min vs ~15 min | 10 min vs ~5 min | 45 min vs ~15 min | 45 min vs ~15 min |
+| **Estado** | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado |
 
 ---
 
@@ -45,6 +45,8 @@
 **T6 — Crear códigos de error:** Se creó el enum `ErrorCode` en `domain/error/` con los cuatro códigos de negocio de la feature (`CUENTA_VACIA`, `MONTO_INVALIDO`, `SALDO_INSUFICIENTE`, `CUENTA_NO_ENCONTRADA`). El dominio propaga códigos, nunca texto: la traducción a mensajes accionables es responsabilidad de `ui/` (`.agent.md` §5.4).
 
 **T7 — Crear TransaccionService:** Se creó el servicio de lógica de negocio pura en `domain/service/TransaccionService.java` con dos métodos `static` sin estado: `validarTransaccion(Transaccion, Cuenta)` (valida monto no nulo y > 0, cuenta no nula, y para EGRESO que `saldo >= monto`, lanzando `BusinessRuleException` con el `ErrorCode` correspondiente) y `calcularNuevoSaldo(Cuenta, Transaccion)` (suma para INGRESO, resta para EGRESO, todo con `BigDecimal`). Junto a él se creó `domain/error/BusinessRuleException.java`, excepción `unchecked` que transporta el `ErrorCode` para que `ui/` lo traduzca a mensaje (`.agent.md` §5.4). El inventario de archivos de `plan.md` se sincronizó con este archivo nuevo (exigido por `tasks.md` T7, ausente en el plan). Verificado: `domain/` solo importa `java.*` y paquetes `com.localcash.domain.*`.
+
+**T8 — Crear tests de TransaccionService:** Se creó `TransaccionServiceTest.java` (JUnit 4.13.2, JVM pura, sin Robolectric ni Android) con los 4 tests mínimos de `tasks.md` (`testIngresoAumentaSaldo`, `testEgresoDisminuyeSaldo`, `testEgresoConSaldoInsuficienteLanzaExcepcion`, `testMontoInvalidoLanzaExcepcion`) más 4 complementarios de nulos, frontera y dominio para garantizar la cobertura ≥70% del criterio de salida. Resultado: **8 tests, 0 fallos, 0 errores** (`testDebugUnitTest` verde) y `assembleDebug` sin warnings. Todo el dinero en `BigDecimal` con literales String; aserciones por `compareTo` (mismo criterio que el servicio).
 
 ---
 
@@ -65,6 +67,7 @@
 - `app/src/main/java/com/localcash/domain/error/ErrorCode.java` (T6) — enum con `CUENTA_VACIA`, `MONTO_INVALIDO`, `SALDO_INSUFICIENTE`, `CUENTA_NO_ENCONTRADA`; Javadoc por constante; cero dependencias externas (solo `java.*` implícitas).
 - `app/src/main/java/com/localcash/domain/error/BusinessRuleException.java` (T7) — excepción `extends RuntimeException` que transporta `ErrorCode` (`getErrorCode()`); mensaje técnico por defecto `"Regla de negocio violada: <CODIGO>"`; sin dependencias Android.
 - `app/src/main/java/com/localcash/domain/service/TransaccionService.java` (T7) — servicio `final` con constructor privado y métodos `static`: `validarTransaccion(Transaccion, Cuenta)` lanza `BusinessRuleException` con `MONTO_INVALIDO` (monto nulo o ≤ 0), `CUENTA_NO_ENCONTRADA` (cuenta nula) o `SALDO_INSUFICIENTE` (EGRESO con `saldo < monto`, vía `compareTo`); `calcularNuevoSaldo(Cuenta, Transaccion)` retorna `BigDecimal` (add para INGRESO, subtract para EGRESO) y lanza `IllegalStateException` si el tipo está fuera del dominio cerrado.
+- `app/src/test/java/com/localcash/domain/service/TransaccionServiceTest.java` (T8) — JUnit 4 puro (JVM, sin Android): 8 tests — los 4 mínimos de `tasks.md` (ingreso suma 1_000_000 + 50_000 = 1_050_000; egreso resta → 950_000; egreso > saldo → `SALDO_INSUFICIENTE`; monto 0 y negativo → `MONTO_INVALIDO`) + `testCuentaNulaLanzaExcepcion` (`CUENTA_NO_ENCONTRADA` en validar y calcular), `testTransaccionNulaLanzaExcepcion` (`MONTO_INVALIDO` en validar y calcular), `testEgresoIgualAlSaldoPermitido` (frontera `>=` → saldo 0) y `testTipoFueraDeDominioLanzaIllegalState` (dominio cerrado). Helpers con `BigDecimal` literales String; aserciones por `compareTo`.
 
 **Modificados:**
 
@@ -156,6 +159,12 @@
 25. **Comparaciones monetarias con `compareTo`, nunca `equals`, en `BigDecimal`**
     _Justificación:_ `BigDecimal.equals` compara también la escala (`1000` ≠ `1000.00`), lo que produciría falsos negativos en `SALDO_INSUFICIENTE`. `compareTo` compara por valor: `saldo.compareTo(monto) >= 0` significa exactamente "el saldo alcanza". Igual criterio para `monto > 0`.
 
+26. **Tests: los 4 mínimos de `tasks.md` T8 + 4 complementarios (8 en total)**
+    _Justificación:_ Los 4 pedidos dejan ramas sin cubrir (nulos, frontera `saldo == monto`, tipo fuera de dominio): los `throw` no ejecutados dejaban la cobertura de `TransaccionService` en el borde del 70%, y el criterio de salida exige ≥70% **garantizado**. Con `testCuentaNulaLanzaExcepcion`, `testTransaccionNulaLanzaExcepcion`, `testEgresoIgualAlSaldoPermitido` y `testTipoFueraDeDominioLanzaIllegalState` se ejecutan todos los caminos del servicio. Los tests complementarios están en la misma clase y se marcan con un comentario de sección (no cambian el alcance de la tarea: siguen siendo tests de T8).
+
+27. **Aserciones monetarias por `compareTo` y montos con literales String en `BigDecimal`**
+    _Justificación:_ `assertEquals(BigDecimal, BigDecimal)` usa `equals` (sensible a escala) y puede fallar en verde por una diferencia de formato, no de valor: `assertEquals(..., 0, esperado.compareTo(obtenido))` compara valor, coherente con la decisión #25 del servicio. `new BigDecimal("50000")` (String) en vez de `new BigDecimal(50000.0)`/`double`: evita el error de representación binaria prohibido por `.agent.md` §6.10.
+
 ---
 
 ## Lecciones Aprendidas
@@ -177,25 +186,25 @@
 - **T6:** Un enum sin dependencias es la forma más barata de código de error tipado: cero costo en runtime, validación en compilación y Javadoc por constante como documentación viva de los casos de negocio.
 - **T7:** `BigDecimal.equals` es una trampa en validaciones monetarias (compara escala, no valor): siempre `compareTo`. Un test futuro en T8 debe cubrir explícitamente `monto = 0` y egreso exactamente igual al saldo (borde `>=`, que pasa).
 - **T7:** Verificación de arquitectura con `grep "^import" domain/` tras el build: todos los imports son `java.*` o `com.localcash.domain.*` — regla §5.1 cumplida y comprobable en un comando.
+- **T8:** El resultado verificable de los tests está en `app/build/test-results/testDebugUnitTest/TEST-<class>.xml` (`tests=... failures=... errors=...`): leer ese atributo es la prueba dura de "en verde", más fiable que confiar en el resumen de la consola. Aquí: `tests="8" skipped="0" failures="0" errors="0"`.
+- **T8:** `assertThrows` existe desde JUnit 4.13 (el proyecto usa 4.13.2 vía `libs.junit` del catálogo de versiones): permite asertar el `ErrorCode` del fallo sin try/catch + `fail()`, escribiendo tests más legibles.
+- **T8:** Los tests de JVM pura no requieren `connectedCheck` ni emulador: `testDebugUnitTest` compila y ejecuta todo en ~4s, ideal como puerta de calidad rápida en cada iteración.
 
 ---
 
 ## Próximos Pasos
 
-1. **T8 — Tests unitarios de `TransaccionService`:** crear `app/src/test/java/com/localcash/domain/service/TransaccionServiceTest.java` con:
-   - `testIngresoAumentaSaldo()` → saldo sube con `add`
-   - `testEgresoDisminuyeSaldo()` → saldo baja con `subtract`
-   - `testEgresoConSaldoInsuficienteLanzaExcepcion()` → `BusinessRuleException` con `ErrorCode.SALDO_INSUFICIENTE`
-   - `testMontoInvalidoLanzaExcepcion()` → `BusinessRuleException` con `ErrorCode.MONTO_INVALIDO`
-   - Criterio: tests en verde, cobertura ≥70% en `TransaccionService`
+1. **T9 — Tests unitarios de DAOs:** crear `app/src/test/java/com/localcash/data/dao/CuentaDaoTest.java` y `TransaccionDaoTest.java`:
+   - Usar `Room.inMemoryDatabaseBuilder()` (`room-testing` ya está en `testImplementation`, T1)
+   - `CuentaDaoTest`: insertar cuenta → `getAll()` la retorna; `updateSaldo` → verificación de actualización
+   - `TransaccionDaoTest`: insertar transacción → `getByCuentaId()` la retorna
+   - Criterio: tests en verde, cobertura ≥70% en DAOs
 
-2. **T9 — Tests unitarios de DAOs:** `CuentaDaoTest` y `TransaccionDaoTest` con `Room.inMemoryDatabaseBuilder()`
+2. **T10 — `SeedDataInitializer.java`** (callback `onCreate` con cuenta "Efectivo Demo" 1_000_000L) y registrarlo en `AppDatabase` (quitar el `// TODO`)
 
-3. **T10 — `SeedDataInitializer.java`** (callback `onCreate` con cuenta "Efectivo Demo" 1_000_000L) y registrarlo en `AppDatabase` (quitar el `// TODO`)
+3. Ejecutar `./gradlew testDebugUnitTest assembleDebug` tras cada fase. **No tocar UI hasta la próxima sesión.**
 
-4. Ejecutar `./gradlew assembleDebug` tras cada fase. **No tocar UI hasta la próxima sesión.**
-
-5. **Pendiente documental (T19):** reconciliar el esquema de la feature con `data-model.md` (subconjunto de entidades, `fecha long` vs `fecha_hora TEXT`) — regla de sincronización del propio documento.
+4. **Pendiente documental (T19):** reconciliar el esquema de la feature con `data-model.md` (subconjunto de entidades, `fecha long` vs `fecha_hora TEXT`) — regla de sincronización del propio documento. También en T19: medir cobertura real (Jacoco) de `data/` y `domain/` para confirmar ≥70%.
 
 ---
 
@@ -210,7 +219,7 @@
 | T5 | Crear modelos de dominio en `domain/model/` | ✅ Completado | 2026-10-07 |
 | T6 | Crear códigos de error en `domain/error/ErrorCode.java` | ✅ Completado | 2026-10-07 |
 | T7 | Crear `TransaccionService.java` en `domain/service/` | ✅ Completado | 2026-10-07 |
-| T8 | Tests unitarios para `TransaccionService` | ⬜ Pendiente | — |
+| T8 | Tests unitarios para `TransaccionService` | ✅ Completado | 2026-10-07 |
 | T9 | Tests unitarios para DAOs | ⬜ Pendiente | — |
 | T10 | Crear `SeedDataInitializer.java` en `data/db/` | ⬜ Pendiente | — |
 | T11 | Crear menú `bottom_nav_menu.xml` | ⬜ Pendiente | — |
