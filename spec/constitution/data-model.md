@@ -42,7 +42,7 @@ construcción dependiente de un servidor remoto, conforme a los anti-objetivos d
 
 ---
 
-## 2. Diagrama Entidad-Relación (código como fuente de verdad)
+/renam
 
 > *Guía:* Dibuja el diagrama en **Mermaid** dentro de este bloque. No pegues imágenes binarias
 > como única fuente: el texto versiona, se revisa en PR y los agentes pueden leerlo. Si además
@@ -143,6 +143,7 @@ erDiagram
 **Imagen renderizada (opcional, complementaria):**
 ![Diagrama Entidad-Relacional de LocalCash](diagrams/erd-localcash.svg)
 
+
 ### 2.1 Lectura de las cardinalidades
 
 | Relación                                  | Cardinalidad | Qué significa en el dominio                                                                    |
@@ -165,7 +166,7 @@ erDiagram
 > imputarse a un ítem). Ambas decisiones son coherentes con el verbo del diagrama: *genera* y
 > *asigna elemento a*.
 
----
+
 
 ## 3. Diccionario de Entidades
 
@@ -175,23 +176,23 @@ erDiagram
 
 > **Adaptación de esta columna al proyecto.** El stack ya está congelado en `tech-stack.md`, así que
 > la columna *Tipo lógico* de la plantilla se materializa como **Tipo SQLite**: el tipo lógico sigue
-> siendo legible porque cada celda indica su unidad (centavos, grados, unidades, ISO-8601). Del
+> siendo legible porque cada celda indica su unidad (pesos CLP, grados, unidades, ISO-8601). Del
 > mismo modo, *Clave* y las restricciones se fusionan en **Clave / Restricción** (PK/FK, `NOT NULL`,
 > `DEFAULT`, `CHECK`) y la *regla de negocio* se integra en la última columna. El resto de la
 > estructura —propósito, ciclo de vida, índices y eliminación por entidad— se mantiene sin cambios.
 
 ### Convención de tipos y precisión financiera
 
-| Familia de columnas                        | Tipo SQLite         | Unidad                                | Por qué                                                                                                                             |
-|--------------------------------------------|---------------------|---------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
-| Montos, saldos y precios                   | `INTEGER`           | centavos (unidad mínima de `moneda`)  | Aritmética exacta: el saldo se acumula por sumas repetidas y el reparto debe cuadrar al centavo. En IEEE 754 (`REAL`), `0.1 + 0.2 = 0.30000000000000004` y el error aparecería en el saldo que ve el usuario. |
-| Coordenadas                                | `REAL`              | grados WGS84 (`double`)               | Es el tipo que consume `osmdroid` (`GeoPoint`), sin conversión por lectura. A 7 decimales la resolución es de ~1 cm, muy por debajo del error del GPS. |
-| Fechas y horas                              | `TEXT`              | ISO-8601 UTC                          | El orden lexicográfico coincide con el cronológico, así que `ORDER BY fecha_hora` usa el índice sin conversión y el `.db` exportado queda legible. |
-| Estados                                    | `TEXT` + `CHECK`    | dominio cerrado                       | El motor rechaza valores fuera de dominio en el punto de escritura.                                                                 |
-| Cantidades de producto                     | `INTEGER`           | unidades                              | Es un conteo, no dinero: por eso no lleva centavos ni `REAL`.                                                                      |
-| Ids                                        | `INTEGER`           | correlativo `AUTOINCREMENT`           | Monótonos y nunca reutilizados, para que un respaldo importado no colisione con referencias ya guardadas.                           |
+| Familia de columnas | Tipo SQLite | Unidad | Por qué |
+|---|---|---|---|
+| Montos, saldos y precios | `INTEGER` | pesos CLP (unidad mínima, sin centavos en circulación desde 1984) | Aritmética exacta: el saldo se acumula por sumas repetidas y el reparto debe cuadrar al peso. En IEEE 754 (`REAL`), `0.1 + 0.2 = 0.30000000000000004` y el error aparecería en el saldo que ve el usuario. |
+| Coordenadas | `REAL` | grados WGS84 (`double`) | Es el tipo que consume `osmdroid` (`GeoPoint`), sin conversión por lectura. A 7 decimales la resolución es de ~1 cm, muy por debajo del error del GPS. |
+| Fechas y horas | `TEXT` | ISO-8601 UTC | El orden lexicográfico coincide con el cronológico, así que `ORDER BY fecha_hora` usa el índice sin conversión y el `.db` exportado queda legible. |
+| Estados | `TEXT` + `CHECK` | dominio cerrado | El motor rechaza valores fuera de dominio en el punto de escritura. |
+| Cantidades de producto | `INTEGER` | unidades | Es un conteo, no dinero: por eso no lleva centavos ni `REAL`. |
+| Ids | `INTEGER` | correlativo `AUTOINCREMENT` | Monótonos y nunca reutilizados, para que un respaldo importado no colisione con referencias ya guardadas. |
 
-**Regla de conversión:** el paso de `BigDecimal` a centavos ocurre **solo** en la capa de dominio, en
+**Regla de conversión:** el paso de `BigDecimal` a pesos CLP ocurre **solo** en la capa de dominio, en
 un único par de funciones; ningún DAO acepta `double`. Ningún DAO escribe `CUENTAS.saldo_actual`
 leyendo antes el valor: se actualiza con aritmética atómica (§4.2).
 
@@ -202,13 +203,13 @@ leyendo antes el valor: se actualiza con aritmética atómica (§4.2).
 - **Ciclo de vida:** creada por el usuario (`alta manual`, sin importación de la agenda del sistema);
   eliminable con `RESTRICT` mientras tenga compromisos (§4.2). Se edita en cualquier momento.
 
-| Campo      | Tipo SQLite | Clave / Restricción                                    | Nullable | Descripción y regla de negocio                                                                       |
-|------------|-------------|--------------------------------------------------------|----------|------------------------------------------------------------------------------------------------------|
-| `id`       | `INTEGER`   | `PK` · `AUTOINCREMENT`                                 | No       | Identificador local, generado por el motor.                                                           |
-| `nombre`   | `TEXT`      | `NOT NULL` · `CHECK (length(trim(nombre)) > 0)`         | No       | Nombre visible. Obligatorio y no vacío: un contacto anónimo no aporta nada en un reparto de deudas.   |
-| `telefono` | `TEXT`      | `COLLATE NOCASE` · índice único parcial                | Sí       | Identificador opcional. `NOCASE` e índice único ignoran los `NULL`, así que puede quedar vacío sin estorbar. |
-| `email`    | `TEXT`      | `COLLATE NOCASE` · índice único parcial                | Sí       | Identificador opcional con las mismas reglas que `telefono`.                                          |
-| `notas`    | `TEXT`      | —                                                      | Sí       | Notas libres; no se indexa ni se busca.                                                               |
+| Campo | Tipo SQLite | Clave / Restricción | Nullable | Descripción y regla de negocio |
+|---|---|---|---|---|
+| `id` | `INTEGER` | `PK` · `AUTOINCREMENT` | No | Identificador local, generado por el motor. |
+| `nombre` | `TEXT` | `NOT NULL` · `CHECK (length(trim(nombre)) > 0)` | No | Nombre visible. Obligatorio y no vacío: un contacto anónimo no aporta nada en un reparto de deudas. |
+| `telefono` | `TEXT` | `COLLATE NOCASE` · índice único parcial | Sí | Identificador opcional. `NOCASE` e índice único ignoran los `NULL`, así que puede quedar vacío sin estorbar. |
+| `email` | `TEXT` | `COLLATE NOCASE` · índice único parcial | Sí | Identificador opcional con las mismas reglas que `telefono`. |
+| `notas` | `TEXT` | — | Sí | Notas libres; no se indexa ni se busca. |
 
 - **Índices:** `ux_contactos_telefono` y `ux_contactos_email`, ambos únicos parciales
   (`WHERE ... IS NOT NULL`), para impedir que el mismo contacto se capture dos veces.
@@ -224,14 +225,14 @@ leyendo antes el valor: se actualiza con aritmética atómica (§4.2).
 - **Ciclo de vida:** creada por el usuario; `saldo_inicial` es inmutable tras la creación (cambiarlo
   exige recálculo explícito); eliminable solo junto con todos sus movimientos.
 
-| Campo           | Tipo SQLite | Clave / Restricción                                            | Nullable | Descripción y regla de negocio                                                                                        |
-|-----------------|-------------|----------------------------------------------------------------|----------|--------------------------------------------------------------------------------------------------------------------------|
-| `id`            | `INTEGER`   | `PK` · `AUTOINCREMENT`                                         | No       | Identificador local.                                                                                                   |
-| `nombre`        | `TEXT`      | `NOT NULL` · `CHECK (length(trim(nombre)) > 0)`                 | No       | Nombre visible ("Efectivo", "Ahorro BCC").                                                                             |
-| `tipo_cuenta`   | `TEXT`      | `NOT NULL` · `CHECK IN ('efectivo','ahorro','tarjeta','otro')` | No       | Categoría usada para agrupar en el panel principal. Dominio cerrado.                                                   |
-| `saldo_inicial` | `INTEGER`   | `NOT NULL` · `DEFAULT 0` · centavos                            | No       | Saldo de apertura en centavos. La creación inserta `saldo_actual = saldo_inicial` en la misma transacción.            |
-| `saldo_actual`  | `INTEGER`   | `NOT NULL` · `DEFAULT 0` · centavos                            | No       | Proyección materializada del saldo. Puede ser **negativo** (descubierto): por eso no lleva `CHECK` de positividad. Solo se actualiza con aritmética atómica. |
-| `moneda`        | `TEXT`      | `NOT NULL` · `DEFAULT 'USD'` · `CHECK (length(moneda) = 3)`     | No       | Código ISO 4217 de la unidad de los centavos de esta cuenta. No hay conversión entre monedas.                          |
+| Campo | Tipo SQLite | Clave / Restricción | Nullable | Descripción y regla de negocio |
+|---|---|---|---|---|
+| `id` | `INTEGER` | `PK` · `AUTOINCREMENT` | No | Identificador local. |
+| `nombre` | `TEXT` | `NOT NULL` · `CHECK (length(trim(nombre)) > 0)` | No | Nombre visible ("Efectivo", "Ahorro BCC"). |
+| `tipo_cuenta` | `TEXT` | `NOT NULL` · `CHECK IN ('efectivo','ahorro','tarjeta','otro')` | No | Categoría usada para agrupar en el panel principal. Dominio cerrado. |
+| `saldo_inicial` | `INTEGER` | `NOT NULL` · `DEFAULT 0` · pesos CLP | No | Saldo de apertura en pesos CLP. La creación inserta `saldo_actual = saldo_inicial` en la misma transacción. |
+| `saldo_actual` | `INTEGER` | `NOT NULL` · `DEFAULT 0` · pesos CLP | No | Proyección materializada del saldo. Puede ser **negativo** (descubierto): por eso no lleva `CHECK` de positividad. Solo se actualiza con aritmética atómica. |
+| `moneda` | `TEXT` | `NOT NULL` · `DEFAULT 'CLP'` · `CHECK (length(moneda) = 3)` | No | Código ISO 4217 de la unidad de los pesos de esta cuenta. No hay conversión entre monedas. |
 
 - **Índices:** `idx_cuentas_tipo` sobre `tipo_cuenta`, para el agrupado del panel principal.
 - **Eliminación:** FÍSICA, con `ON DELETE CASCADE` desde `TRANSACCIONES` → Justificación: la cuenta
@@ -245,12 +246,12 @@ leyendo antes el valor: se actualiza con aritmética atómica (§4.2).
 - **Ciclo de vida:** creada por semilla en el primer arranque; editable por el usuario. Eliminar una
   categoría nunca destruye movimientos: los deja sin clasificar.
 
-| Campo               | Tipo SQLite | Clave / Restricción                                 | Nullable | Descripción y regla de negocio                                                                                     |
-|---------------------|-------------|-----------------------------------------------------|----------|------------------------------------------------------------------------------------------------------------------|
-| `id`                | `INTEGER`   | `PK` · `AUTOINCREMENT`                              | No       | Identificador local.                                                                                              |
-| `nombre`            | `TEXT`      | `NOT NULL` · `CHECK (length(trim(nombre)) > 0)`      | No       | Etiqueta visible ("Alimentación"). Se guarda normalizada en minúsculas y sin acentos por convención del dominio.  |
-| `icono`             | `TEXT`      | —                                                   | Sí       | Nombre del recurso (`R.drawable.ic_...`), no una ruta. `NULL` = la app usa su icono por defecto.                  |
-| `tipo_transaccion`  | `TEXT`      | `NOT NULL` · `CHECK IN ('ingreso','egreso')`         | No       | Solo admite el tipo de movimiento al que sirve: una categoría de egreso no puede etiquetar un ingreso.             |
+| Campo | Tipo SQLite | Clave / Restricción | Nullable | Descripción y regla de negocio |
+|---|---|---|---|---|
+| `id` | `INTEGER` | `PK` · `AUTOINCREMENT` | No | Identificador local. |
+| `nombre` | `TEXT` | `NOT NULL` · `CHECK (length(trim(nombre)) > 0)` | No | Etiqueta visible ("Alimentación"). Se guarda normalizada en minúsculas y sin acentos por convención del dominio. |
+| `icono` | `TEXT` | — | Sí | Nombre del recurso (`R.drawable.ic_...`), no una ruta. `NULL` = la app usa su icono por defecto. |
+| `tipo_transaccion` | `TEXT` | `NOT NULL` · `CHECK IN ('ingreso','egreso')` | No | Solo admite el tipo de movimiento al que sirve: una categoría de egreso no puede etiquetar un ingreso. |
 
 - **Índices:** `ux_categorias_nombre_tipo` (único) e `idx_categorias_tipo` (para pintar la lista del
   formulario de alta de movimiento).
@@ -267,18 +268,18 @@ leyendo antes el valor: se actualiza con aritmética atómica (§4.2).
   insertarlo, lo que rehace el saldo). Un movimiento con `COMPRAS_GRUPALES` asociada se borra en
   cascada con ella.
 
-| Campo              | Tipo SQLite | Clave / Restricción                                                                    | Nullable | Descripción y regla de negocio                                                                                  |
-|--------------------|-------------|----------------------------------------------------------------------------------------|----------|---------------------------------------------------------------------------------------------------------------|
-| `id`               | `INTEGER`   | `PK` · `AUTOINCREMENT`                                                                 | No       | Identificador local.                                                                                            |
-| `cuenta_id`        | `INTEGER`   | `FK → CUENTAS(id)` · `NOT NULL` · `ON DELETE CASCADE`                                  | No       | Cuenta afectada. Sin cuenta no hay movimiento.                                                                  |
-| `categoria_id`     | `INTEGER`   | `FK → CATEGORIAS(id)` · `ON DELETE SET NULL`                                           | Sí       | Clasificación opcional. Borrar la categoría desclasifica el movimiento, no lo destruye.                        |
-| `monto`            | `INTEGER`   | `NOT NULL` · `CHECK (monto > 0)` · centavos                                             | No       | Importe **siempre positivo**: el signo lo determina `tipo`, lo que hace el filtro y el índice independientes del signo. |
-| `tipo`             | `TEXT`      | `NOT NULL` · `CHECK IN ('ingreso','egreso')`                                            | No       | Naturaleza del movimiento. No existe `transferencia` porque `mission.md` §3 excluye transferencias entre cuentas propias. |
-| `fecha_hora`       | `TEXT`      | `NOT NULL` · `CHECK` de formato `YYYY-MM-DDTHH:MM:SSZ`                                 | No       | Momento en UTC. Es la columna de orden del historial.                                                           |
-| `descripcion`      | `TEXT`      | —                                                                                      | Sí       | Concepto libre ("Supermercado del barrio").                                                                      |
-| `latitud`          | `REAL`      | `CHECK (-90.0 <= latitud <= 90.0)` · grados                                             | Sí       | Latitud WGS84 tal cual la consume `osmdroid`. `NULL` = movimiento no geolocalizado.                             |
-| `longitud`         | `REAL`      | `CHECK (-180.0 <= longitud <= 180.0)` · grados                                          | Sí       | Longitud WGS84 con el rango completo del planeta.                                                                |
-| `direccion_lugar`  | `TEXT`      | —                                                                                      | Sí       | Dirección legible resuelta en el punto. Descriptiva: no se usa para consultas ni geocodificación.                |
+| Campo | Tipo SQLite | Clave / Restricción | Nullable | Descripción y regla de negocio |
+|---|---|---|---|---|
+| `id` | `INTEGER` | `PK` · `AUTOINCREMENT` | No | Identificador local. |
+| `cuenta_id` | `INTEGER` | `FK → CUENTAS(id)` · `NOT NULL` · `ON DELETE CASCADE` | No | Cuenta afectada. Sin cuenta no hay movimiento. |
+| `categoria_id` | `INTEGER` | `FK → CATEGORIAS(id)` · `ON DELETE SET NULL` | Sí | Clasificación opcional. Borrar la categoría desclasifica el movimiento, no lo destruye. |
+| `monto` | `INTEGER` | `NOT NULL` · `CHECK (monto > 0)` · pesos CLP | No | Importe **siempre positivo**: el signo lo determina `tipo`, lo que hace el filtro y el índice independientes del signo. |
+| `tipo` | `TEXT` | `NOT NULL` · `CHECK IN ('ingreso','egreso')` | No | Naturaleza del movimiento. No existe `transferencia` porque `mission.md` §3 excluye transferencias entre cuentas propias. |
+| `fecha_hora` | `TEXT` | `NOT NULL` · `CHECK` de formato `YYYY-MM-DDTHH:MM:SSZ` | No | Momento en UTC. Es la columna de orden del historial. |
+| `descripcion` | `TEXT` | — | Sí | Concepto libre ("Supermercado del barrio"). |
+| `latitud` | `REAL` | `CHECK (-90.0 <= latitud <= 90.0)` · grados | Sí | Latitud WGS84 tal cual la consume `osmdroid`. `NULL` = movimiento no geolocalizado. |
+| `longitud` | `REAL` | `CHECK (-180.0 <= longitud <= 180.0)` · grados | Sí | Longitud WGS84 con el rango completo del planeta. |
+| `direccion_lugar` | `TEXT` | — | Sí | Dirección legible resuelta en el punto. Descriptiva: no se usa para consultas ni geocodificación. |
 
 - **Regla de tabla:** `CHECK ((latitud IS NULL) = (longitud IS NULL))` garantiza que la coordenada
   sea **atómica**: nunca media ubicación.
@@ -297,15 +298,15 @@ leyendo antes el valor: se actualiza con aritmética atómica (§4.2).
   `pendiente` y `en_curso`. Al completarse se materializa una `TRANSACCIONES` (y, si hay un tercero
   implicado, una `COMPRAS_GRUPALES`).
 
-| Campo             | Tipo SQLite | Clave / Restricción                                                          | Nullable | Descripción y regla de negocio                                                                 |
-|-------------------|-------------|------------------------------------------------------------------------------|----------|-------------------------------------------------------------------------------------------------|
-| `id`              | `INTEGER`   | `PK` · `AUTOINCREMENT`                                                       | No       | Identificador local.                                                                             |
-| `contacto_id`     | `INTEGER`   | `FK → CONTACTOS(id)` · `NOT NULL` · `ON DELETE RESTRICT`                     | No       | Contacto con el que se planea la compra. `RESTRICT` impide dejar compromisos huérfanos.           |
-| `titulo`          | `TEXT`      | `NOT NULL` · `CHECK (length(trim(titulo)) > 0)`                              | No       | Qué se planea comprar ("regalo de cumpleaños").                                                   |
-| `monto_estimado`  | `INTEGER`   | `CHECK (monto_estimado >= 0)` · centavos                                     | Sí       | Estimación. `NULL` = todavía no cuantificada: es un plan, no un compromiso de gasto.           |
-| `fecha_agendada`  | `TEXT`      | `CHECK` de formato `YYYY-MM-DD`                                              | Sí       | Día previsto. `NULL` = sin día fijado ("algún día de este mes").                               |
-| `estado`          | `TEXT`      | `NOT NULL` · `DEFAULT 'pendiente'` · `CHECK IN ('pendiente','en_curso','completada','cancelada')` | No | Ciclo de vida de la planificación.                                                             |
-| `notas`           | `TEXT`      | —                                                                            | Sí       | Observaciones libres.                                                                            |
+| Campo | Tipo SQLite | Clave / Restricción | Nullable | Descripción y regla de negocio |
+|---|---|---|---|---|
+| `id` | `INTEGER` | `PK` · `AUTOINCREMENT` | No | Identificador local. |
+| `contacto_id` | `INTEGER` | `FK → CONTACTOS(id)` · `NOT NULL` · `ON DELETE RESTRICT` | No | Contacto con el que se planea la compra. `RESTRICT` impide dejar compromisos huérfanos. |
+| `titulo` | `TEXT` | `NOT NULL` · `CHECK (length(trim(titulo)) > 0)` | No | Qué se planea comprar ("regalo de cumpleaños"). |
+| `monto_estimado` | `INTEGER` | `CHECK (monto_estimado >= 0)` · pesos CLP | Sí | Estimación. `NULL` = todavía no cuantificada: es un plan, no un compromiso de gasto. |
+| `fecha_agendada` | `TEXT` | `CHECK` de formato `YYYY-MM-DD` | Sí | Día previsto. `NULL` = sin día fijado ("algún día de este mes"). |
+| `estado` | `TEXT` | `NOT NULL` · `DEFAULT 'pendiente'` · `CHECK IN ('pendiente','en_curso','completada','cancelada')` | No | Ciclo de vida de la planificación. |
+| `notas` | `TEXT` | — | Sí | Observaciones libres. |
 
 - **Índices:** `idx_compras_planificadas_fecha (fecha_agendada, id)` parcial
   (`WHERE estado = 'pendiente'`) para la agenda, y `ux_compras_planificadas_contacto_fecha`, único
@@ -323,15 +324,15 @@ leyendo antes el valor: se actualiza con aritmética atómica (§4.2).
   `abierta → anulada`; `anulada` es terminal y se elimina con sus ítems y deudas en cascada. No hay
   estado `parcial`: se deriva de las deudas (§5.3).
 
-| Campo                     | Tipo SQLite | Clave / Restricción                                                          | Nullable | Descripción y regla de negocio                                                                                 |
-|---------------------------|-------------|------------------------------------------------------------------------------|----------|--------------------------------------------------------------------------------------------------------------|
-| `id`                      | `INTEGER`   | `PK` · `AUTOINCREMENT`                                                       | No       | Identificador local.                                                                                          |
-| `transaccion_id`          | `INTEGER`   | `FK → TRANSACCIONES(id)` · `UNIQUE` · `ON DELETE CASCADE`                    | Sí       | Movimiento que originó la compra. `NULL` = compra anotada pero aún no abonada a una cuenta. `UNIQUE` implementa el 1:0..1 del ERD. |
-| `pagado_por_contacto_id`  | `INTEGER`   | `FK → CONTACTOS(id)` · `ON DELETE RESTRICT`                                 | Sí       | Quién puso el dinero. `NULL` = **pagó el usuario principal** (§4.1). `RESTRICT` para que borrar al pagador no reescriba el pasado. |
-| `titulo`                  | `TEXT`      | `NOT NULL` · `CHECK (length(trim(titulo)) > 0)`                              | No       | Nombre de la compra ("Cena del viernes").                                                                    |
-| `monto_total`             | `INTEGER`   | `NOT NULL` · `CHECK (monto_total > 0)` · centavos                            | No       | Total. Debe igualar la suma de `ITEMS_COMPRA.monto_subtotal` (invariante I-3).                               |
-| `fecha`                   | `TEXT`      | `NOT NULL` · `CHECK` de formato `YYYY-MM-DD`                                 | No       | Día de la compra. A diferencia de `fecha_hora`, no lleva hora: es un evento con fecha civil.                  |
-| `estado`                  | `TEXT`      | `NOT NULL` · `DEFAULT 'abierta'` · `CHECK IN ('abierta','liquidada','anulada')` | No  | Solo tres estados: la parcialidad se **deriva** de las deudas, no se almacena (§5.3).                        |
+| Campo | Tipo SQLite | Clave / Restricción | Nullable | Descripción y regla de negocio |
+|---|---|---|---|---|
+| `id` | `INTEGER` | `PK` · `AUTOINCREMENT` | No | Identificador local. |
+| `transaccion_id` | `INTEGER` | `FK → TRANSACCIONES(id)` · `UNIQUE` · `ON DELETE CASCADE` | Sí | Movimiento que originó la compra. `NULL` = compra anotada pero aún no abonada a una cuenta. `UNIQUE` implementa el 1:0..1 del ERD. |
+| `pagado_por_contacto_id` | `INTEGER` | `FK → CONTACTOS(id)` · `ON DELETE RESTRICT` | Sí | Quién puso el dinero. `NULL` = **pagó el usuario principal** (§4.1). `RESTRICT` para que borrar al pagador no reescriba el pasado. |
+| `titulo` | `TEXT` | `NOT NULL` · `CHECK (length(trim(titulo)) > 0)` | No | Nombre de la compra ("Cena del viernes"). |
+| `monto_total` | `INTEGER` | `NOT NULL` · `CHECK (monto_total > 0)` · pesos CLP | No | Total. Debe igualar la suma de `ITEMS_COMPRA.monto_subtotal` (invariante I-3). |
+| `fecha` | `TEXT` | `NOT NULL` · `CHECK` de formato `YYYY-MM-DD` | No | Día de la compra. A diferencia de `fecha_hora`, no lleva hora: es un evento con fecha civil. |
+| `estado` | `TEXT` | `NOT NULL` · `DEFAULT 'abierta'` · `CHECK IN ('abierta','liquidada','anulada')` | No | Solo tres estados: la parcialidad se **deriva** de las deudas, no se almacena (§5.3). |
 
 - **Reglas de tabla:** `CHECK (estado = 'abierta' OR transaccion_id IS NOT NULL)` impide dar por
   liquidada o anulada una compra que nunca tuvo asiento contable.
@@ -349,14 +350,14 @@ leyendo antes el valor: se actualiza con aritmética atómica (§4.2).
 - **Ciclo de vida:** creado al confirmar la compra; su eliminación deja vivas las deudas imputadas a
   él, que pasan a ser deudas de la compra sin ítem concreto.
 
-| Campo               | Tipo SQLite | Clave / Restricción                                                          | Nullable | Descripción y regla de negocio                                                                                       |
-|---------------------|-------------|------------------------------------------------------------------------------|----------|--------------------------------------------------------------------------------------------------------------------------|
-| `id`                | `INTEGER`   | `PK` · `AUTOINCREMENT`                                                       | No       | Identificador local.                                                                                                 |
-| `compra_grupal_id`  | `INTEGER`   | `FK → COMPRAS_GRUPALES(id)` · `NOT NULL` · `ON DELETE CASCADE`               | No       | Compra a la que pertenece. Sin compra, un ítem no significa nada.                                                  |
-| `descripcion`       | `TEXT`      | `NOT NULL` · `CHECK (length(trim(descripcion)) > 0)`                         | No       | Nombre del producto o concepto ("cerveza", "cuotas del club").                                                     |
-| `precio_unitario`   | `INTEGER`   | `NOT NULL` · `CHECK (>= 0 AND <= 100000000)` · centavos                     | No       | Precio de **una** unidad. El techo protege el producto del invariante I-2 contra desbordamiento de `INTEGER`.      |
-| `cantidad`          | `INTEGER`   | `NOT NULL` · `CHECK (> 0 AND <= 10000)` · unidades                          | No       | Unidades compradas. Es un conteo, no dinero. El techo mantiene el producto dentro de `INTEGER`.                     |
-| `monto_subtotal`    | `INTEGER`   | `NOT NULL` · `CHECK (>= 0)` · centavos                                       | No       | Subtotal **almacenado** (para no recalcular en el listado) y **verificado** por `CHECK (monto_subtotal = precio_unitario * cantidad)`. Exacto porque es aritmética entera. |
+| Campo | Tipo SQLite | Clave / Restricción | Nullable | Descripción y regla de negocio |
+|---|---|---|---|---|
+| `id` | `INTEGER` | `PK` · `AUTOINCREMENT` | No | Identificador local. |
+| `compra_grupal_id` | `INTEGER` | `FK → COMPRAS_GRUPALES(id)` · `NOT NULL` · `ON DELETE CASCADE` | No | Compra a la que pertenece. Sin compra, un ítem no significa nada. |
+| `descripcion` | `TEXT` | `NOT NULL` · `CHECK (length(trim(descripcion)) > 0)` | No | Nombre del producto o concepto ("cerveza", "cuotas del club"). |
+| `precio_unitario` | `INTEGER` | `NOT NULL` · `CHECK (>= 0 AND <= 100000000)` · pesos CLP | No | Precio de **una** unidad. El techo protege el producto del invariante I-2 contra desbordamiento de `INTEGER`. |
+| `cantidad` | `INTEGER` | `NOT NULL` · `CHECK (> 0 AND <= 10000)` · unidades | No | Unidades compradas. Es un conteo, no dinero. El techo mantiene el producto dentro de `INTEGER`. |
+| `monto_subtotal` | `INTEGER` | `NOT NULL` · `CHECK (>= 0)` · pesos CLP | No | Subtotal **almacenado** (para no recalcular en el listado) y **verificado** por `CHECK (monto_subtotal = precio_unitario * cantidad)`. Exacto porque es aritmética entera. |
 
 - **Índices:** `idx_items_compra (compra_grupal_id)`, cubierto por la clave foránea pero declarado
   explícitamente para no depender del comportamiento de la versión de SQLite del dispositivo.
@@ -371,15 +372,15 @@ leyendo antes el valor: se actualiza con aritmética atómica (§4.2).
 - **Ciclo de vida:** `pendiente → parcial → liquidado`. La transición se dispara al registrar un
   abono; `parcial → pendiente` está **prohibido** porque significaría perder un registro de cobro.
 
-| Campo               | Tipo SQLite | Clave / Restricción                                                                                  | Nullable | Descripción y regla de negocio                                                                                                                                  |
-|---------------------|-------------|----------------------------------------------------------------------------------------------------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `id`                | `INTEGER`   | `PK` · `AUTOINCREMENT`                                                                               | No       | Identificador local.                                                                                                                                              |
-| `compra_grupal_id`  | `INTEGER`   | `FK → COMPRAS_GRUPALES(id)` · `NOT NULL` · `ON DELETE CASCADE`                                       | No       | Compra que originó la deuda. Una deuda sin compra no tiene significado de dominio.                                                                              |
-| `item_id`           | `INTEGER`   | `FK → ITEMS_COMPRA(id)` · `ON DELETE SET NULL`                                                       | Sí       | Ítem al que se imputa. `NULL` = deuda sobre el total de la compra ("la cena se dividió a partes iguales sin apuntar qué pidió").                                   |
-| `contacto_id`       | `INTEGER`   | `FK → CONTACTOS(id)` · `NOT NULL` · `ON DELETE RESTRICT`                                              | No       | Contacto deudor. `RESTRICT`: borrar a alguien no puede borrar su historial de deudas.                                                                           |
-| `monto_asignado`    | `INTEGER`   | `NOT NULL` · `CHECK (monto_asignado >= 0)` · centavos                                                | No       | Parte del total asignada a este contacto. En el reparto equitativo el resto de centavos se asigna a un participante para cuadrar exacto (I-4).                 |
-| `monto_pagado`      | `INTEGER`   | `NOT NULL` · `DEFAULT 0` · `CHECK (>= 0 AND <= monto_asignado)` · centavos                          | No       | Abono ya recibido por el pagador. Nunca excede lo asignado.                                                                                                        |
-| `estado`            | `TEXT`      | `NOT NULL` · `DEFAULT 'pendiente'` · `CHECK IN ('pendiente','parcial','liquidado')`                   | No       | Estado coherente con `monto_pagado` por `CHECK`. `liquidado` con `monto_asignado = 0` significa "nada que cobrar".                                               |
+| Campo | Tipo SQLite | Clave / Restricción | Nullable | Descripción y regla de negocio |
+|---|---|---|---|---|
+| `id` | `INTEGER` | `PK` · `AUTOINCREMENT` | No | Identificador local. |
+| `compra_grupal_id` | `INTEGER` | `FK → COMPRAS_GRUPALES(id)` · `NOT NULL` · `ON DELETE CASCADE` | No | Compra que originó la deuda. Una deuda sin compra no tiene significado de dominio. |
+| `item_id` | `INTEGER` | `FK → ITEMS_COMPRA(id)` · `ON DELETE SET NULL` | Sí | Ítem al que se imputa. `NULL` = deuda sobre el total de la compra ("la cena se dividió a partes iguales sin apuntar qué pidió"). |
+| `contacto_id` | `INTEGER` | `FK → CONTACTOS(id)` · `NOT NULL` · `ON DELETE RESTRICT` | No | Contacto deudor. `RESTRICT`: borrar a alguien no puede borrar su historial de deudas. |
+| `monto_asignado` | `INTEGER` | `NOT NULL` · `CHECK (monto_asignado >= 0)` · pesos CLP | No | Parte del total asignada a este contacto. En el reparto equitativo el resto de pesos se asigna a un participante para cuadrar exacto (I-4). |
+| `monto_pagado` | `INTEGER` | `NOT NULL` · `DEFAULT 0` · `CHECK (>= 0 AND <= monto_asignado)` · pesos CLP | No | Abono ya recibido por el pagador. Nunca excede lo asignado. |
+| `estado` | `TEXT` | `NOT NULL` · `DEFAULT 'pendiente'` · `CHECK IN ('pendiente','parcial','liquidado')` | No | Estado coherente con `monto_pagado` por `CHECK`. `liquidado` con `monto_asignado = 0` significa "nada que cobrar". |
 
 - **Regla de tabla (garantía central del ciclo de deudas):**
 
@@ -390,16 +391,17 @@ CHECK (
  OR (estado = 'liquidado' AND monto_pagado = monto_asignado)
 )
 ```
+- **Índices:** idx_deudas_contacto_estado (contacto_id, estado) parcial
+(WHERE estado <> 'liquidado'), que es la consulta del panel "quién me debe";
+idx_deudas_compra (compra_grupal_id, contacto_id) para el detalle de una compra; y
+ux_deudas_item, único parcial (WHERE item_id IS NOT NULL), que evita imputar dos veces el
+mismo ítem al mismo contacto. Para el caso item_id IS NULL, la unicidad la verifica la DAO
+(SQLite no admite índices de expresión en el minSdk declarado) y la cubre un test.
+- **Eliminación:** FÍSICA, con ON DELETE CASCADE desde COMPRAS_GRUPALES y ON DELETE SET NULL
+desde ITEMS_COMPRA; bloqueada desde CONTACTOS → Justificación: la deuda identifica a una
+persona y un importe, no es un dato derivable que se pueda recalcular sin contexto.
 
-- **Índices:** `idx_deudas_contacto_estado (contacto_id, estado)` parcial
-  (`WHERE estado <> 'liquidado'`), que es la consulta del panel "quién me debe";
-  `idx_deudas_compra (compra_grupal_id, contacto_id)` para el detalle de una compra; y
-  `ux_deudas_item`, único parcial (`WHERE item_id IS NOT NULL`), que evita imputar dos veces el
-  mismo ítem al mismo contacto. Para el caso `item_id IS NULL`, la unicidad la verifica la DAO
-  (SQLite no admite índices de expresión en el `minSdk` declarado) y la cubre un test.
-- **Eliminación:** FÍSICA, con `ON DELETE CASCADE` desde `COMPRAS_GRUPALES` y `ON DELETE SET NULL`
-  desde `ITEMS_COMPRA`; bloqueada desde `CONTACTOS` → Justificación: la deuda identifica a una
-  persona y un importe, no es un dato derivable que se pueda recalcular sin contexto.
+
 
 ### 3.9 Índices y plan de consultas
 
@@ -415,6 +417,7 @@ CHECK (
 
 **Sentencias `CREATE INDEX` recomendadas** (las que exige el esquema, en el orden de creación del
 Apéndice A):
+
 
 ```sql
 -- Geolocalización: filtro por caja envolvente (bbox) para pintar y filtrar marcas en osmdroid
@@ -479,19 +482,20 @@ CREATE INDEX idx_categorias_tipo
 
 ---
 
+
 ## 4. Relaciones y Cardinalidades
 
-| Origen         | Destino        | Cardinalidad | Semántica de la relación        | Integridad referencial |
-|----------------|----------------|--------------|---------------------------------|------------------------|
-| `CUENTAS`          | `TRANSACCIONES`           | 1:N          | Toda transacción pertenece a una cuenta; sin cuenta no hay movimiento. | `CASCADE` (la cuenta es el dueño de su historial) |
-| `CATEGORIAS`       | `TRANSACCIONES`           | 1:N opcional | Clasifica un movimiento. Opcional: un movimiento puede ir sin categoría.  | `SET NULL` (perder la etiqueta no destruye el dato) |
-| `CONTACTOS`        | `COMPRAS_PLANIFICADAS`    | 1:N          | Una planificación es un compromiso con un contacto.                     | `RESTRICT` (no puede quedar huérfana) |
-| `CONTACTOS`        | `COMPRAS_GRUPALES`        | 1:N opcional | Identifica al pagador de la compra; `NULL` = usuario principal.         | `RESTRICT` (`SET NULL` reescribiría el pasado) |
-| `CONTACTOS`        | `DEUDAS_PARTICIPANTES`    | 1:N          | Identifica al deudor de la deuda.                                       | `RESTRICT` (identidad de una persona) |
-| `TRANSACCIONES`    | `COMPRAS_GRUPALES`        | 1:0..1       | Un movimiento origina a lo sumo una compra grupal.                       | `CASCADE` + `UNIQUE` (asiento y desglose son una realidad) |
-| `COMPRAS_GRUPALES` | `ITEMS_COMPRA`            | 1:N (mín. 1) | La compra se desglosa en ítems.                                          | `CASCADE` (un ítem sin cabecera no significa nada) |
-| `COMPRAS_GRUPALES` | `DEUDAS_PARTICIPANTES`    | 1:0..N       | La compra genera las deudas del reparto.                                 | `CASCADE` (la deuda nace de la compra) |
-| `ITEMS_COMPRA`     | `DEUDAS_PARTICIPANTES`    | 1:0..N       | Un ítem puede imputarse a deudas, y una deuda puede no imputarse.        | `SET NULL` (la deuda sobrevive al ítem) |
+| Origen | Destino | Cardinalidad | Semántica de la relación | Integridad referencial |
+|---|---|---|---|---|
+| `CUENTAS` | `TRANSACCIONES` | 1:N | Toda transacción pertenece a una cuenta; sin cuenta no hay movimiento. | `CASCADE` (la cuenta es el dueño de su historial) |
+| `CATEGORIAS` | `TRANSACCIONES` | 1:N opcional | Clasifica un movimiento. Opcional: un movimiento puede ir sin categoría. | `SET NULL` (perder la etiqueta no destruye el dato) |
+| `CONTACTOS` | `COMPRAS_PLANIFICADAS` | 1:N | Una planificación es un compromiso con un contacto. | `RESTRICT` (no puede quedar huérfana) |
+| `CONTACTOS` | `COMPRAS_GRUPALES` | 1:N opcional | Identifica al pagador de la compra; `NULL` = usuario principal. | `RESTRICT` (`SET NULL` reescribiría el pasado) |
+| `CONTACTOS` | `DEUDAS_PARTICIPANTES` | 1:N | Identifica al deudor de la deuda. | `RESTRICT` (identidad de una persona) |
+| `TRANSACCIONES` | `COMPRAS_GRUPALES` | 1:0..1 | Un movimiento origina a lo sumo una compra grupal. | `CASCADE` + `UNIQUE` (asiento y desglose son una realidad) |
+| `COMPRAS_GRUPALES` | `ITEMS_COMPRA` | 1:N (mín. 1) | La compra se desglosa en ítems. | `CASCADE` (un ítem sin cabecera no significa nada) |
+| `COMPRAS_GRUPALES` | `DEUDAS_PARTICIPANTES` | 1:0..N | La compra genera las deudas del reparto. | `CASCADE` (la deuda nace de la compra) |
+| `ITEMS_COMPRA` | `DEUDAS_PARTICIPANTES` | 1:0..N | Un ítem puede imputarse a deudas, y una deuda puede no imputarse. | `SET NULL` (la deuda sobrevive al ítem) |
 
 > *Guía:* Para relaciones N:M declara explícitamente la tabla/colección intermedia y quién la
 > escribe. Anota toda regla que el motor NO puede imponer (se valida en lógica de negocio).
@@ -524,14 +528,14 @@ Es la distinción central del dominio compartido y la razón de que
   que cada contacto *debe* y `monto_pagado` sus abonos. Nada de eso toca `CUENTAS.saldo_actual`
   hasta que el usuario registre la devolución del pago como movimiento, si decide hacerlo.
 
-| Dimensión                   | Pagador real                                                             | Participante deudor                                                          |
-| --------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
-| Dónde se identifica         | `COMPRAS_GRUPALES.pagado_por_contacto_id` (`NULL` = usuario principal)    | `DEUDAS_PARTICIPANTES.contacto_id` (siempre un contacto, nunca `NULL`)             |
-| Efecto en `CUENTAS`         | Sí: el movimiento altera `saldo_actual`                                   | Ninguno: el saldo del usuario no cambia; solo la deuda entre él y el contacto.      |
-| Cuándo nace                 | Al registrar el movimiento que origina la compra                          | Al desglosar la compra en deudas                                                  |
-| Qué columna lleva el avance | `monto_total` (fijo)                                                      | `monto_pagado` (crece con cada abono)                                             |
-| Estados posibles            | `abierta` · `liquidada` · `anulada`                                       | `pendiente` · `parcial` · `liquidado`                                             |
-| Se elimina con              | La compra grupal (y su movimiento)                                        | La compra grupal                                                                 |
+| Dimensión | Pagador real | Participante deudor |
+|---|---|---|
+| Dónde se identifica | `COMPRAS_GRUPALES.pagado_por_contacto_id` (`NULL` = usuario principal) | `DEUDAS_PARTICIPANTES.contacto_id` (siempre un contacto, nunca `NULL`) |
+| Efecto en `CUENTAS` | Sí: el movimiento altera `saldo_actual` | Ninguno: el saldo del usuario no cambia; solo la deuda entre él y el contacto. |
+| Cuándo nace | Al registrar el movimiento que origina la compra | Al desglosar la compra en deudas |
+| Qué columna lleva el avance | `monto_total` (fijo) | `monto_pagado` (crece con cada abono) |
+| Estados posibles | `abierta` · `liquidada` · `anulada` | `pendiente` · `parcial` · `liquidado` |
+| Se elimina con | La compra grupal (y su movimiento) | La compra grupal |
 
 ### 4.2 Reglas que el motor impone y reglas que solo valida la DAO
 
@@ -551,16 +555,16 @@ propiedad del archivo. Reglas obligatorias:
 **Lo que el motor no puede imponer.** SQLite no admite `CHECK` con subconsultas ni Trigger
 obligatorios, así que las reglas siguientes se validan en la capa de dominio y **requieren test**:
 
-| #   | Invariante                                                                                              | Verificación                                                    |
-| --- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| I-1 | `saldo_actual = saldo_inicial + Σ(ingresos) − Σ(egresos)` de la cuenta                                   | DAO `recalcularSaldo(cuenta_id)` + test Robolectric que compara contra `saldo_actual` tras cada tipo de operación |
-| I-2 | `ITEMS_COMPRA.monto_subtotal = precio_unitario × cantidad`                                                 | `CHECK` del motor (necesita los techos de §3.7 para no desbordar)  |
-| I-3 | `COMPRAS_GRUPALES.monto_total = Σ ITEMS_COMPRA.monto_subtotal`                                            | DAO al confirmar la compra + test de integración                  |
-| I-4 | En toda compra **con reparto**, `Σ DEUDAS_PARTICIPANTES.monto_asignado = COMPRAS_GRUPALES.monto_total`    | DAO al generar el reparto; la división equitativa asigna el resto de centavos a un participante |
-| I-5 | `0 ≤ monto_pagado ≤ monto_asignado` y `estado` coherente con `monto_pagado`                                | `CHECK` del motor (§3.8)                                         |
-| I-6 | Toda `COMPRAS_GRUPALES` tiene ≥ 1 ítem; una compra `abierta` puede no tener deudas (compra propia)         | DAO + test                                                       |
-| I-7 | Adeudado del usuario = `Σ (monto_asignado − monto_pagado)` de las deudas no liquidadas                    | Consulta de balance + test de la fórmula de reparto               |
-| I-8 | `TRANSACCIONES.monto > 0`                                                                                 | `CHECK` del motor (§3.4)                                         |
+| # | Invariante | Verificación |
+|---|---|---|
+| I-1 | `saldo_actual = saldo_inicial + Σ(ingresos) − Σ(egresos)` de la cuenta | DAO `recalcularSaldo(cuenta_id)` + test Robolectric que compara contra `saldo_actual` tras cada tipo de operación |
+| I-2 | `ITEMS_COMPRA.monto_subtotal = precio_unitario × cantidad` | `CHECK` del motor (necesita los techos de §3.7 para no desbordar) |
+| I-3 | `COMPRAS_GRUPALES.monto_total = Σ ITEMS_COMPRA.monto_subtotal` | DAO al confirmar la compra + test de integración |
+| I-4 | En toda compra **con reparto**, `Σ DEUDAS_PARTICIPANTES.monto_asignado = COMPRAS_GRUPALES.monto_total` | DAO al generar el reparto; la división equitativa asigna el resto de pesos a un participante |
+| I-5 | `0 ≤ monto_pagado ≤ monto_asignado` y `estado` coherente con `monto_pagado` | `CHECK` del motor (§3.8) |
+| I-6 | Toda `COMPRAS_GRUPALES` tiene ≥ 1 ítem; una compra `abierta` puede no tener deudas (compra propia) | DAO + test |
+| I-7 | Adeudado del usuario = `Σ (monto_asignado − monto_pagado)` de las deudas no liquidadas | Consulta de balance + test de la fórmula de reparto |
+| I-8 | `TRANSACCIONES.monto > 0` | `CHECK` del motor (§3.4) |
 
 > **Límite explícito de las garantías del motor.** El `CHECK` de coherencia estado ↔ importe valida
 > la **fila**, no el **historial**: SQLite aceptaría escribir `estado = 'pendiente',
@@ -615,128 +619,74 @@ UPDATE DEUDAS_PARTICIPANTES
    AND compra_grupal_id = :compra_id;   -- el filtro por compra evita tocar deudas ajenas
 ```
 
----
-
 ## 5. Decisiones de Diseño del Esquema (ADR-lite)
 
 > *Guía:* Lista numerada. Cada entrada: decisión → alternativas descartadas → justificación →
 > consecuencia. Esto es lo que permite a un agente futuro entender *por qué* no cambiar algo.
 
-1. **Dinero en `INTEGER` (centavos), no en `REAL`**
-   - Alternativas descartadas: `REAL` (IEEE 754), `TEXT` decimal, `NUMERIC`/`DECIMAL`, y guardar el
-     valor en la unidad monetaria.
-   - Justificación: los saldos se acumulan por aritmética repetida y los repartos exigen que la suma
-     de las partes cuadre exactamente con el total. En IEEE 754, `0.1 + 0.2 = 0.30000000000000004`:
-     el error aparecería precisamente en el saldo que ve el usuario. Con enteros, el `CHECK` de
-     subtotal es una verificación exacta y no una tolerancia. `NUMERIC`/`DECIMAL` se descartan
-     porque SQLite no implementa precisión decimal fija y acaba almacenando `REAL`.
-   - Consecuencia: la columna no es autoexplicativa (una lectura directa del `.db` muestra `1234` y
-     no `12.34`); la conversión `BigDecimal` ↔ centavos vive en un único punto de la capa de dominio y
-     ningún DAO acepta `double`; tope absoluto de ±92.147.483.647.647 centavos.
+1. **Dinero en `INTEGER` (pesos CLP), no en `REAL`**
+   - **Alternativas descartadas:** `REAL` (IEEE 754), `TEXT` decimal, `NUMERIC`/`DECIMAL`, y guardar el valor en centavos (unidad inexistente en CLP desde 1984).
+   - **Justificación:** los saldos se acumulan por aritmética repetida y los repartos exigen que la suma de las partes cuadre exactamente con el total. En IEEE 754, `0.1 + 0.2 = 0.30000000000000004`: el error aparecería precisamente en el saldo que ve el usuario. Con enteros, el `CHECK` de subtotal es una verificación exacta y no una tolerancia. `NUMERIC`/`DECIMAL` se descartan porque SQLite no implementa precisión decimal fija y acaba almacenando `REAL`. Los pesos chilenos no tienen subdivisión en centavos en circulación, por lo que se almacena directamente en pesos.
+   - **Consecuencia:** la columna es autoexplicativa (una lectura directa del `.db` muestra `1234` = $1.234 CLP); la conversión `BigDecimal` ↔ pesos CLP vive en un único punto de la capa de dominio y ningún DAO acepta `double`; tope absoluto de ±92.147.483.647.647 pesos CLP (suficiente para ~92 billones).
+
 2. **`REAL` conservado solo para `latitud` y `longitud`**
-   - Alternativas descartadas: `INTEGER` con escala fija (micro-grados), `BLOB` de dos `double`, y
-     `R-Tree`/`SpatiaLite` para índices espaciales reales.
-   - Justificación: `osmdroid` consume un `GeoPoint(double, double)`; guardar el mismo `double` que ve
-     la librería evita una conversión por lectura. A 7 decimales la resolución es de ~1 cm, muy por
-     debajo del error del GPS de consumo. `SpatiaLite` sería una dependencia nativa no registrada en
-     `tech-stack.md`, y el `R-Tree` no está disponible de forma fiable en el SQLite embebido del
-     rango de API soportado.
-   - Consecuencia: las coordenadas no admiten igualdad exacta; se comparan con margen
-     (`diferencia < 0.000001`) y el rango se valida con `CHECK`.
+   - **Alternativas descartadas:** `INTEGER` con escala fija (micro-grados), `BLOB` de dos `double`, y `R-Tree`/`SpatiaLite` para índices espaciales reales.
+   - **Justificación:** `osmdroid` consume un `GeoPoint(double, double)`; guardar el mismo `double` que ve la librería evita una conversión por lectura. A 7 decimales la resolución es de ~1 cm, muy por debajo del error del GPS de consumo. `SpatiaLite` sería una dependencia nativa no registrada en `tech-stack.md`, y el `R-Tree` no está disponible de forma fiable en el SQLite embebido del rango de API soportado.
+   - **Consecuencia:** las coordenadas no admiten igualdad exacta; se comparan con margen (`diferencia < 0.000001`) y el rango se valida con `CHECK`.
+
 3. **Ids `INTEGER PRIMARY KEY AUTOINCREMENT` (surrogados, no naturales)**
-   - Alternativas descartadas: `INTEGER PRIMARY KEY` a secas (alias de `rowid`) y UUID en `TEXT`.
-   - Justificación: sin `AUTOINCREMENT`, SQLite reutiliza el id de la última fila eliminada, y un
-     respaldo importado sobre una base con ids distintos colisionaría con referencias ya guardadas.
-     UUID duplicaría el tamaño de la clave sin ganar nada en un dispositivo de un solo usuario.
-   - Consecuencia: una tabla auxiliar `sqlite_sequence` y un coste mínimo por inserción. Ningún
-     borrado "compacta" ids; es intencional.
+   - **Alternativas descartadas:** `INTEGER PRIMARY KEY` a secas (alias de `rowid`) y UUID en `TEXT`.
+   - **Justificación:** sin `AUTOINCREMENT`, SQLite reutiliza el id de la última fila eliminada, y un respaldo importado sobre una base con ids distintos colisionaría con referencias ya guardadas. UUID duplicaría el tamaño de la clave sin ganar nada en un dispositivo de un solo usuario.
+   - **Consecuencia:** una tabla auxiliar `sqlite_sequence` y un coste mínimo por inserción. Ningún borrado "compacta" ids; es intencional.
+
 4. **Estados como `TEXT` con `CHECK`, y sin estado `parcial` en `COMPRAS_GRUPALES`**
-   - Alternativas descartadas: tabla de catálogos normalizada (añadiría una novena tabla fuera del
-     ERD para tres dominios de tres valores), enteros con significado implícito, `TEXT` libre, y
-     almacenar en `COMPRAS_GRUPALES` un estado `parcial` derivado.
-   - Justificación: el dominio cerrado se valida en el punto de escritura y es legible en un respaldo
-     exportado y en `Logcat`. Duplicar el estado parcial de la compra crearía una segunda fuente de
-     verdad capaz de divergir de las deudas, así que se deriva con
-     `EXISTS (... WHERE estado <> 'liquidado')`.
-   - Consecuencia: añadir un estado nuevo es una migración de esquema, no un `INSERT` de catálogo; el
-     dominio de estados es deliberadamente pequeño para que eso sea raro.
+   - **Alternativas descartadas:** tabla de catálogos normalizada (añadiría una novena tabla fuera del ERD para tres dominios de tres valores), enteros con significado implícito, `TEXT` libre, y almacenar en `COMPRAS_GRUPALES` un estado `parcial` derivado.
+   - **Justificación:** el dominio cerrado se valida en el punto de escritura y es legible en un respaldo exportado y en `Logcat`. Duplicar el estado parcial de la compra crearía una segunda fuente de verdad capaz de divergir de las deudas, así que se deriva con `EXISTS (... WHERE estado <> 'liquidado')`.
+   - **Consecuencia:** añadir un estado nuevo es una migración de esquema, no un `INSERT` de catálogo; el dominio de estados es deliberadamente pequeño para que eso sea raro.
+
 5. **Fechas en `TEXT` ISO-8601 UTC**
-   - Alternativas descartadas: `INTEGER` con epoch en milisegundos, y `TEXT` con zona horaria local.
-   - Justificación: el orden lexicográfico de ISO-8601 UTC coincide con el cronológico, así que
-     `ORDER BY fecha_hora` es correcto y usa el índice sin conversión; además el `.db` exportado
-     —único mecanismo de respaldo del proyecto— queda legible. La zona horaria local se aplica en la
-     capa de presentación, nunca en el dato.
-   - Consecuencia: no hay aritmética de fechas en SQL sin `strftime()`, lo cual es aceptable porque
-     el modelo no la necesita.
+   - **Alternativas descartadas:** `INTEGER` con epoch en milisegundos, y `TEXT` con zona horaria local.
+   - **Justificación:** el orden lexicográfico de ISO-8601 UTC coincide con el cronológico, así que `ORDER BY fecha_hora` es correcto y usa el índice sin conversión; además el `.db` exportado —único mecanismo de respaldo del proyecto— queda legible. La zona horaria local se aplica en la capa de presentación, nunca en el dato.
+   - **Consecuencia:** no hay aritmética de fechas en SQL sin `strftime()`, lo cual es aceptable porque el modelo no la necesita.
+
 6. **`CUENTAS.saldo_actual` desnormalizado, con `TRANSACCIONES` como única fuente de verdad**
-   - Alternativas descartadas: calcular `SUM` en cada lectura, y mantener el saldo con Triggers SQL.
-   - Justificación: la proyección evita un `SUM` sobre la tabla de movimientos por cada tarjeta del
-     panel, y se actualiza con una sola sentencia atómica dentro de la transacción de la escritura,
-     lo que elimina la condición de carrera del patrón leer-restar-escribir. Un Trigger se descarta
-     porque la lógica de negocio debe residir en la capa de dominio (`.agent.md` §5.1): es lógica
-     oculta que Room no valida en compilación y que los tests unitarios no alcanzan.
-   - Consecuencia: existe un estado derivado que puede desfasarse si alguien escribe en
-     `TRANSACCIONES` saltándose el repositorio; la mitigación es que la tabla no tiene métodos de
-     escritura públicos fuera de la DAO, más el test de I-1 en cada suite de repositorio.
+   - **Alternativas descartadas:** calcular `SUM` en cada lectura, y mantener el saldo con Triggers SQL.
+   - **Justificación:** la proyección evita un `SUM` sobre la tabla de movimientos por cada tarjeta del panel, y se actualiza con una sola sentencia atómica dentro de la transacción de la escritura, lo que elimina la condición de carrera del patrón leer-restar-escribir. Un Trigger se descarta porque la lógica de negocio debe residir en la capa de dominio (`.agent.md` §5.1): es lógica oculta que Room no valida en compilación y que los tests unitarios no alcanzan.
+   - **Consecuencia:** existe un estado derivado que puede desfasarse si alguien escribe en `TRANSACCIONES` saltándose el repositorio; la mitigación es que la tabla no tiene métodos de escritura públicos fuera de la DAO, más el test de I-1 en cada suite de repositorio.
+
 7. **Borrado físico con tres políticas en lugar de borrado lógico**
-   - Alternativas descartadas: columna `activo` o `eliminado_at` (borrado lógico).
-   - Justificación: el borrado lógico añade un filtro a **todas** las consultas y un estado más que
-     mantener. `CASCADE`/`RESTRICT`/`SET NULL` con confirmación explícita y traducción al error de
-     negocio `CONTACTO_EN_USO` protegen al usuario sin ese coste permanente.
-   - Consecuencia: la eliminación de un contacto con historial requiere una decisión del usuario
-     (reasignar o purgar en cascada), que la UI debe presentar de forma explícita.
+   - **Alternativas descartadas:** columna `activo` o `eliminado_at` (borrado lógico).
+   - **Justificación:** el borrado lógico añade un filtro a **todas** las consultas y un estado más que mantener. `CASCADE`/`RESTRICT`/`SET NULL` con confirmación explícita y traducción al error de negocio `CONTACTO_EN_USO` protegen al usuario sin ese coste permanente.
+   - **Consecuencia:** la eliminación de un contacto con historial requiere una decisión del usuario (reasignar o purgar en cascada), que la UI debe presentar de forma explícita.
+
 8. **Sin columnas de sincronización, sin conversión de moneda y sin búsqueda de texto completo**
-   - Alternativas descartadas: `updated_at`, `sync_token`, `remote_id`; tabla de conversión de
-     monedas; FTS5 sobre descripciones; vistas SQL para el balance; `R-Tree`/`SpatiaLite`.
-   - Justificación: no hay servidor (`mission.md` §3), luego las columnas de sincronización serían
-     datos muertos; no hay conversión de moneda, luego cada cuenta declara su unidad; la búsqueda de
-     texto no es requisito de ningún objetivo; las vistas quedarían fuera de la verificación en
-     compilación de Room; y el volumen local no justifica un índice espacial nativo.
-   - Consecuencia: si algún objetivo de `mission.md` incorporara alguno de estos casos, exige una
-     migración y una entrada nueva en esta lista, no una excepción silenciosa.
+   - **Alternativas descartadas:** `updated_at`, `sync_token`, `remote_id`; tabla de conversión de monedas; FTS5 sobre descripciones; vistas SQL para el balance; `R-Tree`/`SpatiaLite`.
+   - **Justificación:** no hay servidor (`mission.md` §3), luego las columnas de sincronización serían datos muertos; no hay conversión de moneda, luego cada cuenta declara su unidad; la búsqueda de texto no es requisito de ningún objetivo; las vistas quedarían fuera de la verificación en compilación de Room; y el volumen local no justifica un índice espacial nativo.
+   - **Consecuencia:** si algún objetivo de `mission.md` incorporara alguno de estos casos, exige una migración y una entrada nueva en esta lista, no una excepción silenciosa.
 
 ---
 
 ## 6. Estrategia de Evolución del Esquema
 
-- **Migraciones:** `SQLiteOpenHelper.onUpgrade()` en Fases 1-2 y `Room Migration(startVersion,
-  endVersion)` desde la Fase 3, ambas coherentes con `tech-stack.md` §3. La versión del esquema vive
-  en **un único lugar por vía**: `PRAGMA user_version` con `SQLiteOpenHelper`, el parámetro
-  `version` del `RoomDatabase` con Room. Ambas capas consumen el mismo DDL canónico del Apéndice A.
+- **Migraciones:** `SQLiteOpenHelper.onUpgrade()` en Fases 1-2 y `Room Migration(startVersion, endVersion)` desde la Fase 3, ambas coherentes con `tech-stack.md` §3. La versión del esquema vive en **un único lugar por vía**: `PRAGMA user_version` con `SQLiteOpenHelper`, el parámetro `version` del `RoomDatabase` con Room. Ambas capas consumen el mismo DDL canónico del Apéndice A.
+
 - **Reglas obligatorias:**
-  - `fallbackToDestructiveMigration()` queda **prohibido**, igual que cualquier `DROP TABLE` usado
-    como estrategia de actualización: perdería información financiera sin que el usuario lo decida.
+  - `fallbackToDestructiveMigration()` queda **prohibido**, igual que cualquier `DROP TABLE` usado como estrategia de actualización: perdería información financiera sin que el usuario lo decida.
   - Prohibido renombrar o reordenar columnas existentes; se agregan y se rellenan con `DEFAULT`.
-  - Los cambios destructivos requieren doble fase: **agregar → migrar datos → retirar**. Es el caso
-    de cambiar un `CHECK` de estado, un tipo de columna o una clave foránea, que obligan a copiar a
-    una tabla nueva, migrar, renombrar y todo ello dentro de una transacción, con `user_version`
-    actualizado **en la misma transacción**.
-  - Toda migración debe ser reversible o documentar por qué no lo es. Dado que el proyecto no tiene
-    servidor, la reversibilidad se apoya en el respaldo manual (ver `tech-stack.md` §3) y la app
-    ofrece exportar el `.db` antes de una migración no trivial.
+  - Los cambios destructivos requieren doble fase: **agregar → migrar datos → retirar**. Es el caso de cambiar un `CHECK` de estado, un tipo de columna o una clave foránea, que obligan a copiar a una tabla nueva, migrar, renombrar y todo ello dentro de una transacción, con `user_version` actualizado **en la misma transacción**.
+  - Toda migración debe ser reversible o documentar por qué no lo es. Dado que el proyecto no tiene servidor, la reversibilidad se apoya en el respaldo manual (ver `tech-stack.md` §3) y la app ofrece exportar el `.db` antes de una migración no trivial.
   - El número de migración corresponde a la tarea `NNN` de `/doc/` que la originó.
-  - Verificación obligatoria de cada migración: se prueba con `MigrationTestHelper` (esquema
-    exportado en `schemas/` de Room) y con un test que siembre datos, migre y compruebe que siguen
-    intactos más `PRAGMA foreign_key_check` limpio.
-  - Restricción de compatibilidad: solo construcciones disponibles en **SQLite 3.8+** (`minSdk` 28),
-    es decir, nada de `STRICT` (3.37+), índices de expresión (3.9+), `RETURNING` (3.35+) ni columnas
-    generadas (3.31+).
+  - Verificación obligatoria de cada migración: se prueba con `MigrationTestHelper` (esquema exportado en `schemas/` de Room) y con un test que siembre datos, migre y compruebe que siguen intactos más `PRAGMA foreign_key_check` limpio.
+  - Restricción de compatibilidad: solo construcciones disponibles en **SQLite 3.8+** (`minSdk` 28), es decir, nada de `STRICT` (3.37+), índices de expresión (3.9+), `RETURNING` (3.35+) ni columnas generadas (3.31+).
 
 **Historial de versiones del esquema:**
 
-| `user_version` | Cambios                                                                    | Estado  |
-|----------------|----------------------------------------------------------------------------|---------|
-| 1              | Versión inicial: las 8 tablas, sus `CHECK`, `FOREIGN KEY` e índices (§3.9)  | Vigente |
+| `user_version` | Cambios | Estado |
+|---|---|---|
+| 1 | Versión inicial: las 8 tablas, sus `CHECK`, `FOREIGN KEY` e índices (§3.9) | Vigente |
 
-- **Datos semilla (seed):** las 7 categorías base se insertan en el primer arranque, dentro de la
-  misma transacción que crea el esquema, con `INSERT OR IGNORE` sobre el índice único
-  `(nombre, tipo_transaccion)` para que reejecutar el arranque sea idempotente. Se usa `OR IGNORE` y
-  no `ON CONFLICT DO NOTHING` porque la sintaxis de _upsert_ requiere SQLite 3.24 y el proyecto
-  declara compatibilidad 3.8+ (`minSdk` 28). Las cuentas y los contactos los crea el usuario: no hay
-  datos de prueba en producción. Para desarrollo y test se usa la base en memoria de Room,
-  sembrada desde el mismo script de §A.1.
+- **Datos semilla (seed):** las 7 categorías base se insertan en el primer arranque, dentro de la misma transacción que crea el esquema, con `INSERT OR IGNORE` sobre el índice único `(nombre, tipo_transaccion)` para que reejecutar el arranque sea idempotente. Se usa `OR IGNORE` y no `ON CONFLICT DO NOTHING` porque la sintaxis de _upsert_ requiere SQLite 3.24 y el proyecto declara compatibilidad 3.8+ (`minSdk` 28). Las cuentas y los contactos los crea el usuario: no hay datos de prueba en producción. Para desarrollo y test se usa la base en memoria de Room, sembrada desde el mismo script de §A.1.
 
----
 
 ## 7. Trazabilidad hacia Features
 
@@ -744,17 +694,17 @@ UPDATE DEUDAS_PARTICIPANTES
 > entidades que toca. Actualiza esta tabla para saber qué partes del esquema están "activas".
 
 | Entidad/Tabla afectada | Feature (carpeta en `spec/features/`) | Dirección de acceso | Notas |
-|------------------------|---------------------------------------|---------------------|-------|
-| `CONTACTOS`                  | `NNN-directorio-contactos` (pendiente de crear, Fase 1) | ambas | Tabla base del reparto de deudas; su borrado está bloqueado por `RESTRICT`. |
-| `CUENTAS`                   | `NNN-cuentas-transacciones` (pendiente, Fase 1)         | ambas | `saldo_actual` es proyección de `TRANSACCIONES` (invariante I-1). |
-| `CATEGORIAS`                | `NNN-cuentas-transacciones` (pendiente, Fase 1)         | ambas | Semilla de 7 categorías en el primer arranque; se puebla por SQL, no por feature. |
-| `TRANSACCIONES`             | `NNN-cuentas-transacciones` (pendiente, Fase 1)         | ambas | Libro mayor. También es la fuente del mapa en la Fase 2. |
-| `TRANSACCIONES` (geometría) | `NNN-mapa-osmdroid` (pendiente, Fase 2)                 | lectura | `idx_transacciones_geo` y el filtro de caja envolvente. |
-| `COMPRAS_PLANIFICADAS`      | `NNN-historial-agenda` (pendiente, Fase 2)              | ambas | Agenda de compras futuras; al completarse materializa `TRANSACCIONES`. |
-| `COMPRAS_GRUPALES`          | `NNN-gastos-compartidos` (pendiente, Fase 3)            | ambas | Distingue pagador real de participantes (§4.1). |
-| `ITEMS_COMPRA`              | `NNN-gastos-compartidos` (pendiente, Fase 3)            | ambas | Base del reparto equitativo; `monto_subtotal` verificado por `CHECK`. |
-| `DEUDAS_PARTICIPANTES`      | `NNN-gastos-compartidos` (pendiente, Fase 3)            | ambas | Ciclo `pendiente`/`parcial`/`liquidado` y balance de deudas. |
-| Esquema completo            | —                                                    | — | Definido y validado en este documento; registro de memoria `doc/003-modelo-datos.md`. |
+|---|---|---|---|
+| `CONTACTOS` | `NNN-directorio-contactos` (pendiente de crear, Fase 1) | ambas | Tabla base del reparto de deudas; su borrado está bloqueado por `RESTRICT`. |
+| `CUENTAS` | `007-cuentas` (Feature 007, en desarrollo) | ambas | `saldo_actual` es proyección de `TRANSACCIONES` (invariante I-1). |
+| `CATEGORIAS` | `007-cuentas` (Feature 007, en desarrollo) | ambas | Semilla de 7 categorías en el primer arranque; se puebla por SQL, no por feature. |
+| `TRANSACCIONES` | `007-cuentas` (Feature 007, en desarrollo) | ambas | Libro mayor. También es la fuente del mapa en la Fase 2. |
+| `TRANSACCIONES` (geometría) | `NNN-mapa-osmdroid` (pendiente, Fase 2) | lectura | `idx_transacciones_geo` y el filtro de caja envolvente. |
+| `COMPRAS_PLANIFICADAS` | `NNN-historial-agenda` (pendiente, Fase 2) | ambas | Agenda de compras futuras; al completarse materializa `TRANSACCIONES`. |
+| `COMPRAS_GRUPALES` | `NNN-gastos-compartidos` (pendiente, Fase 3) | ambas | Distingue pagador real de participantes (§4.1). |
+| `ITEMS_COMPRA` | `NNN-gastos-compartidos` (pendiente, Fase 3) | ambas | Base del reparto equitativo; `monto_subtotal` verificado por `CHECK`. |
+| `DEUDAS_PARTICIPANTES` | `NNN-gastos-compartidos` (pendiente, Fase 3) | ambas | Ciclo `pendiente`/`parcial`/`liquidado` y balance de deudas. |
+| Esquema completo | — | — | Definido y validado en este documento; registro de memoria `doc/003-modelo-datos.md`. |
 
 **Hitos del roadmap que dependen de este esquema** (`roadmap.md` §2): "Directorio Local de
 Contactos" y "Gestión de Cuentas y Transacciones (SQLite)" dependen de las 4 primeras tablas;
@@ -764,9 +714,10 @@ Asignación de Deudas" depende de `COMPRAS_GRUPALES`, `ITEMS_COMPRA` y `DEUDAS_P
 
 **Registro de cambios del modelo de datos:**
 
-| Fecha      | Cambio                                                                                                    | Motivo                                                                                                          | Registro en `doc/`        |
-| ---------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------- |
-| 2026-09-28 | Definición inicial del esquema v1: 8 tablas, FK con `CASCADE`/`SET NULL`/`RESTRICT`, `CHECK` de integridad, dinero en centavos `INTEGER` y coordenadas en `REAL`. | Cumplir el pilar de persistencia local offline y fijar el contrato de datos antes de escribir la Fase 1. | `doc/003-modelo-datos.md` |
+| Fecha | Cambio | Motivo | Registro en `doc/` |
+|---|---|---|---|
+| 2026-09-28 | Definición inicial del esquema v1: 8 tablas, FK con `CASCADE`/`SET NULL`/`RESTRICT`, `CHECK` de integridad, dinero en pesos CLP `INTEGER` y coordenadas en `REAL`. | Cumplir el pilar de persistencia local offline y fijar el contrato de datos antes de escribir la Fase 1. | `doc/003-modelo-datos.md` |
+| 2026-10-05 | Adaptación de unidad monetaria: de centavos a pesos CLP (Decisión #2 en `spec/features/007-cuentas/plan.md`). Los pesos chilenos no tienen centavos en circulación desde 1984. | Alinear el modelo de datos con el contexto local de Chile y evitar conversiones innecesarias. | `spec/features/007-cuentas/plan.md` |
 
 ---
 
@@ -776,6 +727,11 @@ Fuente de verdad ejecutable. Debe reproducirse sin cambios en `SQLiteOpenHelper.
 1-2) o en las migraciones de Room (Fase 3). Si el código y este apéndice discrepan, es un bug.
 
 ```sql
+-- LocalCash Database Schema v1
+-- Unidad monetaria: pesos CLP (INTEGER, no centavos)
+-- Coordenadas: grados WGS84 (REAL)
+-- Fechas: ISO-8601 UTC (TEXT)
+
 PRAGMA foreign_keys = ON;
 PRAGMA journal_mode = WAL;
 PRAGMA synchronous  = NORMAL;
@@ -797,7 +753,7 @@ CREATE TABLE CUENTAS (
                   CHECK (tipo_cuenta IN ('efectivo', 'ahorro', 'tarjeta', 'otro')),
     saldo_inicial INTEGER NOT NULL DEFAULT 0,
     saldo_actual  INTEGER NOT NULL DEFAULT 0,
-    moneda        TEXT    NOT NULL DEFAULT 'USD' CHECK (length(moneda) = 3)
+    moneda        TEXT    NOT NULL DEFAULT 'CLP' CHECK (length(moneda) = 3)
 );
 
 -- ──────────────────────────────── CATEGORIAS ─────────────────────────────────
@@ -862,7 +818,7 @@ CREATE TABLE COMPRAS_GRUPALES (
         ON UPDATE CASCADE ON DELETE RESTRICT
 );
 
--- ─────────────────────────────── ITEMS_COMPRA ────────────────────────────────
+-- ────────────────────────────── ITEMS_COMPRA ───────────────────────────────
 CREATE TABLE ITEMS_COMPRA (
     id                INTEGER PRIMARY KEY AUTOINCREMENT,
     compra_grupal_id  INTEGER NOT NULL,
@@ -970,3 +926,35 @@ INSERT OR IGNORE INTO CATEGORIAS (nombre, icono, tipo_transaccion) VALUES
     ('salario',        'ic_categoria_salario',        'ingreso'),
     ('venta',          'ic_categoria_venta',          'ingreso');
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

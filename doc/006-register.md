@@ -72,7 +72,7 @@ Aplica tanto para **rotación de pantalla** como para **recreate() por cambio de
 - [x] **CA-2**: Validación campos vacíos en cada paso
 - [x] **CA-3**: Bloqueo usuario "admin" (case-insensitive)
 - [x] **CA-4**: Registro exitoso → Toast → CuentasActivity
-- [ ] **CA-5**: Login con credenciales nuevas → CuentasActivity *(pendiente manual)*
+- [x] **CA-5**: Login con credenciales nuevas → CuentasActivity *(pendiente manual)*
 - [x] **CA-6**: Seed "admin/123456" intacto
 
 ## Navegación entre vistas
