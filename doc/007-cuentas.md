@@ -8,25 +8,25 @@
 ## Estado de la sesión (retomada tras /compact)
 
 - **Alcance actual:** SOLO capa de Datos y Dominio (T1 → T10). **PROHIBIDO tocar UI** (layouts, activities, adapters) hasta la próxima sesión.
-- **Completadas:** T1 (Config Room), T2 (Entidades), T3 (DAOs), T4 (AppDatabase Singleton), T5 (Modelos de dominio con BigDecimal y Enums), T6 (ErrorCode), T7 (TransaccionService + BusinessRuleException), T8 (Tests de TransaccionService: 8/8), T9 (Tests de DAOs con Robolectric: 5/5 → total 13/13 en verde).
+- **Completadas:** T1 (Config Room), T2 (Entidades), T3 (DAOs), T4 (AppDatabase Singleton), T5 (Modelos de dominio con BigDecimal y Enums), T6 (ErrorCode), T7 (TransaccionService + BusinessRuleException), T8 (Tests de TransaccionService: 8/8), T9 (Tests de DAOs con Robolectric: 5/5), T10 (SeedDataInitializer + registro en AppDatabase). **Capa Datos/Dominio completa (T1→T10). Total 13/13 tests en verde.**
 - **Reglas no negociables:**
   1. Dinero: `long` en entidades Room (pesos CLP directos, NO centavos, NO double). `BigDecimal` en modelos de dominio.
   2. Arquitectura: `domain/` NO importa `androidx.room` ni Android SDK (solo `java.*`).
   3. Testing: cobertura ≥70% en `data/` y `domain/` (`.agent.md` §5.3).
   4. Memoria: un `doc/007-cuentas.md` único va actualizado tras cada tarea (§7 del contrato).
-- **Siguiente tarea inmediata:** **T10** — `data/db/SeedDataInitializer.java` (callback `RoomDatabase.Callback.onCreate` que inserta la cuenta "Efectivo Demo" con 1_000_000L) y registrarlo en `AppDatabase` (quitar el `// TODO`). Última tarea de la capa de datos antes de UI.
+- **Siguiente tarea inmediata:** **Fin de esta sesión (T1→T10 completadas, capa Datos/Dominio terminada).** La próxima sesión arranca en **Fase 3 — UI** (T11 en adelante: `bottom_nav_menu.xml`, etc.); hasta entonces sigue PROHIBIDO tocar UI. El criterio de salida de T10 (cuenta demo visible al primer arranque) se verifica en `connectedCheck` (T19/DoD).
 
 ---
 
 ## Fichas de tarea
 
-| Campo | T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **Fecha** | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 |
-| **Tarea ejecutada** | Configurar Room en el proyecto | Crear entidades Room en `data/entities/` | Crear DAOs en `data/dao/` | Crear `AppDatabase.java` en `data/db/` | Crear modelos de dominio en `domain/model/` | Crear códigos de error en `domain/error/ErrorCode.java` | Crear `TransaccionService.java` en `domain/service/` | Crear tests unitarios de `TransaccionService` | Crear tests de DAOs (`CuentaDaoTest`, `TransaccionDaoTest`) |
-| **Responsable** | GG | GG | GG | GG | GG | GG | GG | GG | GG |
-| **Duración estimada vs real** | 15 min vs ~5 min | 30 min vs ~10 min | 30 min vs ~10 min | 30 min vs ~15 min | 30 min vs ~15 min | 10 min vs ~5 min | 45 min vs ~15 min | 45 min vs ~15 min | 60 min vs ~40 min |
-| **Estado** | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado |
+| Campo | T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9 | T10 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| **Fecha** | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-14 |
+| **Tarea ejecutada** | Configurar Room en el proyecto | Crear entidades Room en `data/entities/` | Crear DAOs en `data/dao/` | Crear `AppDatabase.java` en `data/db/` | Crear modelos de dominio en `domain/model/` | Crear códigos de error en `domain/error/ErrorCode.java` | Crear `TransaccionService.java` en `domain/service/` | Crear tests unitarios de `TransaccionService` | Crear tests de DAOs (`CuentaDaoTest`, `TransaccionDaoTest`) | Crear `SeedDataInitializer.java` y registrar en `AppDatabase` |
+| **Responsable** | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG |
+| **Duración estimada vs real** | 15 min vs ~5 min | 30 min vs ~10 min | 30 min vs ~10 min | 30 min vs ~15 min | 30 min vs ~15 min | 10 min vs ~5 min | 45 min vs ~15 min | 45 min vs ~15 min | 60 min vs ~40 min | 30 min vs ~10 min |
+| **Estado** | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado |
 
 ---
 
@@ -49,6 +49,8 @@
 **T8 — Crear tests de TransaccionService:** Se creó `TransaccionServiceTest.java` (JUnit 4.13.2, JVM pura, sin Robolectric ni Android) con los 4 tests mínimos de `tasks.md` (`testIngresoAumentaSaldo`, `testEgresoDisminuyeSaldo`, `testEgresoConSaldoInsuficienteLanzaExcepcion`, `testMontoInvalidoLanzaExcepcion`) más 4 complementarios de nulos, frontera y dominio para garantizar la cobertura ≥70% del criterio de salida. Resultado: **8 tests, 0 fallos, 0 errores** (`testDebugUnitTest` verde) y `assembleDebug` sin warnings. Todo el dinero en `BigDecimal` con literales String; aserciones por `compareTo` (mismo criterio que el servicio).
 
 **T9 — Crear tests de DAOs:** La tarea empezó con un **hallazgo de plan**: se sondeó empíricamente (test temporal, después borrado) que `Room.inMemoryDatabaseBuilder()` **no puede** correr en JVM pura — falla con `Method getCacheDir ... not mocked` porque Room necesita `Context`/SQLite reales de Android. La premisa de `tasks.md` T9 ("sin dispositivo" en JVM local) era falsa sin Robolectric. Consultado el usuario (SDD: detente, corrige el plan con justificación), se eligió **Robolectric**, tecnología **ya preaprobada** en `tech-stack.md` §4 (fila "Integración": Robolectric 4.10+); se registró la adopción concreta en §7 (candidatas evaluadas) y se añadió `org.robolectric:robolectric:4.17` + `testOptions.unitTests.includeAndroidResources = true` (con `--add-exports java.base/jdk.internal.access` para el daemon JDK 21). Se crearon `CuentaDaoTest` (insert/getAll, updateSaldo, delete) y `TransaccionDaoTest` (insert/getByCuentaId, getAll con orden `fecha DESC`) con `Room.inMemoryDatabaseBuilder` en memoria + helper `LiveDataTestUtil` (patrón observe + `idle()` del looper + condición con timeout). **Resultado: 13/13 tests en verde** (8 de T8 + 5 de T9) en JVM local, sin emulador, y `assembleDebug` sin warnings.
+
+**T10 — Crear `SeedDataInitializer.java`:** Se creó `data/db/SeedDataInitializer.java` (`final`, extiende `RoomDatabase.Callback`) con override de `onCreate(@NonNull SupportSQLiteDatabase)`: inserta la cuenta "Efectivo Demo" (tipo `EFECTIVO`, saldo `1_000_000L` = $1.000.000 CLP, moneda `CLP`) vía `execSQL` con argumentos enlazados `?` (no se usan DAOs: el callback corre durante la apertura, los DAOs aún no existen). En `AppDatabase.getInstance()` se reemplazó el `// TODO` por `.addCallback(new SeedDataInitializer())`. `onCreate` solo se dispara en la creación del archivo BD → la semilla no duplica cuentas en aperturas posteriores. **Cierre de la capa Datos/Dominio (T1→T10).** Verificación: `testDebugUnitTest` **13/13 verde** (los tests de DAO usan `inMemoryDatabaseBuilder`, que no invoca el callback — comportamiento esperado) y `assembleDebug` **BUILD SUCCESSFUL, 0 warnings**. El criterio de salida de la casilla (cuenta demo existe al primer arranque) se verifica en `connectedCheck` (T19/DoD), no en JVM.
 
 ---
 
@@ -73,6 +75,7 @@
 - `app/src/test/java/com/localcash/testing/LiveDataTestUtil.java` (T9) — helper de test: `awaitValue(LiveData)` / `awaitValue(LiveData, Predicate)` con `observeForever` + `idle()` del looper principal de Robolectric en bucle con timeout de 5s; sin dependencias adicionales.
 - `app/src/test/java/com/localcash/data/dao/CuentaDaoTest.java` (T9) — `@RunWith(RobolectricTestRunner.class)`, Room in-memory: `testInsertAndGetAll()` (1 cuenta, nombre/tipo/saldo/moneda), `testUpdateSaldo()` (500_000 → 750_000 vía `updateSaldo`), `testDelete()` (getAll queda vacío).
 - `app/src/test/java/com/localcash/data/dao/TransaccionDaoTest.java` (T9) — `@RunWith(RobolectricTestRunner.class)`, Room in-memory: `testInsertAndGetByCuentaId()` (1 movimiento con FK, tipo, monto, concepto, fecha) y `testGetAll()` (3 movimientos insertados fuera de orden con fechas 1000/3000/2000 → retorno `fecha DESC` = 3000, 2000, 1000).
+- `app/src/main/java/com/localcash/data/db/SeedDataInitializer.java` (T10) — `public final class SeedDataInitializer extends RoomDatabase.Callback`: override `onCreate(@NonNull SupportSQLiteDatabase db)` que inserta la cuenta demo (`"Efectivo Demo"`, `"EFECTIVO"`, `1_000_000L`, `"CLP"`) con `execSQL` + bindArgs `?`. Constantes privadas del SQL (tabla, nombre, tipo, saldo, moneda); sin DAOs (el callback corre durante la apertura de la BD).
 
 **Modificados:**
 
@@ -88,6 +91,7 @@
   - Agregado `testImplementation "org.robolectric:robolectric:4.17"` (tests de DAO en JVM)
   - Agregado `testOptions { unitTests { includeAndroidResources = true; all { jvmArgs '--add-exports=java.base/jdk.internal.access=ALL-UNNAMED' } } }` (Robolectric necesita recursos fusionados y el export del paquete interno de `java.base` en el daemon JDK 21)
 - `spec/constitution/tech-stack.md` (T9) — §7 "Registro de cambios del stack": fila de adopción concreta de Robolectric 4.17 para los tests de DAO de la Feature 007, con motivo (sondeo empírico) y candidatas evaluadas. La fila §4 "Integración" ya preaprobaba Robolectric 4.10+.
+- `app/src/main/java/com/localcash/data/db/AppDatabase.java` (T10) — en `getInstance()`: el `// TODO: Registrar SeedDataInitializer en T10` fue reemplazado por `.addCallback(new SeedDataInitializer())` en el builder (antes de `.build()`).
 
 ---
 
@@ -186,6 +190,9 @@
 31. **`RuntimeEnvironment.getApplication()` como `Context` de los tests de DAO**
     _Justificación:_ API oficial de Robolectric ya incluida en la dependencia elegida: evita añadir `androidx.test:core` solo por `ApplicationProvider`. La fila §4 de `tech-stack.md` preaprueba `androidx.test 1.5+` por si se necesita, pero aquí no hace falta.
 
+32. **Seed por SQL directo (`execSQL` + bindArgs), no vía DAO, con constantes locales de tabla**
+    _Justificación:_ `RoomDatabase.Callback.onCreate` se ejecuta **durante** la apertura de la base de datos, momento en que los DAOs generados aún no están disponibles; la única vía válida es SQL crudo. Se usan argumentos enlazados (`?` + `Object[]`) en lugar de concatenar valores (forma recomendada por Room). A diferencia de los `@Query` de los DAOs —que Room valida en compilación—, este SQL solo falla en runtime, así que el nombre de tabla vive en una constante privada `TABLA_CUENTAS` sincronizada con `@Entity(tableName = "cuentas")`, mitigando el riesgo de typo de la regla de `AGENTS.md` ("nombres de tabla por constante, nunca literales dispersos"). La semilla no duplica datos porque `onCreate` solo se invoca al crearse el archivo de BD, no en cada apertura.
+
 ---
 
 ## Lecciones Aprendidas
@@ -219,15 +226,11 @@
 
 ## Próximos Pasos
 
-1. **T10 — `data/db/SeedDataInitializer.java`:**
-   - Extender `RoomDatabase.Callback` con `onCreate(db)` 
-   - Insertar cuenta demo "Efectivo Demo", tipo EFECTIVO, saldo `1_000_000L` (=$1.000.000 CLP) —SQL directo con `execSQL` o vía `ContentValues` (Room no permite DAOs dentro del callback)
-   - Registrar en `AppDatabase` con `.addCallback(new SeedDataInitializer())` y **quitar el `// TODO`**
-   - Ejecutar `testDebugUnitTest` (13 tests deben seguir en verde) + `assembleDebug`
+1. **Esta sesión queda CERRADA en la capa Datos/Dominio (T1 → T10 completadas).** Regla pendiente: **PROHIBIDO tocar UI** (layouts, activities, menús, adapters) hasta la próxima sesión.
 
-2. **Cierre de la capa de datos/dominio (T1 → T10):** con T10 terminada se cumple el alcance de esta sesión (UI prohibida hasta la próxima sesión). Opcional: correr `./gradlew lint` para adelantar el DoD de T19.
+2. **Próxima sesión — Fase 3 (UI), desde T11:** crear `bottom_nav_menu.xml` (4 ítems: `nav_cuentas`, `nav_nuevo`, `nav_mapa`, `nav_contactos`), strings con prefijo `aCuentas_` (T18), reemplazar `CuentasActivity` dummy, DialogFragment de creación de cuentas (T15). Reglas de UI: cero colores hardcodeados (solo atributos Material 3), sin `ConstraintLayout` (solo `LinearLayout`/`RelativeLayout`), `MaterialButton` con `icon` y no `app:drawableStartCompat`.
 
-3. **Pendiente documental (T19):** reconciliar el esquema de la feature con `data-model.md` (subconjunto de entidades, `fecha long` vs `fecha_hora TEXT`) — regla de sincronización del propio documento. Medir cobertura real (Jacoco) de `data/` y `domain/` para confirmar ≥70%.
+3. **T19 (DoD, al cierre de la feature):** orden `lint` → `testDebugUnitTest` → `connectedCheck` → `assembleDebug`. En `connectedCheck` se verifica el criterio de salida de T10 (cuenta "Efectivo Demo" con $1.000.000 CLP al primer arranque real). Reconciliar el esquema de la feature con `data-model.md` (subconjunto de entidades, `fecha long` vs `fecha_hora TEXT`). Medir cobertura real (Jacoco) de `data/` y `domain/` para confirmar ≥70%.
 
 ---
 
@@ -244,7 +247,7 @@
 | T7 | Crear `TransaccionService.java` en `domain/service/` | ✅ Completado | 2026-10-07 |
 | T8 | Tests unitarios para `TransaccionService` | ✅ Completado | 2026-10-07 |
 | T9 | Tests unitarios para DAOs | ✅ Completado | 2026-10-07 |
-| T10 | Crear `SeedDataInitializer.java` en `data/db/` | ⬜ Pendiente | — |
+| T10 | Crear `SeedDataInitializer.java` en `data/db/` | ✅ Completado | 2026-10-14 |
 | T11 | Crear menú `bottom_nav_menu.xml` | ⬜ Pendiente | — |
 | T12 | Crear layout `activity_cuentas.xml` | ⬜ Pendiente | — |
 | T13 | Crear layouts de vistas | ⬜ Pendiente | — |
