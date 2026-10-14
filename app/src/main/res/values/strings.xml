@@ -76,4 +76,8 @@
     <string name="aCuentas_btn_logout">Cerrar sesión</string>
     <string name="aCuentas_theme_toggle_desc">Cambiar tema claro/oscuro</string>
     <string name="aCuentas_logo_desc">Logo Módulo Cuentas</string>
+    <string name="aCuentas_nav_cuentas">Cuentas</string>
+    <string name="aCuentas_nav_nuevo">Nuevo</string>
+    <string name="aCuentas_nav_mapa">Mapa</string>
+    <string name="aCuentas_nav_contactos">Contactos</string>
 </resources>

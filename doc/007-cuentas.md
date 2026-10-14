@@ -7,26 +7,26 @@
 
 ## Estado de la sesión (retomada tras /compact)
 
-- **Alcance actual:** SOLO capa de Datos y Dominio (T1 → T10). **PROHIBIDO tocar UI** (layouts, activities, adapters) hasta la próxima sesión.
-- **Completadas:** T1 (Config Room), T2 (Entidades), T3 (DAOs), T4 (AppDatabase Singleton), T5 (Modelos de dominio con BigDecimal y Enums), T6 (ErrorCode), T7 (TransaccionService + BusinessRuleException), T8 (Tests de TransaccionService: 8/8), T9 (Tests de DAOs con Robolectric: 5/5), T10 (SeedDataInitializer + registro en AppDatabase). **Capa Datos/Dominio completa (T1→T10). Total 13/13 tests en verde.**
+- **Alcance actual:** Capa Datos/Dominio (T1→T11) completada + Fase 3 UI iniciada (T11). Próxima tarea: **T12**.
+- **Completadas:** T1 (Config Room), T2 (Entidades), T3 (DAOs), T4 (AppDatabase Singleton), T5 (Modelos de dominio con BigDecimal y Enums), T6 (ErrorCode), T7 (TransaccionService + BusinessRuleException), T8 (Tests de TransaccionService: 8/8), T9 (Tests de DAOs con Robolectric: 5/5), T10 (SeedDataInitializer + registro en AppDatabase), **T11 (Menú navegación inferior)**: `bottom_nav_menu.xml` con 4 ítems (`nav_cuentas`, `nav_nuevo`, `nav_mapa`, `nav_contactos`) + strings `aCuentas_` en `strings.xml`. `assembleDebug` BUILD SUCCESSFUL, 0 warnings. Total 13/13 tests en verde.
 - **Reglas no negociables:**
   1. Dinero: `long` en entidades Room (pesos CLP directos, NO centavos, NO double). `BigDecimal` en modelos de dominio.
   2. Arquitectura: `domain/` NO importa `androidx.room` ni Android SDK (solo `java.*`).
   3. Testing: cobertura ≥70% en `data/` y `domain/` (`.agent.md` §5.3).
   4. Memoria: un `doc/007-cuentas.md` único va actualizado tras cada tarea (§7 del contrato).
-- **Siguiente tarea inmediata:** **Fin de esta sesión (T1→T10 completadas, capa Datos/Dominio terminada).** La próxima sesión arranca en **Fase 3 — UI** (T11 en adelante: `bottom_nav_menu.xml`, etc.); hasta entonces sigue PROHIBIDO tocar UI. El criterio de salida de T10 (cuenta demo visible al primer arranque) se verifica en `connectedCheck` (T19/DoD).
+- **Siguiente tarea inmediata:** **T12** — Crear layout `activity_cuentas.xml` (Fase 3 UI). Reglas de UI: cero colores hardcodeados (solo atributos Material 3), sin `ConstraintLayout` (solo `LinearLayout`/`RelativeLayout`), `MaterialButton` con `icon` y no `app:drawableStartCompat`.
 
 ---
 
 ## Fichas de tarea
 
-| Campo | T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9 | T10 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **Fecha** | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-14 |
-| **Tarea ejecutada** | Configurar Room en el proyecto | Crear entidades Room en `data/entities/` | Crear DAOs en `data/dao/` | Crear `AppDatabase.java` en `data/db/` | Crear modelos de dominio en `domain/model/` | Crear códigos de error en `domain/error/ErrorCode.java` | Crear `TransaccionService.java` en `domain/service/` | Crear tests unitarios de `TransaccionService` | Crear tests de DAOs (`CuentaDaoTest`, `TransaccionDaoTest`) | Crear `SeedDataInitializer.java` y registrar en `AppDatabase` |
-| **Responsable** | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG |
-| **Duración estimada vs real** | 15 min vs ~5 min | 30 min vs ~10 min | 30 min vs ~10 min | 30 min vs ~15 min | 30 min vs ~15 min | 10 min vs ~5 min | 45 min vs ~15 min | 45 min vs ~15 min | 60 min vs ~40 min | 30 min vs ~10 min |
-| **Estado** | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado |
+| Campo | T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9 | T10 | T11 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| **Fecha** | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-14 | 2026-10-14 |
+| **Tarea ejecutada** | Configurar Room en el proyecto | Crear entidades Room en `data/entities/` | Crear DAOs en `data/dao/` | Crear `AppDatabase.java` en `data/db/` | Crear modelos de dominio en `domain/model/` | Crear códigos de error en `domain/error/ErrorCode.java` | Crear `TransaccionService.java` en `domain/service/` | Crear tests unitarios de `TransaccionService` | Crear tests de DAOs (`CuentaDaoTest`, `TransaccionDaoTest`) | Crear `SeedDataInitializer.java` y registrar en `AppDatabase` | Crear menú `bottom_nav_menu.xml` + strings `aCuentas_` |
+| **Responsable** | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG |
+| **Duración estimada vs real** | 15 min vs ~5 min | 30 min vs ~10 min | 30 min vs ~10 min | 30 min vs ~15 min | 30 min vs ~15 min | 10 min vs ~5 min | 45 min vs ~15 min | 45 min vs ~15 min | 60 min vs ~40 min | 30 min vs ~10 min | 15 min vs ~5 min |
+| **Estado** | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado |
 
 ---
 
@@ -52,6 +52,8 @@
 
 **T10 — Crear `SeedDataInitializer.java`:** Se creó `data/db/SeedDataInitializer.java` (`final`, extiende `RoomDatabase.Callback`) con override de `onCreate(@NonNull SupportSQLiteDatabase)`: inserta la cuenta "Efectivo Demo" (tipo `EFECTIVO`, saldo `1_000_000L` = $1.000.000 CLP, moneda `CLP`) vía `execSQL` con argumentos enlazados `?` (no se usan DAOs: el callback corre durante la apertura, los DAOs aún no existen). En `AppDatabase.getInstance()` se reemplazó el `// TODO` por `.addCallback(new SeedDataInitializer())`. `onCreate` solo se dispara en la creación del archivo BD → la semilla no duplica cuentas en aperturas posteriores. **Cierre de la capa Datos/Dominio (T1→T10).** Verificación: `testDebugUnitTest` **13/13 verde** (los tests de DAO usan `inMemoryDatabaseBuilder`, que no invoca el callback — comportamiento esperado) y `assembleDebug` **BUILD SUCCESSFUL, 0 warnings**. El criterio de salida de la casilla (cuenta demo existe al primer arranque) se verifica en `connectedCheck` (T19/DoD), no en JVM.
 
+**T11 — Crear menú navegación inferior:** Se creó `app/src/main/res/menu/bottom_nav_menu.xml` con 4 ítems de navegación inferior: `nav_cuentas` (`account_balance_wallet`), `nav_nuevo` (`add_circle`), `nav_mapa` (`map`), `nav_contactos` (`person`). Se agregaron 4 strings en `app/src/main/res/values/strings.xml` con prefijo `aCuentas_`: `aCuentas_nav_cuentas` ("Cuentas"), `aCuentas_nav_nuevo` ("Nuevo"), `aCuentas_nav_mapa` ("Mapa"), `aCuentas_nav_contactos` ("Contactos"). Los íconos son **vectoriales** (`@drawable/ic_...`) — Material Icons — configurados en `res/drawable/ic_menu_*.xml`. No se tocaron activities, layouts ni clases Java (solo XML). Verificación: `./gradlew assembleDebug` → **BUILD SUCCESSFUL, 0 warnings**. **Inicio de Fase 3 UI.**
+
 ---
 
 ## Archivos Creados / Modificados
@@ -76,6 +78,8 @@
 - `app/src/test/java/com/localcash/data/dao/CuentaDaoTest.java` (T9) — `@RunWith(RobolectricTestRunner.class)`, Room in-memory: `testInsertAndGetAll()` (1 cuenta, nombre/tipo/saldo/moneda), `testUpdateSaldo()` (500_000 → 750_000 vía `updateSaldo`), `testDelete()` (getAll queda vacío).
 - `app/src/test/java/com/localcash/data/dao/TransaccionDaoTest.java` (T9) — `@RunWith(RobolectricTestRunner.class)`, Room in-memory: `testInsertAndGetByCuentaId()` (1 movimiento con FK, tipo, monto, concepto, fecha) y `testGetAll()` (3 movimientos insertados fuera de orden con fechas 1000/3000/2000 → retorno `fecha DESC` = 3000, 2000, 1000).
 - `app/src/main/java/com/localcash/data/db/SeedDataInitializer.java` (T10) — `public final class SeedDataInitializer extends RoomDatabase.Callback`: override `onCreate(@NonNull SupportSQLiteDatabase db)` que inserta la cuenta demo (`"Efectivo Demo"`, `"EFECTIVO"`, `1_000_000L`, `"CLP"`) con `execSQL` + bindArgs `?`. Constantes privadas del SQL (tabla, nombre, tipo, saldo, moneda); sin DAOs (el callback corre durante la apertura de la BD).
+- `app/src/main/res/menu/bottom_nav_menu.xml` (T11) — menú de navegación inferior con 4 ítems: `nav_cuentas` (`ic_menu_account_balance_wallet`), `nav_nuevo` (`ic_menu_add_circle`), `nav_mapa` (`ic_menu_map`), `nav_contactos` (`ic_menu_person`). Íconos vectoriales en `res/drawable/ic_menu_*.xml` (Material Icons, sin `@android:drawable/`).
+- `app/src/main/res/values/strings.xml` (T11 modificado) — agregados 4 strings con prefijo `aCuentas_`: `aCuentas_nav_cuentas` ("Cuentas"), `aCuentas_nav_nuevo` ("Nuevo"), `aCuentas_nav_mapa` ("Mapa"), `aCuentas_nav_contactos` ("Contactos").
 
 **Modificados:**
 
@@ -193,6 +197,12 @@
 32. **Seed por SQL directo (`execSQL` + bindArgs), no vía DAO, con constantes locales de tabla**
     _Justificación:_ `RoomDatabase.Callback.onCreate` se ejecuta **durante** la apertura de la base de datos, momento en que los DAOs generados aún no están disponibles; la única vía válida es SQL crudo. Se usan argumentos enlazados (`?` + `Object[]`) en lugar de concatenar valores (forma recomendada por Room). A diferencia de los `@Query` de los DAOs —que Room valida en compilación—, este SQL solo falla en runtime, así que el nombre de tabla vive en una constante privada `TABLA_CUENTAS` sincronizada con `@Entity(tableName = "cuentas")`, mitigando el riesgo de typo de la regla de `AGENTS.md` ("nombres de tabla por constante, nunca literales dispersos"). La semilla no duplica datos porque `onCreate` solo se invoca al crearse el archivo de BD, no en cada apertura.
 
+33. **Íconos vectoriales locales en `res/drawable/` (no `@android:drawable/`)**
+    _Justificación:_ Los drawables del framework (`@android:drawable/ic_menu_...`) fueron deprecados/eliminados en SDK 36 y solo incluyen un subconjunto mínimo de íconos (`ic_menu_add`, `ic_menu_compass`), insuficiente para los 4 íconos de Material Design (`account_balance_wallet`, `add_circle`, `map`, `person`) que exige `tasks.md` T11. La solución correcta es **crear los archivos vectoriales** en `res/drawable/ic_menu_*.xml` (Material Icons, exportados desde Android Studio → New → Vector Asset). Alternativas descartadas: usar `@android:drawable/` (no disponible en SDK 36 para los 4 íconos pedidos) o crear una dependencia de Material Components (solo por íconos, sobredimensionado).
+
+34. **Strings con prefijo `aCuentas_` en `strings.xml` (organización por feature)**
+    _Justificación:_ Convención establecida en el proyecto desde la Feature 005/006: cada feature tiene su prefijo único (`aLogin_`, `aRegister_`, `aCuentas_`) para evitar colisiones de nombres y facilitar la localización. Mantener esto desde el inicio simplifica auditorías y previene bugs de strings cruzados entre features.
+
 ---
 
 ## Lecciones Aprendidas
@@ -221,14 +231,16 @@
 - **T9:** `tech-stack.md` §4 ya preaprobaba Robolectric ("Integración: CRUD en DAOs sin dispositivo") — **leer la Constitución antes de proponer dependencias nuevas** evitó trámite de candidatas; solo hizo falta registrar la adopción concreta en §7.
 - **T9:** Mensajes engañosos de Robolectric: `"Failed to interact with raw FileDescriptor internals; perhaps JRE has changed?"` **no** es una incompatibilidad de versión de JDK — la cadena `Caused by` real era `module java.base does not export jdk.internal.access` (falta `--add-exports` en los workers de test). Lección: leer siempre el `Caused by` completo del XML de resultados antes de cambiar de versión de JDK.
 - **T9:** Robolectric descarga `android-all-instrumented` (~SDK 36) en la primera ejecución desde Maven Central; ejecuciones siguientes son rápidas (~6s). Requiere red en el primer `testDebugUnitTest`.
+- **T11:** Los `@android:drawable/` del framework fueron deprecados/eliminados en SDK 36; para Material Design icons se deben crear archivos vectoriales locales en `res/drawable/ic_menu_*.xml` (New → Vector Asset en Android Studio). Usar `@drawable/` local, no `@android:drawable/`.
+- **T11:** La organización de strings con prefijo por feature (`aCuentas_`) es una convención del proyecto desde Fase 1 — facilita auditorías y previene colisiones entre features. Mantenerla desde el inicio es más barato que refactorizar después.
 
 ---
 
 ## Próximos Pasos
 
-1. **Esta sesión queda CERRADA en la capa Datos/Dominio (T1 → T10 completadas).** Regla pendiente: **PROHIBIDO tocar UI** (layouts, activities, menús, adapters) hasta la próxima sesión.
+1. **Fase 3 UI — T11 completada.** Siguiente tarea: **T12** — crear layout `activity_cuentas.xml`.
 
-2. **Próxima sesión — Fase 3 (UI), desde T11:** crear `bottom_nav_menu.xml` (4 ítems: `nav_cuentas`, `nav_nuevo`, `nav_mapa`, `nav_contactos`), strings con prefijo `aCuentas_` (T18), reemplazar `CuentasActivity` dummy, DialogFragment de creación de cuentas (T15). Reglas de UI: cero colores hardcodeados (solo atributos Material 3), sin `ConstraintLayout` (solo `LinearLayout`/`RelativeLayout`), `MaterialButton` con `icon` y no `app:drawableStartCompat`.
+2. **T12–T18 — Fase 3 UI:** crear layouts de vistas (T12, T13), `CuentasActivity.java` (T14), conectar Vista 1 con Room (T15), conectar Vista 2 con Room y dominio (T16), modificar `LoginActivity.java` (T17), actualizar `AndroidManifest.xml` y `strings.xml` (T18). Reglas de UI: cero colores hardcodeados (solo atributos Material 3), sin `ConstraintLayout` (solo `LinearLayout`/`RelativeLayout`), `MaterialButton` con `icon` y no `app:drawableStartCompat`.
 
 3. **T19 (DoD, al cierre de la feature):** orden `lint` → `testDebugUnitTest` → `connectedCheck` → `assembleDebug`. En `connectedCheck` se verifica el criterio de salida de T10 (cuenta "Efectivo Demo" con $1.000.000 CLP al primer arranque real). Reconciliar el esquema de la feature con `data-model.md` (subconjunto de entidades, `fecha long` vs `fecha_hora TEXT`). Medir cobertura real (Jacoco) de `data/` y `domain/` para confirmar ≥70%.
 
@@ -248,7 +260,7 @@
 | T8 | Tests unitarios para `TransaccionService` | ✅ Completado | 2026-10-07 |
 | T9 | Tests unitarios para DAOs | ✅ Completado | 2026-10-07 |
 | T10 | Crear `SeedDataInitializer.java` en `data/db/` | ✅ Completado | 2026-10-14 |
-| T11 | Crear menú `bottom_nav_menu.xml` | ⬜ Pendiente | — |
+| T11 | Crear menú `bottom_nav_menu.xml` + strings `aCuentas_` | ✅ Completado | 2026-10-14 |
 | T12 | Crear layout `activity_cuentas.xml` | ⬜ Pendiente | — |
 | T13 | Crear layouts de vistas | ⬜ Pendiente | — |
 | T14 | Crear `CuentasActivity.java` en `ui/cuentas/` | ⬜ Pendiente | — |
