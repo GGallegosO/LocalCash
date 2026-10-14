@@ -80,4 +80,17 @@
     <string name="aCuentas_nav_nuevo">Nuevo</string>
     <string name="aCuentas_nav_mapa">Mapa</string>
     <string name="aCuentas_nav_contactos">Contactos</string>
+    <!-- Strings para ViewFlipper T13 -->
+    <string name="aCuentas_saldo_total">Saldo total</string>
+    <string name="aCuentas_nueva_cuenta">Nueva cuenta</string>
+    <string name="aCuentas_tipo_ingreso">Ingreso</string>
+    <string name="aCuentas_tipo_egreso">Egreso</string>
+    <string name="aCuentas_monto">Monto</string>
+    <string name="aCuentas_conta">Cuenta</string>
+    <string name="aCuentas_concepto">Concepto</string>
+    <string name="aCuentas_geolocalizacion">Geolocalizar</string>
+    <string name="aCuentas_guardar">Guardar</string>
+    <string name="aCuentas_sin_datos">No hay datos aún</string>
+    <string name="aCuentas_titulo_mapa">Mapa</string>
+    <string name="aCuentas_titulo_contactos">Contactos</string>
 </resources>

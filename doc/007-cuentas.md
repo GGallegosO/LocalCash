@@ -7,7 +7,7 @@
 
 ## Estado de la sesión (retomada tras /compact)
 
-- **Alcance actual:** Capa Datos/Dominio (T1→T11) completada + Fase 3 UI iniciada (T11). Próxima tarea: **T12**.
+- **Alcance actual:** Capa Datos/Dominio (T1→T12) completada + Fase 3 UI en progreso (T12 finalizada). Próxima tarea: **T13**.
 - **Completadas:** T1 (Config Room), T2 (Entidades), T3 (DAOs), T4 (AppDatabase Singleton), T5 (Modelos de dominio con BigDecimal y Enums), T6 (ErrorCode), T7 (TransaccionService + BusinessRuleException), T8 (Tests de TransaccionService: 8/8), T9 (Tests de DAOs con Robolectric: 5/5), T10 (SeedDataInitializer + registro en AppDatabase), **T11 (Menú navegación inferior)**: `bottom_nav_menu.xml` con 4 ítems (`nav_cuentas`, `nav_nuevo`, `nav_mapa`, `nav_contactos`) + strings `aCuentas_` en `strings.xml`. `assembleDebug` BUILD SUCCESSFUL, 0 warnings. Total 13/13 tests en verde.
 - **Reglas no negociables:**
   1. Dinero: `long` en entidades Room (pesos CLP directos, NO centavos, NO double). `BigDecimal` en modelos de dominio.
@@ -262,7 +262,8 @@
 | T10 | Crear `SeedDataInitializer.java` en `data/db/` | ✅ Completado | 2026-10-14 |
 | T11 | Crear menú `bottom_nav_menu.xml` + strings `aCuentas_` | ✅ Completado | 2026-10-14 |
 | T12 | Crear layout `activity_cuentas.xml` | ✅ Completado | 2026-10-14 |
-| T13 | Crear layouts de vistas | ⬜ Pendiente | — |
+| T13 | Crear layouts `view_*.xml` (cuentas, transacción, mapa, contactos) | ✅ Completado | 2026-10-14 |
+| T14 | Crear `CuentasActivity.java` en `ui/cuentas/` | ⬜ Pendiente | — |
 | T14 | Crear `CuentasActivity.java` en `ui/cuentas/` | ⬜ Pendiente | — |
 | T15 | Conectar Vista 1 (Cuentas) con Room | ⬜ Pendiente | — |
 | T16 | Conectar Vista 2 (Transacción) con Room y dominio | ⬜ Pendiente | — |
