@@ -37,18 +37,6 @@ public class CuentasActivity extends BaseActivity {
      * Configura los listeners de los botones de la UI.
      */
     private void setupClickListeners() {
-        // Botón "Cerrar sesión": termina esta Activity para volver al Login
-        binding.btnLogout.setOnClickListener(v -> {
-            // No se llama a finish() aquí porque el flujo natural al cerrar sesión
-            // es simplemente terminar esta Activity; LoginActivity ya hizo finish()
-            // al navegar aquí, así que no hay pila de retorno.
-            // Si se quiere forzar volver a Login como nueva instancia:
-            Intent intent = new Intent(this, com.localcash.ui.login.LoginActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(intent);
-            finish();
-        });
-
         // Botón de cambio de tema (reutiliza lógica de LoginActivity)
         binding.btnThemeToggle.setOnClickListener(v -> toggleTheme());
     }
