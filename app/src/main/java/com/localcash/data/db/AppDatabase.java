@@ -66,7 +66,7 @@ public abstract class AppDatabase extends RoomDatabase {
                                     DATABASE_NAME
                             )
                             // fallbackToDestructiveMigration() PROHIBIDO (.agent.md §6.11)
-                            // TODO: Registrar SeedDataInitializer en T10 (.addCallback(...))
+                            .addCallback(new SeedDataInitializer())
                             .build();
                 }
             }
