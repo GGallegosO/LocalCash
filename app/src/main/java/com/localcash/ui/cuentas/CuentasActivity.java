@@ -1,56 +1,74 @@
 package com.localcash.ui.cuentas;
 
-import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
+import androidx.appcompat.widget.Toolbar;
 
 import com.localcash.R;
 import com.localcash.databinding.ActivityCuentasBinding;
-import com.localcash.ui.BaseActivity;
-import com.localcash.ui.theme.ThemeManager;
 
-/**
- * Vista dummy "Módulo 1: Cuentas y Movimientos".
- * Destino de navegación tras login exitoso.
- * Permite cerrar sesión y volver a LoginActivity.
- */
-public class CuentasActivity extends BaseActivity {
-
-    private static final String TAG = "CuentasActivity";
+public class CuentasActivity extends AppCompatActivity {
 
     private ActivityCuentasBinding binding;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // ThemeManager.applyTheme(this) se llama automáticamente en BaseActivity.onCreate()
         super.onCreate(savedInstanceState);
 
         binding = ActivityCuentasBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        setupClickListeners();
-    }
+        // Configurar Toolbar como ActionBar
+        Toolbar toolbar = binding.toolbar;
+        setSupportActionBar(toolbar);
+        ActionBar ab = getSupportActionBar();
+        if (ab != null) {
+            ab.setTitle(R.string.aCuentas_toolbar_title);
+        }
 
-    /**
-     * Configura los listeners de los botones de la UI.
-     */
-    private void setupClickListeners() {
-        // Botón de cambio de tema (reutiliza lógica de LoginActivity)
-        binding.btnThemeToggle.setOnClickListener(v -> toggleTheme());
-    }
+        // Configurar toggle de tema
+        binding.btnThemeToggle.setOnClickListener(v -> {
+            if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES) {
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+            } else {
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+            }
+        });
 
-    /**
-     * Alterna entre tema claro y oscuro, guarda la preferencia y recrea la Activity.
-     */
-    private void toggleTheme() {
-        boolean isCurrentlyDark = ThemeManager.isDarkMode(this);
-        boolean newDarkMode = !isCurrentlyDark;
+        // Configurar BottomNavigationView para cambiar entre vistas del ViewFlipper
+        binding.bottomNav.setOnNavigationItemSelectedListener(item -> {
+            int itemId = item.getItemId();
+            if (itemId == R.id.nav_cuentas) {
+                binding.viewFlipper.setDisplayedChild(0);
+                return true;
+            } else if (itemId == R.id.nav_nuevo) {
+                binding.viewFlipper.setDisplayedChild(1);
+                return true;
+            } else if (itemId == R.id.nav_mapa) {
+                binding.viewFlipper.setDisplayedChild(2);
+                return true;
+            } else if (itemId == R.id.nav_contactos) {
+                binding.viewFlipper.setDisplayedChild(3);
+                return true;
+            }
+            return false;
+        });
 
-        ThemeManager.setDarkMode(this, newDarkMode);
+        // Inflar los 4 layouts internos dentro del ViewFlipper
+        // Vista 0: Cuentas
+        getLayoutInflater().inflate(R.layout.view_cuentas, binding.viewFlipper);
+        // Vista 1: Transacción
+        getLayoutInflater().inflate(R.layout.view_transaccion, binding.viewFlipper);
+        // Vista 2: Mapa
+        getLayoutInflater().inflate(R.layout.view_mapa, binding.viewFlipper);
+        // Vista 3: Contactos
+        getLayoutInflater().inflate(R.layout.view_contactos, binding.viewFlipper);
 
-        // Recrear la Activity para aplicar el nuevo tema visualmente
-        recreate();
+        // Establecer la vista inicial
+        binding.viewFlipper.setDisplayedChild(0);
     }
 }

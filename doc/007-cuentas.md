@@ -20,13 +20,13 @@
 
 ## Fichas de tarea
 
-| Campo | T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9 | T10 | T11 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **Fecha** | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-14 | 2026-10-14 |
-| **Tarea ejecutada** | Configurar Room en el proyecto | Crear entidades Room en `data/entities/` | Crear DAOs en `data/dao/` | Crear `AppDatabase.java` en `data/db/` | Crear modelos de dominio en `domain/model/` | Crear códigos de error en `domain/error/ErrorCode.java` | Crear `TransaccionService.java` en `domain/service/` | Crear tests unitarios de `TransaccionService` | Crear tests de DAOs (`CuentaDaoTest`, `TransaccionDaoTest`) | Crear `SeedDataInitializer.java` y registrar en `AppDatabase` | Crear menú `bottom_nav_menu.xml` + strings `aCuentas_` |
-| **Responsable** | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG |
-| **Duración estimada vs real** | 15 min vs ~5 min | 30 min vs ~10 min | 30 min vs ~10 min | 30 min vs ~15 min | 30 min vs ~15 min | 10 min vs ~5 min | 45 min vs ~15 min | 45 min vs ~15 min | 60 min vs ~40 min | 30 min vs ~10 min | 15 min vs ~5 min |
-| **Estado** | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado |
+| Campo | T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9 | T10 | T11 | T12 | T13 | T14 | T15 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| **Fecha** | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-14 | 2026-10-14 | 2026-10-14 | 2026-10-15 | 2026-10-15 |
+| **Tarea ejecutada** | Configurar Room en el proyecto | Crear entidades Room en `data/entities/` | Crear DAOs en `data/dao/` | Crear `AppDatabase.java` en `data/db/` | Crear modelos de dominio en `domain/model/` | Crear códigos de error en `domain/error/ErrorCode.java` | Crear `TransaccionService.java` en `domain/service/` | Crear tests unitarios de `TransaccionService` | Crear tests de DAOs (`CuentaDaoTest`, `TransaccionDaoTest`) | Crear `SeedDataInitializer.java` y registrar en `AppDatabase` | Crear menú `bottom_nav_menu.xml` + strings `aCuentas_` | Crear layout `activity_cuentas.xml` | Crear layouts `view_*.xml` (cuentas, transacción, mapa, contactos) | Crear `CuentasActivity.java` en `ui/cuentas/` |
+| **Responsable** | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG |
+| **Duración estimada vs real** | 15 min vs ~5 min | 30 min vs ~10 min | 30 min vs ~10 min | 30 min vs ~15 min | 30 min vs ~15 min | 10 min vs ~5 min | 45 min vs ~15 min | 45 min vs ~15 min | 60 min vs ~40 min | 30 min vs ~10 min | 30 min vs ~10 min | 15 min vs ~5 min | 45 min vs ~20 min | 30 min vs ~20 min |
+| **Estado** | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | ✅ Completado | ⬜ Pendiente |
 
 ---
 
@@ -263,8 +263,7 @@
 | T11 | Crear menú `bottom_nav_menu.xml` + strings `aCuentas_` | ✅ Completado | 2026-10-14 |
 | T12 | Crear layout `activity_cuentas.xml` | ✅ Completado | 2026-10-14 |
 | T13 | Crear layouts `view_*.xml` (cuentas, transacción, mapa, contactos) | ✅ Completado | 2026-10-14 |
-| T14 | Crear `CuentasActivity.java` en `ui/cuentas/` | ⬜ Pendiente | — |
-| T14 | Crear `CuentasActivity.java` en `ui/cuentas/` | ⬜ Pendiente | — |
+| T14 | Crear `CuentasActivity.java` en `ui/cuentas/` | ✅ Completado | 2026-10-14 |
 | T15 | Conectar Vista 1 (Cuentas) con Room | ⬜ Pendiente | — |
 | T16 | Conectar Vista 2 (Transacción) con Room y dominio | ⬜ Pendiente | — |
 | T17 | Modificar `LoginActivity.java` | ⬜ Pendiente | — |
