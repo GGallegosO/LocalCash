@@ -2,17 +2,25 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true">
 
-    <!-- AppBar superior -->
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar"
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="?attr/colorPrimary"
-        app:title="@string/aCuentas_toolbar_title" />
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toTopOf="parent">
 
-    <!-- Botón toggle de tema (imagen) en la esquina superior derecha -->
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="?attr/colorPrimary"
+            app:title="@string/aCuentas_toolbar_title"
+            app:titleTextColor="?attr/colorOnPrimary" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- Botón toggle de tema (MaterialButton sin fondo) en la esquina superior derecha -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnThemeToggle"
         style="@style/Widget.Material3.Button.IconButton"
@@ -21,17 +29,17 @@
         android:layout_marginEnd="16dp"
         android:contentDescription="@string/aCuentas_toggle_tema_desc"
         app:icon="@drawable/ic_brightness_medium"
-        app:iconTint="?attr/colorOnSurface"
+        app:iconTint="?attr/colorOnPrimary"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/toolbar"
-        app:layout_constraintBottom_toBottomOf="@id/toolbar" />
+        app:layout_constraintTop_toTopOf="@id/appBarLayout"
+        app:layout_constraintBottom_toBottomOf="@id/appBarLayout" />
 
     <!-- ViewFlipper central -->
     <ViewFlipper
         android:id="@+id/viewFlipper"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        app:layout_constraintTop_toBottomOf="@id/toolbar"
+        app:layout_constraintTop_toBottomOf="@id/appBarLayout"
         app:layout_constraintBottom_toTopOf="@id/bottomNav" />
 
     <!-- BottomNavigationView inferior -->
@@ -40,6 +48,11 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:menu="@menu/bottom_nav_menu" />
+        app:menu="@menu/bottom_nav_menu"
+        app:itemBackground="@color/bottom_nav_item_background"
+        app:itemIconTint="@color/bottom_nav_item_foreground"
+        app:itemTextColor="@color/bottom_nav_item_foreground"
+        app:itemActiveIndicatorStyle="@style/Widget.Material3.BottomNavigationView.ActiveIndicator"
+        app:labelVisibilityMode="labeled" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

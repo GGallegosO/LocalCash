@@ -3,25 +3,26 @@
 
     <item
         android:id="@+id/nav_cuentas"
-        android:icon="@null"
+        android:icon="@drawable/account_balance_wallet"
         android:contentDescription="@string/aCuentas_nav_cuentas"
-        android:title="@string/aCuentas_nav_cuentas" />
+        android:title="@string/aCuentas_nav_cuentas"
+         />
 
     <item
         android:id="@+id/nav_nuevo"
-        android:icon="@null"
+        android:icon="@drawable/ic_add_circle"
         android:contentDescription="@string/aCuentas_nav_nuevo"
         android:title="@string/aCuentas_nav_nuevo" />
 
     <item
         android:id="@+id/nav_mapa"
-        android:icon="@null"
+        android:icon="@drawable/ic_map"
         android:contentDescription="@string/aCuentas_nav_mapa"
         android:title="@string/aCuentas_nav_mapa" />
 
     <item
         android:id="@+id/nav_contactos"
-        android:icon="@null"
+        android:icon="@drawable/ic_person"
         android:contentDescription="@string/aCuentas_nav_contactos"
         android:title="@string/aCuentas_nav_contactos" />
 

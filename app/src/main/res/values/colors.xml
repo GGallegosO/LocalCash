@@ -21,7 +21,7 @@
 
     <!-- Light Theme Colors - Inverso coherente -->
     <color name="md_theme_light_primary">#00C853</color>
-    <color name="md_theme_light_onPrimary">#FFFFFF</color>
+    <color name="md_theme_light_onPrimary">#1A1A1A</color>
     <color name="md_theme_light_primaryContainer">#E8F5E9</color>
     <color name="md_theme_light_onPrimaryContainer">#1A1A1A</color>
     <color name="md_theme_light_secondary">#00C853</color>
