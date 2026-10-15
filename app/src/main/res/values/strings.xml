@@ -73,7 +73,7 @@
     <!-- Strings de CuentasActivity (prefijo aCuentas_) -->
     <string name="aCuentas_title">Cuentas y Movimientos</string>
     <string name="aCuentas_subtitle">(En desarrollo - Próximamente con osmdroid y SQLite)</string>
-    <string name="aCuentas_toolbar_title">Cuentas</string>
+    <string name="aCuentas_toolbar_title">Mis Cuentas</string>
     <string name="aCuentas_toggle_tema_desc">Cambiar tema claro/oscuro</string>
     <string name="aCuentas_logo_desc">Logo Módulo Cuentas</string>
     <string name="aCuentas_nav_cuentas">Cuentas</string>
@@ -82,6 +82,15 @@
     <string name="aCuentas_nav_contactos">Contactos</string>
     <!-- Strings para ViewFlipper T13 -->
     <string name="aCuentas_saldo_total">Saldo total</string>
+
+    <!-- Strings para View 1 - T15 -->
+    <string name="aCuentas_saldo_total_label">Saldo Total</string>
+    <string name="aCuentas_saldo_total_demo">$1.250.000 CLP</string>
+    <string name="aCuentas_fab_nueva_cuenta_desc">Agregar nueva cuenta</string>
+    <string name="aCuentas_item_cuenta_icon_desc">Ícono de cuenta</string>
+    <string name="aCuentas_nombre_cuenta">Cuenta</string>
+    <string name="aCuentas_tipo_efectivo">Efectivo</string>
+    <string name="aCuentas_empty_cuentas">No hay cuentas registradas</string>
     <string name="aCuentas_nueva_cuenta">Nueva cuenta</string>
     <string name="aCuentas_tipo_ingreso">Ingreso</string>
     <string name="aCuentas_tipo_egreso">Egreso</string>
@@ -93,4 +102,8 @@
     <string name="aCuentas_sin_datos">No hay datos aún</string>
     <string name="aCuentas_titulo_mapa">Mapa</string>
     <string name="aCuentas_titulo_contactos">Contactos</string>
+
+    <!-- Tipos de cuenta (para placeholders futuros o adapters) -->
+    <string name="aCuentas_tipo_ahorro">Ahorro</string>
+    <string name="aCuentas_tipo_tarjeta">Tarjeta</string>
 </resources>

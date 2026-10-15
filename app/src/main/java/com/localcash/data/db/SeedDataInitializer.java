@@ -5,8 +5,9 @@ import androidx.room.RoomDatabase;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
 /**
- * Semilla de datos inicial: inserta la cuenta "Efectivo Demo" con saldo de
- * apertura $1.000.000 CLP la <b>primera vez</b> que se crea la base de datos.
+ * Semilla de datos inicial: inserta 2 cuentas bancarias (Cuenta Corriente
+ * $750.000 CLP + Tarjeta Visa $500.000 CLP = $1.250.000 CLP total) la
+ * <b>primera vez</b> que se crea la base de datos.
  * <p>
  * {@link RoomDatabase.Callback#onCreate} se invoca solo cuando el archivo de BD
  * se crea por primera vez; en aperturas posteriores Room no lo ejecuta, por lo
@@ -34,10 +35,16 @@ public final class SeedDataInitializer extends RoomDatabase.Callback {
      */
     private static final String TABLA_CUENTAS = "cuentas";
 
-    private static final String NOMBRE_CUENTA_DEMO = "Efectivo Demo";
-    private static final String TIPO_CUENTA_DEMO = "EFECTIVO";
-    /** Saldo de apertura: 1_000_000L = $1.000.000 CLP (unidad mínima: 1 peso). */
-    private static final long SALDO_APERTURA_DEMO = 1_000_000L;
+    private static final String NOMBRE_CUENTA_AHORRO = "Cuenta Corriente";
+    private static final String TIPO_CUENTA_AHORRO = "AHORRO";
+    /** Saldo de apertura: 750_000L = $750.000 CLP (unidad mínima: 1 peso). */
+    private static final long SALDO_APERTURA_AHORRO = 750_000L;
+
+    private static final String NOMBRE_CUENTA_TARJETA = "Tarjeta Visa";
+    private static final String TIPO_CUENTA_TARJETA = "TARJETA";
+    /** Saldo de apertura: 500_000L = $500.000 CLP (unidad mínima: 1 peso). */
+    private static final long SALDO_APERTURA_TARJETA = 500_000L;
+
     private static final String MONEDA_DEMO = "CLP";
 
     /** Constructor por defecto requerido por {@link RoomDatabase.Callback}. */
@@ -45,8 +52,12 @@ public final class SeedDataInitializer extends RoomDatabase.Callback {
         super();
     }
 
-    /**
-     * Inserta la cuenta demo al crear la base de datos.
+/**
+     * Inserta las cuentas demo al crear la base de datos.
+     * <p>
+     * Cuentas: "Cuenta Corriente" (AHORRO, $750.000 CLP) y "Tarjeta Visa"
+     * (TARJETA, $500.000 CLP). Total = $1.250.000 CLP (para demo).
+     * </p>
      *
      * @param db Base de datos recién creada (el esquema ya está aplicado)
      */
@@ -57,9 +68,18 @@ public final class SeedDataInitializer extends RoomDatabase.Callback {
                 "INSERT INTO " + TABLA_CUENTAS
                         + " (nombre, tipo, saldo, moneda) VALUES (?, ?, ?, ?)",
                 new Object[]{
-                        NOMBRE_CUENTA_DEMO,
-                        TIPO_CUENTA_DEMO,
-                        SALDO_APERTURA_DEMO,
+                        NOMBRE_CUENTA_AHORRO,
+                        TIPO_CUENTA_AHORRO,
+                        SALDO_APERTURA_AHORRO,
+                        MONEDA_DEMO
+                });
+        db.execSQL(
+                "INSERT INTO " + TABLA_CUENTAS
+                        + " (nombre, tipo, saldo, moneda) VALUES (?, ?, ?, ?)",
+                new Object[]{
+                        NOMBRE_CUENTA_TARJETA,
+                        TIPO_CUENTA_TARJETA,
+                        SALDO_APERTURA_TARJETA,
                         MONEDA_DEMO
                 });
     }
