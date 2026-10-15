@@ -7,14 +7,14 @@
 
 ## Estado de la sesión (retomada tras /compact)
 
-- **Alcance actual:** Capa Datos/Dominio (T1→T12) completada + Fase 3 UI en progreso (T12 finalizada). Próxima tarea: **T13**.
-- **Completadas:** T1 (Config Room), T2 (Entidades), T3 (DAOs), T4 (AppDatabase Singleton), T5 (Modelos de dominio con BigDecimal y Enums), T6 (ErrorCode), T7 (TransaccionService + BusinessRuleException), T8 (Tests de TransaccionService: 8/8), T9 (Tests de DAOs con Robolectric: 5/5), T10 (SeedDataInitializer + registro en AppDatabase), **T11 (Menú navegación inferior)**: `bottom_nav_menu.xml` con 4 ítems (`nav_cuentas`, `nav_nuevo`, `nav_mapa`, `nav_contactos`) + strings `aCuentas_` en `strings.xml`. `assembleDebug` BUILD SUCCESSFUL, 0 warnings. Total 13/13 tests en verde.
+- **Alcance actual:** Capa Datos/Dominio (T1→T10) completada. Fase 3 UI: T11, T12, T13 y T14 completadas (estructura visual y Activity base). Próxima tarea: **T15** (Lógica de UI con Room).
+- **Completadas:** T1 a T10 (Datos/Dominio), T11 (Menú navegación), T12 (`activity_cuentas.xml`), T13 (Layouts `view_*.xml` refinados visualmente), T14 (`CuentasActivity.java` con ViewBinding y navegación).
 - **Reglas no negociables:**
   1. Dinero: `long` en entidades Room (pesos CLP directos, NO centavos, NO double). `BigDecimal` en modelos de dominio.
   2. Arquitectura: `domain/` NO importa `androidx.room` ni Android SDK (solo `java.*`).
   3. Testing: cobertura ≥70% en `data/` y `domain/` (`.agent.md` §5.3).
   4. Memoria: un `doc/007-cuentas.md` único va actualizado tras cada tarea (§7 del contrato).
-- **Siguiente tarea inmediata:** **T12** — Crear layout `activity_cuentas.xml` (Fase 3 UI). Reglas de UI: cero colores hardcodeados (solo atributos Material 3), sin `ConstraintLayout` (solo `LinearLayout`/`RelativeLayout`), `MaterialButton` con `icon` y no `app:drawableStartCompat`.
+- **Siguiente tarea inmediata:** **T15** — Conectar Vista 1 (`view_cuentas`) con Room (ViewModel, LiveData, Adapter) para mostrar el saldo total real y la lista de cuentas desde la base de datos.
 
 ---
 
@@ -22,11 +22,11 @@
 
 | Campo | T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9 | T10 | T11 | T12 | T13 | T14 | T15 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **Fecha** | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-14 | 2026-10-14 | 2026-10-14 | 2026-10-15 | 2026-10-15 |
-| **Tarea ejecutada** | Configurar Room en el proyecto | Crear entidades Room en `data/entities/` | Crear DAOs en `data/dao/` | Crear `AppDatabase.java` en `data/db/` | Crear modelos de dominio en `domain/model/` | Crear códigos de error en `domain/error/ErrorCode.java` | Crear `TransaccionService.java` en `domain/service/` | Crear tests unitarios de `TransaccionService` | Crear tests de DAOs (`CuentaDaoTest`, `TransaccionDaoTest`) | Crear `SeedDataInitializer.java` y registrar en `AppDatabase` | Crear menú `bottom_nav_menu.xml` + strings `aCuentas_` | Crear layout `activity_cuentas.xml` | Crear layouts `view_*.xml` (cuentas, transacción, mapa, contactos) | Crear `CuentasActivity.java` en `ui/cuentas/` |
-| **Responsable** | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG |
-| **Duración estimada vs real** | 15 min vs ~5 min | 30 min vs ~10 min | 30 min vs ~10 min | 30 min vs ~15 min | 30 min vs ~15 min | 10 min vs ~5 min | 45 min vs ~15 min | 45 min vs ~15 min | 60 min vs ~40 min | 30 min vs ~10 min | 30 min vs ~10 min | 15 min vs ~5 min | 45 min vs ~20 min | 30 min vs ~20 min |
-| **Estado** | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | ✅ Completado | ⬜ Pendiente |
+| **Fecha** | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-14 | 2026-10-14 | 2026-10-14 | 2026-10-15 | 2026-10-15 | — |
+| **Tarea ejecutada** | Configurar Room en el proyecto | Crear entidades Room en `data/entities/` | Crear DAOs en `data/dao/` | Crear `AppDatabase.java` en `data/db/` | Crear modelos de dominio en `domain/model/` | Crear códigos de error en `domain/error/ErrorCode.java` | Crear `TransaccionService.java` en `domain/service/` | Crear tests unitarios de `TransaccionService` | Crear tests de DAOs (`CuentaDaoTest`, `TransaccionDaoTest`) | Crear `SeedDataInitializer.java` y registrar en `AppDatabase` | Crear menú `bottom_nav_menu.xml` + strings `aCuentas_` | Crear layout `activity_cuentas.xml` | Refinar layouts `view_*.xml` (UI visual) | Crear `CuentasActivity.java` con ViewBinding | Conectar Vista 1 (Cuentas) con Room (ViewModel/Adapter) |
+| **Responsable** | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG |
+| **Duración estimada vs real** | 15 min vs ~5 min | 30 min vs ~10 min | 30 min vs ~10 min | 30 min vs ~15 min | 30 min vs ~15 min | 10 min vs ~5 min | 45 min vs ~15 min | 45 min vs ~15 min | 60 min vs ~40 min | 30 min vs ~10 min | 30 min vs ~10 min | 15 min vs ~5 min | 45 min vs ~20 min | 30 min vs ~20 min | 60 min vs — |
+| **Estado** | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | ✅ Completado | ✅ Completado | ⬜ Pendiente |
 
 ---
 
@@ -54,6 +54,9 @@
 
 **T11 — Crear menú navegación inferior:** Se creó `app/src/main/res/menu/bottom_nav_menu.xml` con 4 ítems de navegación inferior: `nav_cuentas` (`account_balance_wallet`), `nav_nuevo` (`add_circle`), `nav_mapa` (`map`), `nav_contactos` (`person`). Se agregaron 4 strings en `app/src/main/res/values/strings.xml` con prefijo `aCuentas_`: `aCuentas_nav_cuentas` ("Cuentas"), `aCuentas_nav_nuevo` ("Nuevo"), `aCuentas_nav_mapa` ("Mapa"), `aCuentas_nav_contactos` ("Contactos"). Los íconos son **vectoriales** (`@drawable/ic_...`) — Material Icons — configurados en `res/drawable/ic_menu_*.xml`. No se tocaron activities, layouts ni clases Java (solo XML). Verificación: `./gradlew assembleDebug` → **BUILD SUCCESSFUL, 0 warnings**. **Inicio de Fase 3 UI.**
 
+**T13 (Fase Visual) — Refinar layouts de vistas:** Se completó el diseño visual de `view_cuentas.xml` siguiendo la referencia. Se implementó una `MaterialCardView` para el saldo total, un `RecyclerView` para la lista, un `TextView` para el estado vacío (`tvEmptyState`) y un `FloatingActionButton`. Se creó `item_cuenta.xml` con un diseño horizontal (ícono de tipo de cuenta, nombre con weight=1 y monto en negrita). Se centralizaron todos los textos en `strings.xml` con el prefijo `aCuentas_` y se aseguró el uso exclusivo de atributos Material 3.
+**T14 — Crear `CuentasActivity.java`:** Se creó la Activity principal usando `ActivityCuentasBinding`, configurando el Toolbar, el toggle de tema con `AppCompatDelegate.setDefaultNightMode()` y la navegación del `BottomNavigationView` que controla el `ViewFlipper`.
+
 ---
 
 ## Archivos Creados / Modificados
@@ -80,6 +83,7 @@
 - `app/src/main/java/com/localcash/data/db/SeedDataInitializer.java` (T10) — `public final class SeedDataInitializer extends RoomDatabase.Callback`: override `onCreate(@NonNull SupportSQLiteDatabase db)` que inserta la cuenta demo (`"Efectivo Demo"`, `"EFECTIVO"`, `1_000_000L`, `"CLP"`) con `execSQL` + bindArgs `?`. Constantes privadas del SQL (tabla, nombre, tipo, saldo, moneda); sin DAOs (el callback corre durante la apertura de la BD).
 - `app/src/main/res/menu/bottom_nav_menu.xml` (T11) — menú de navegación inferior con 4 ítems: `nav_cuentas` (`ic_menu_account_balance_wallet`), `nav_nuevo` (`ic_menu_add_circle`), `nav_mapa` (`ic_menu_map`), `nav_contactos` (`ic_menu_person`). Íconos vectoriales en `res/drawable/ic_menu_*.xml` (Material Icons, sin `@android:drawable/`).
 - `app/src/main/res/values/strings.xml` (T11 modificado) — agregados 4 strings con prefijo `aCuentas_`: `aCuentas_nav_cuentas` ("Cuentas"), `aCuentas_nav_nuevo` ("Nuevo"), `aCuentas_nav_mapa` ("Mapa"), `aCuentas_nav_contactos` ("Contactos").
+- `app/src/main/res/layout/item_cuenta.xml` (T13) — Layout de fila para el RecyclerView de cuentas.
 
 **Modificados:**
 
@@ -96,6 +100,9 @@
   - Agregado `testOptions { unitTests { includeAndroidResources = true; all { jvmArgs '--add-exports=java.base/jdk.internal.access=ALL-UNNAMED' } } }` (Robolectric necesita recursos fusionados y el export del paquete interno de `java.base` en el daemon JDK 21)
 - `spec/constitution/tech-stack.md` (T9) — §7 "Registro de cambios del stack": fila de adopción concreta de Robolectric 4.17 para los tests de DAO de la Feature 007, con motivo (sondeo empírico) y candidatas evaluadas. La fila §4 "Integración" ya preaprobaba Robolectric 4.10+.
 - `app/src/main/java/com/localcash/data/db/AppDatabase.java` (T10) — en `getInstance()`: el `// TODO: Registrar SeedDataInitializer en T10` fue reemplazado por `.addCallback(new SeedDataInitializer())` en el builder (antes de `.build()`).
+- `app/src/main/res/layout/view_cuentas.xml` (T13) — Refinado con `MaterialCardView` (fondo `?attr/colorSurfaceVariant`), `RecyclerView`, estado vacío y FAB.
+- `app/src/main/res/values/strings.xml` (T13) — Agregados strings de UI de cuentas.
+- `app/src/main/java/com/localcash/data/db/SeedDataInitializer.java` (T10/T13 prep) — Actualizado para insertar 2 cuentas bancarias realistas: "Cuenta Corriente" (AHORRO, $750.000) y "Tarjeta Visa" (TARJETA, $500.000).
 
 ---
 
@@ -203,6 +210,12 @@
 34. **Strings con prefijo `aCuentas_` en `strings.xml` (organización por feature)**
     _Justificación:_ Convención establecida en el proyecto desde la Feature 005/006: cada feature tiene su prefijo único (`aLogin_`, `aRegister_`, `aCuentas_`) para evitar colisiones de nombres y facilitar la localización. Mantener esto desde el inicio simplifica auditorías y previene bugs de strings cruzados entre features.
 
+35. **Uso de `?attr/colorSurfaceVariant` para el fondo de la Card de saldo**
+    _Justificación:_ En modo oscuro, `?attr/colorSurface` es casi negro, confundiendo la tarjeta con el fondo. `colorSurfaceVariant` proporciona el contraste necesario en ambos temas.
+
+36. **Datos semilla realistas (Cuentas bancarias en lugar de Efectivo)**
+    _Justificación:_ Una cuenta de "Efectivo" no es lógica para un flujo de transferencias. Se actualizó `SeedDataInitializer` para generar cuentas bancarias que sumen el total demo de $1.250.000.
+
 ---
 
 ## Lecciones Aprendidas
@@ -238,7 +251,7 @@
 
 ## Próximos Pasos
 
-1. **Fase 3 UI — T11 completada.** Siguiente tarea: **T12** — crear layout `activity_cuentas.xml`.
+1. **Fase 3 UI — T14 completada.** Siguiente tarea: **T15** — Conectar Vista 1 (`view_cuentas`) con Room. Crear `CuentasViewModel`, `CuentasAdapter` y observar el `LiveData` para mostrar el saldo total real y la lista de cuentas.
 
 2. **T12–T18 — Fase 3 UI:** crear layouts de vistas (T12, T13), `CuentasActivity.java` (T14), conectar Vista 1 con Room (T15), conectar Vista 2 con Room y dominio (T16), modificar `LoginActivity.java` (T17), actualizar `AndroidManifest.xml` y `strings.xml` (T18). Reglas de UI: cero colores hardcodeados (solo atributos Material 3), sin `ConstraintLayout` (solo `LinearLayout`/`RelativeLayout`), `MaterialButton` con `icon` y no `app:drawableStartCompat`.
 
@@ -262,9 +275,9 @@
 | T10 | Crear `SeedDataInitializer.java` en `data/db/` | ✅ Completado | 2026-10-14 |
 | T11 | Crear menú `bottom_nav_menu.xml` + strings `aCuentas_` | ✅ Completado | 2026-10-14 |
 | T12 | Crear layout `activity_cuentas.xml` | ✅ Completado | 2026-10-14 |
-| T13 | Crear layouts `view_*.xml` (cuentas, transacción, mapa, contactos) | ✅ Completado | 2026-10-14 |
-| T14 | Crear `CuentasActivity.java` en `ui/cuentas/` | ✅ Completado | 2026-10-14 |
-| T15 | Conectar Vista 1 (Cuentas) con Room | ⬜ Pendiente | — |
+| T13 | Refinar layouts `view_*.xml` (UI visual) | ✅ Completado | 2026-10-15 |
+| T14 | Crear `CuentasActivity.java` en `ui/cuentas/` | ✅ Completado | 2026-10-15 |
+| T15 | Conectar Vista 1 (Cuentas) con Room (ViewModel/Adapter) | ⬜ Pendiente | — |
 | T16 | Conectar Vista 2 (Transacción) con Room y dominio | ⬜ Pendiente | — |
 | T17 | Modificar `LoginActivity.java` | ⬜ Pendiente | — |
 | T18 | Actualizar `AndroidManifest.xml` y `strings.xml` | ⬜ Pendiente | — |

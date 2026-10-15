@@ -1,21 +1,87 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:padding="16dp">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <!-- Card superior: Saldo Total -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardSaldoTotal"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="@string/aCuentas_saldo_total"
-        android:textColor="?attr/colorOnSurface"
-        android:textSize="18sp" />
+        android:layout_margin="16dp"
+        app:cardBackgroundColor="@color/md_theme_dark_secondaryContainer"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="2dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
-    <Button
-        android:id="@+id/btnNuevaCuenta"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <TextView
+                android:id="@+id/tvSaldoLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/aCuentas_saldo_total_label"
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:textColor="?attr/colorOnPrimaryContainer" />
+
+            <TextView
+                android:id="@+id/tvSaldoTotal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/aCuentas_saldo_total_demo"
+                android:textAppearance="?attr/textAppearanceHeadlineLarge"
+                android:textColor="?attr/colorOnPrimaryContainer" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- RecyclerView para lista de cuentas -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerCuentas"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:paddingHorizontal="16dp"
+        android:layout_marginTop="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/cardSaldoTotal" />
+
+    <!-- FAB para nueva cuenta -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabNuevaCuenta"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/aCuentas_nueva_cuenta"
-        android:textColor="?attr/colorPrimary" />
-</LinearLayout>
+        android:layout_margin="16dp"
+        android:contentDescription="@string/aCuentas_fab_nueva_cuenta_desc"
+        android:src="@drawable/ic_add_circle"
+        app:backgroundTint="?attr/colorPrimary"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:tint="?attr/colorOnPrimary" />
+
+    <!-- Estado vacío (cuando no hay cuentas registradas) -->
+    <TextView
+        android:id="@+id/tvEmptyState"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/aCuentas_empty_cuentas"
+        android:textAppearance="?attr/textAppearanceBodyLarge"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/fabNuevaCuenta"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/cardSaldoTotal" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
