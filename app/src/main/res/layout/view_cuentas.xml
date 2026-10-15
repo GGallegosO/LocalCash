@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp">
@@ -11,7 +12,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
-        app:cardBackgroundColor="@color/md_theme_dark_secondaryContainer"
+        app:cardBackgroundColor="?attr/colorSurfaceVariant"
         app:cardCornerRadius="16dp"
         app:cardElevation="2dp"
         app:layout_constraintEnd_toEndOf="parent"
@@ -30,16 +31,17 @@
                 android:layout_height="wrap_content"
                 android:text="@string/aCuentas_saldo_total_label"
                 android:textAppearance="?attr/textAppearanceTitleMedium"
-                android:textColor="?attr/colorOnPrimaryContainer" />
+                android:textColor="?attr/colorOnSurfaceVariant" />
 
+            <!-- Se llena en tiempo real desde CuentasViewModel (LiveData saldoTotal) -->
             <TextView
                 android:id="@+id/tvSaldoTotal"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="@string/aCuentas_saldo_total_demo"
                 android:textAppearance="?attr/textAppearanceHeadlineLarge"
-                android:textColor="?attr/colorOnPrimaryContainer" />
+                android:textColor="?attr/colorOnSurfaceVariant"
+                tools:text="$1.250.000 CLP" />
 
         </LinearLayout>
 

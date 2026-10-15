@@ -85,8 +85,8 @@
 
     <!-- Strings para View 1 - T15 -->
     <string name="aCuentas_saldo_total_label">Saldo Total</string>
-    <string name="aCuentas_saldo_total_demo">$1.250.000 CLP</string>
     <string name="aCuentas_fab_nueva_cuenta_desc">Agregar nueva cuenta</string>
+    <string name="aCuentas_fab_proximamente">Próximamente: Agregar nueva cuenta</string>
     <string name="aCuentas_item_cuenta_icon_desc">Ícono de cuenta</string>
     <string name="aCuentas_nombre_cuenta">Cuenta</string>
     <string name="aCuentas_tipo_efectivo">Efectivo</string>
