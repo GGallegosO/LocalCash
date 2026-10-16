@@ -7,8 +7,8 @@
 
 ## Estado de la sesión
 
-- **Alcance actual:** Capa Datos/Dominio (T1→T10) completada. Fase 3 UI: T11 a T15 completadas. Próxima tarea: **T16** (Conectar Vista 2 con Room y dominio).
-- **Completadas:** T1 a T14, y **T15 (Vista 1 conectada con Room: `CurrencyFormatter`, `CuentasViewModel`, `CuentasAdapter`, y diálogo FAB para agregar cuentas)**.
+- **Alcance actual:** Capa Datos/Dominio (T1→T10) completada. Fase 3 UI: T11 a T15 **completadas al 100%**. Próxima tarea: **T16** (Conectar Vista 2 con Room y dominio).
+- **Completadas:** T1 a T14, y **T15 (Vista 1 conectada con Room, diálogo FAB para crear cuentas, y gestión completa de cuentas: editar nombre/saldo y soft delete)**.
 - **Reglas no negociables:**
   1. Dinero: `long` en entidades Room (pesos CLP directos, NO centavos, NO double). `BigDecimal` en modelos de dominio.
   2. Arquitectura: `domain/` NO importa `androidx.room` ni Android SDK (solo `java.*`).
@@ -23,7 +23,7 @@
 | Campo | T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9 | T10 | T11 | T12 | T13 | T14 | T15 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | **Fecha** | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-14 | 2026-10-14 | 2026-10-14 | 2026-10-15 | 2026-10-15 | 2026-10-15 |
-| **Tarea ejecutada** | Configurar Room en el proyecto | Crear entidades Room en `data/entities/` | Crear DAOs en `data/dao/` | Crear `AppDatabase.java` en `data/db/` | Crear modelos de dominio en `domain/model/` | Crear códigos de error en `domain/error/ErrorCode.java` | Crear `TransaccionService.java` en `domain/service/` | Crear tests unitarios de `TransaccionService` | Crear tests de DAOs (`CuentaDaoTest`, `TransaccionDaoTest`) | Crear `SeedDataInitializer.java` y registrar en `AppDatabase` | Crear menú `bottom_nav_menu.xml` + strings `aCuentas_` | Crear layout `activity_cuentas.xml` | Refinar layouts `view_*.xml` (UI visual) | Crear `CuentasActivity.java` con ViewBinding | Conectar Vista 1 con Room y agregar diálogo FAB |
+| **Tarea ejecutada** | Configurar Room en el proyecto | Crear entidades Room en `data/entities/` | Crear DAOs en `data/dao/` | Crear `AppDatabase.java` en `data/db/` | Crear modelos de dominio en `domain/model/` | Crear códigos de error en `domain/error/ErrorCode.java` | Crear `TransaccionService.java` en `domain/service/` | Crear tests unitarios de `TransaccionService` | Crear tests de DAOs (`CuentaDaoTest`, `TransaccionDaoTest`) | Crear `SeedDataInitializer.java` y registrar en `AppDatabase` | Crear menú `bottom_nav_menu.xml` + strings `aCuentas_` | Crear layout `activity_cuentas.xml` | Refinar layouts `view_*.xml` (UI visual) | Crear `CuentasActivity.java` con ViewBinding | Conectar Vista 1 con Room, diálogo FAB y gestión de cuentas (editar/eliminar) |
 | **Responsable** | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG |
 | **Duración estimada vs real** | 15 min vs ~5 min | 30 min vs ~10 min | 30 min vs ~10 min | 30 min vs ~15 min | 30 min vs ~15 min | 10 min vs ~5 min | 45 min vs ~15 min | 45 min vs ~15 min | 60 min vs ~40 min | 30 min vs ~10 min | 30 min vs ~10 min | 15 min vs ~5 min | 45 min vs ~20 min | 30 min vs ~20 min | 60 min vs ~45 min |
 | **Estado** | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | ✅ Completado | ✅ Completado | ✅ Completado |
@@ -59,6 +59,8 @@
 
 **T15 — Conectar Vista 1 (Cuentas) con Room:** Se implementó la lógica completa de la Vista 1 para mostrar datos reales de la base de datos. Se creó `CurrencyFormatter.java` (utilidad para formatear montos CLP con locale `es-CL`), `CuentasViewModel.java` (expone `LiveData<List<Cuenta>>` y `LiveData<BigDecimal>` del saldo total calculado vía `Transformations.map`), y `CuentasAdapter.java` (mapea cada cuenta a una fila visual con ícono según tipo, nombre y monto formateado). Se modificó `CuentasActivity.java` para observar los LiveData, configurar el RecyclerView con `LinearLayoutManager`, manejar el estado vacío (mostrar/ocultar `tvEmptyState`), y extender `BaseActivity` (usando `ThemeManager` para el toggle de tema, corrigiendo la T14). Se limpiaron textos hardcodeados de `view_cuentas.xml` e `item_cuenta.xml`, se corrigió la estructura del divisor en `item_cuenta.xml` (LinearLayout vertical), y se aplicó `?attr/colorSurfaceVariant` a la card de saldo (Decisión #35). Finalmente, se implementó el alta de cuentas desde el FAB con `MaterialAlertDialogBuilder` (método `mostrarDialogNuevaCuenta()`): infla `dialog_nueva_cuenta.xml`, valida el nombre sin cerrar el diálogo ante error, lee el tipo de `MaterialButtonToggleGroup` vía `TipoCuenta.name()`, parsea el saldo de forma segura (`NumberFormatException` → 0, con `Log.w`) e inserta con `CuentasViewModel.insertarCuenta(...)` en el Executor de `AppDatabase`. Verificación: `assembleDebug` exitoso, `lint` sin hallazgos nuevos, `testDebugUnitTest` 13/13 verde.
 
+**T15.6 — Gestión de Cuentas (Editar/Eliminar):** Se implementó el 'Soft Delete' (borrado lógico) para mantener la integridad referencial con las transacciones (`ON DELETE CASCADE`). Se agregó el campo `activa` a la entidad `Cuenta` y se realizó una **Migración Real de Room (v1 a v2)** con `ALTER TABLE` (cumpliendo §6.11, sin `fallbackToDestructiveMigration`). Se agregaron métodos al `CuentaDao` para actualizar, contar transacciones y filtrar solo cuentas activas. En el `CuentasViewModel` se agregaron métodos para editar nombre, editar saldo (validando que no existan transacciones, retornando `LiveData<Boolean>`) y desactivar cuentas. En la UI, se implementó un **Long-Press** en el `CuentasAdapter` que despliega un `MaterialAlertDialog` con opciones para editar nombre, editar saldo o eliminar (confirmación).
+
 ---
 
 ## Archivos Creados / Modificados
@@ -91,6 +93,8 @@
 - `app/src/main/java/com/localcash/ui/cuentas/CuentasAdapter.java` (T15) — `RecyclerView.Adapter` con `ViewHolder` estático. Mapea tipo de cuenta a ícono (EFECTIVO/AHORRO/TARJETA), nombre y monto formateado. `setCuentas()` con notificaciones granulares (`notifyItemRangeInserted/Removed/Changed`).
 - `app/src/main/res/layout/dialog_nueva_cuenta.xml` (T15) — Formulario de diálogo para crear cuenta nueva con campos de nombre, tipo (Ahorro/Tarjeta) y saldo inicial.
 - `app/src/main/res/drawable/ic_account_balance_wallet.xml` (T15) — Renombrado de `account_balance_wallet.xml` para estandarizar prefijo `ic_` (consistencia con `ic_savings`, `ic_credit_card`, etc.).
+- `app/src/main/res/layout/dialog_editar_nombre_cuenta.xml` (T15.6) — Diálogo con `TextInputLayout`/`TextInputEditText` para editar el nombre de una cuenta.
+- `app/src/main/res/layout/dialog_editar_saldo_cuenta.xml` (T15.6) — Diálogo con `TextInputLayout`/`TextInputEditText` para editar el saldo de una cuenta.
 
 **Modificados:**
 
@@ -118,6 +122,14 @@
 - `app/src/main/java/com/localcash/ui/cuentas/CuentasViewModel.java` (T15) — Agregado método `insertarCuenta(String, String, long)` que persiste la cuenta en Room vía `AppDatabase.getExecutor().execute()` (hilo secundario).
 - `app/src/main/java/com/localcash/ui/cuentas/CuentasActivity.java` (T15) — Reemplazado el Toast del FAB por `mostrarDialogNuevaCuenta()` (MaterialAlertDialog) con validación de nombre (sin cerrar el diálogo ante error), selección de tipo vía `TipoCuenta.name()` y parseo seguro de saldo (`NumberFormatException` → 0). Promoción de `viewModel` a campo de clase.
 - `app/src/main/res/values/strings.xml` (T15) — Agregados strings del diálogo (`aCuentas_dialog_titulo`, `aCuentas_dialog_guardar`, `aCuentas_dialog_cancelar`, `aCuentas_dialog_nombre_hint`, `aCuentas_dialog_tipo_label`, `aCuentas_dialog_saldo_hint`, `aCuentas_dialog_saldo_default`, `aCuentas_toast_cuenta_creada`, `aCuentas_error_nombre_vacio`). Eliminado `aCuentas_fab_proximamente` (sin uso).
+- (T15.6) `app/src/main/java/com/localcash/data/entities/Cuenta.java`: Agregado campo `boolean activa`.
+- (T15.6) `app/src/main/java/com/localcash/data/db/AppDatabase.java`: Versión subida a 2, agregada `MIGRATION_1_2`.
+- (T15.6) `app/src/main/java/com/localcash/data/dao/CuentaDao.java`: `getAll()` filtra `activa = 1`, agregados `update()`, `getCuentaById()`, `contarTransacciones()`.
+- (T15.6) `app/src/main/java/com/localcash/data/dao/TransaccionDao.java`: Agregado `contarTransaccionesSync()`.
+- (T15.6) `app/src/main/java/com/localcash/ui/cuentas/CuentasViewModel.java`: Agregados `editarNombreCuenta`, `editarSaldoCuenta`, `desactivarCuenta`.
+- (T15.6) `app/src/main/java/com/localcash/ui/cuentas/CuentasAdapter.java`: Implementado `OnCuentaLongClickListener`.
+- (T15.6) `app/src/main/java/com/localcash/ui/cuentas/CuentasActivity.java`: Lógica de diálogos para editar/eliminar y observación de validaciones.
+- (T15.6) `app/src/main/res/values/strings.xml`: Agregados strings para menús y diálogos de gestión.
 
 ---
 
@@ -261,6 +273,15 @@
 46. **Promoción de `viewModel` a campo de clase en `CuentasActivity`**
     _Justificación:_ El ViewModel estaba como variable local de `configurarVistaCuentas()`, inaccesible para el nuevo `mostrarDialogNuevaCuenta()`. Promoverlo a campo es el cambio mínimo para que el diálogo pueda invocar `insertarCuenta(...)` sin duplicar la creación del ViewModel ni cambiar su ciclo de vida (`ViewModelProvider(this)` sigue ligado a la Activity).
 
+47. **Migración Real de Room (v1 a v2) en lugar de `fallbackToDestructiveMigration()`:** La constitución (§6.11) prohíbe destruir la BD. Se usó `ALTER TABLE` para agregar la columna `activa`, preservando los datos existentes.
+   _Justificación:_ `fallbackToDestructiveMigration()` borraría toda la información financiera del usuario ante un cambio de esquema. La migración `MIGRATION_1_2` (`ALTER TABLE cuentas ADD COLUMN activa INTEGER NOT NULL DEFAULT 1`) preserva los saldos e historial ya persistidos. El campo `activa` de la entidad lleva `@ColumnInfo(defaultValue = "1")` para que la DDL de instalación nueva y la de migración coincidan y Room valide el esquema.
+
+48. **Soft Delete (`activa = 0`) en lugar de `@Delete` físico:** La entidad `Transaccion` tiene `ON DELETE CASCADE`. Borrar una cuenta físicamente borraría su historial. El soft delete oculta la cuenta de la UI (`WHERE activa = 1`) pero mantiene el historial intacto.
+   _Justificación:_ La integridad del historial de transacciones es un requisito de negocio (los movimientos son la fuente de verdad del saldo, `data-model.md` §5.6). La cuenta "eliminada" deja de listarse pero sus filas permanecen en la BD.
+
+49. **`LiveData<Boolean>` para validaciones de negocio en el ViewModel:** El método `editarSaldoCuenta` retorna `LiveData<Boolean>` (true si se actualizó, false si hay transacciones). El ViewModel no produce texto de error (cumple §5.4); la UI traduce el `false` al string `@string/aCuentas_error_saldo_con_transacciones`.
+   _Justificación:_ Mantener el ViewModel libre de texto de usuario respeta `.agent.md` §5.4 (el dominio/ViewModel emiten códigos o estados; `ui/` traduce). Se prefirió `Boolean` a `MutableLiveData<String>` precisamente para no incrustar literales de UI en el ViewModel.
+
 ---
 
 ## Lecciones Aprendidas
@@ -299,6 +320,9 @@
 - **T15:** `Locale.forLanguageTag("es-CL")` reemplaza al constructor deprecado `new Locale("es", "CL")` en JDK 21.
 - **T15:** Para evitar que un `AlertDialog` se cierre al fallar una validación, se debe obtener el botón positivo con `dialog.getButton()` después de `show()` y asignarle un `OnClickListener` propio que solo llame a `dialog.dismiss()` en caso de éxito.
 - **T15:** Usar `Enum.name()` para valores persistidos es más seguro que hardcodear Strings, ya que el compilador valida la existencia del valor y se mantiene una única fuente de verdad con el enum de dominio.
+- **T15.6:** Para validar reglas de negocio antes de una escritura en Room (ej: 'no editar saldo si hay transacciones'), se deben usar consultas síncronas (`@Query` sin LiveData) dentro del `db.getExecutor().execute()`, ya que el LiveData no se puede leer de forma bloqueante.
+- **T15.6:** El patrón nativo de Android para acciones secundarias en listas (editar/eliminar) es el **Long-Press** (mantener presionado) sobre el ítem del RecyclerView, desplegando un menú de opciones.
+- **T15.6:** Al agregar una columna con `ALTER TABLE ... DEFAULT`, el campo correspondiente de la entidad debe declarar el mismo `@ColumnInfo(defaultValue = ...)`; de lo contrario, la validación de esquema de Room puede rechazar la migración por discrepancia (y el `exportSchema = true` deja la prueba dura en `app/schemas/.../2.json`).
 
 ---
 
@@ -330,7 +354,7 @@
 | T12 | Crear layout `activity_cuentas.xml` | ✅ Completado | 2026-10-14 |
 | T13 | Refinar layouts `view_*.xml` (UI visual) | ✅ Completado | 2026-10-15 |
 | T14 | Crear `CuentasActivity.java` en `ui/cuentas/` | ✅ Completado | 2026-10-15 |
-| T15 | Conectar Vista 1 (Cuentas) con Room y agregar diálogo FAB | ✅ Completado | 2026-10-15 |
+| T15 | Conectar Vista 1 (Cuentas) con Room y gestión completa (crear/editar/eliminar) | ✅ Completado | 2026-10-15 |
 | T16 | Conectar Vista 2 (Transacción) con Room y dominio | ⬜ Pendiente | — |
 | T17 | Modificar `LoginActivity.java` | ⬜ Pendiente | — |
 | T18 | Actualizar `AndroidManifest.xml` y `strings.xml` | ⬜ Pendiente | — |
