@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Diálogo para agregar una cuenta nueva (T15.5.1). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <!-- Nombre de la cuenta -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/inputLayoutNombre"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/aCuentas_dialog_nombre_hint">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/inputNombre"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Etiqueta del tipo de cuenta -->
+    <TextView
+        android:id="@+id/tvTipoLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="@string/aCuentas_dialog_tipo_label"
+        android:textAppearance="?attr/textAppearanceLabelLarge" />
+
+    <!-- Selector de tipo de cuenta -->
+    <com.google.android.material.button.MaterialButtonToggleGroup
+        android:id="@+id/toggleTipo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:selectionRequired="true"
+        app:singleSelection="true">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAhorro"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/aCuentas_tipo_ahorro" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnTarjeta"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/aCuentas_tipo_tarjeta" />
+
+    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+    <!-- Saldo inicial -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/inputLayoutSaldo"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:hint="@string/aCuentas_dialog_saldo_hint">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/inputSaldo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:text="@string/aCuentas_dialog_saldo_default" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+</LinearLayout>

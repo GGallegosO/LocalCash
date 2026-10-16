@@ -106,4 +106,10 @@
     <!-- Tipos de cuenta (para placeholders futuros o adapters) -->
     <string name="aCuentas_tipo_ahorro">Ahorro</string>
     <string name="aCuentas_tipo_tarjeta">Tarjeta</string>
+
+    <!-- Strings para diálogo de nueva cuenta (T15.5) -->
+    <string name="aCuentas_dialog_nombre_hint">Nombre de la cuenta</string>
+    <string name="aCuentas_dialog_tipo_label">Tipo de cuenta</string>
+    <string name="aCuentas_dialog_saldo_hint">Saldo inicial</string>
+    <string name="aCuentas_dialog_saldo_default">0</string>
 </resources>
