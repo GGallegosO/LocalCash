@@ -3,6 +3,7 @@ package com.localcash.ui.cuentas;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -22,10 +23,16 @@ import com.localcash.R;
 import com.localcash.data.entities.Cuenta;
 import com.localcash.databinding.ActivityCuentasBinding;
 import com.localcash.databinding.ViewCuentasBinding;
+import com.localcash.databinding.ViewTransaccionBinding;
+import com.localcash.domain.error.ErrorCode;
 import com.localcash.domain.model.TipoCuenta;
+import com.localcash.domain.model.TipoTransaccion;
 import com.localcash.ui.BaseActivity;
 import com.localcash.ui.theme.ThemeManager;
 import com.localcash.ui.util.CurrencyFormatter;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Activity principal de LocalCash (Módulo 1): 4 vistas en un {@code ViewFlipper}
@@ -46,8 +53,20 @@ public class CuentasActivity extends BaseActivity
     /** Binding de la Vista 1 (se infla dentro del ViewFlipper, fuera de activity_cuentas.xml). */
     private ViewCuentasBinding vistaCuentas;
 
+    /** Binding de la Vista 2 (Transacción), inflado dentro del ViewFlipper. */
+    private ViewTransaccionBinding vistaTransaccion;
+
     /** ViewModel de la Vista 1: usado para insertar cuentas desde el diálogo. */
     private CuentasViewModel viewModel;
+
+    /** ViewModel de la Vista 2: registra movimientos (ingreso/egreso). */
+    private TransaccionViewModel transaccionViewModel;
+
+    /** Cuentas activas asociadas, en el mismo orden que el adapter del spinner. */
+    private final List<Cuenta> cuentasSpinner = new ArrayList<>();
+
+    /** Id de la cuenta seleccionada en el spinner ({@code -1} si no hay selección). */
+    private long cuentaSeleccionadaId = -1L;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,7 +110,8 @@ public class CuentasActivity extends BaseActivity
         // Vista 0: Cuentas (binding propio: sus vistas no forman parte de activity_cuentas.xml)
         vistaCuentas = ViewCuentasBinding.inflate(getLayoutInflater(), binding.viewFlipper, true);
         // Vista 1: Transacción
-        getLayoutInflater().inflate(R.layout.view_transaccion, binding.viewFlipper);
+        vistaTransaccion = ViewTransaccionBinding.inflate(
+                getLayoutInflater(), binding.viewFlipper, true);
         // Vista 2: Mapa
         getLayoutInflater().inflate(R.layout.view_mapa, binding.viewFlipper);
         // Vista 3: Contactos
@@ -102,6 +122,9 @@ public class CuentasActivity extends BaseActivity
 
         // Conectar la Vista 1 con Room (ViewModel + Adapter)
         configurarVistaCuentas();
+
+        // Conectar la Vista 2 con Room y dominio (ViewModel de transacciones)
+        configurarVistaTransaccion();
     }
 
     /**
@@ -129,6 +152,152 @@ public class CuentasActivity extends BaseActivity
 
         // FAB: abrir diálogo para agregar una cuenta nueva (T15.5)
         vistaCuentas.fabNuevaCuenta.setOnClickListener(v -> mostrarDialogNuevaCuenta());
+    }
+
+    /**
+     * Conecta el formulario de la Vista 2 (Transacción) con
+     * {@link TransaccionViewModel}: puebla el selector de cuentas activas y
+     * enlaza el botón "Guardar Movimiento".
+     */
+    private void configurarVistaTransaccion() {
+        transaccionViewModel = new ViewModelProvider(this).get(TransaccionViewModel.class);
+
+        transaccionViewModel.getCuentasActivas().observe(this, cuentas -> {
+            cuentasSpinner.clear();
+            List<String> nombres = new ArrayList<>();
+            if (cuentas != null) {
+                cuentasSpinner.addAll(cuentas);
+                for (Cuenta cuenta : cuentas) {
+                    nombres.add(cuenta.getNombre());
+                }
+            }
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                    this, android.R.layout.simple_list_item_1, nombres);
+            vistaTransaccion.spinnerCuentas.setAdapter(adapter);
+            // La lista cambió: la selección anterior ya no es válida.
+            cuentaSeleccionadaId = -1L;
+            vistaTransaccion.spinnerCuentas.setText("", false);
+        });
+
+        vistaTransaccion.spinnerCuentas.setOnItemClickListener((parent, view, position, id) -> {
+            if (position >= 0 && position < cuentasSpinner.size()) {
+                cuentaSeleccionadaId = cuentasSpinner.get(position).getId();
+                vistaTransaccion.inputLayoutCuenta.setError(null);
+            }
+        });
+
+        vistaTransaccion.btnGuardarMovimiento.setOnClickListener(v -> registrarMovimiento());
+    }
+
+    /**
+     * Valida los campos del formulario (monto &gt; 0, concepto no vacío y cuenta
+     * seleccionada). Si la validación de UI pasa, delega el registro en el
+     * ViewModel y reacciona al {@link ErrorCode} resultante. Si hay errores de
+     * UI, <b>no</b> se llama al ViewModel.
+     */
+    private void registrarMovimiento() {
+        // Limpiar errores previos
+        vistaTransaccion.inputLayoutMonto.setError(null);
+        vistaTransaccion.inputLayoutConcepto.setError(null);
+        vistaTransaccion.inputLayoutCuenta.setError(null);
+
+        // Monto: no vacío y > 0
+        CharSequence montoTexto = vistaTransaccion.inputMonto.getText();
+        String montoStr = montoTexto != null ? montoTexto.toString().trim() : "";
+        long monto = 0L;
+        if (!montoStr.isEmpty()) {
+            try {
+                monto = Long.parseLong(montoStr);
+            } catch (NumberFormatException e) {
+                Log.w(TAG, "Monto no numérico en el formulario: " + montoStr, e);
+                monto = 0L;
+            }
+        }
+        if (monto <= 0) {
+            vistaTransaccion.inputLayoutMonto.setError(
+                    getString(R.string.aCuentas_error_monto_vacio));
+            return;
+        }
+
+        // Concepto: no vacío
+        CharSequence conceptoTexto = vistaTransaccion.inputConcepto.getText();
+        String concepto = conceptoTexto != null ? conceptoTexto.toString().trim() : "";
+        if (concepto.isEmpty()) {
+            vistaTransaccion.inputLayoutConcepto.setError(
+                    getString(R.string.aCuentas_error_concepto_vacio));
+            return;
+        }
+
+        // Cuenta: seleccionada en el spinner
+        if (cuentaSeleccionadaId <= 0) {
+            vistaTransaccion.inputLayoutCuenta.setError(
+                    getString(R.string.aCuentas_error_cuenta_no_seleccionada));
+            return;
+        }
+
+        String tipo = (vistaTransaccion.toggleTipoTransaccion.getCheckedButtonId() == R.id.btnEgreso)
+                ? TipoTransaccion.EGRESO.name()
+                : TipoTransaccion.INGRESO.name();
+
+        final long montoFinal = monto;
+        LiveData<ErrorCode> resultado = transaccionViewModel.registrarTransaccion(
+                cuentaSeleccionadaId, tipo, montoFinal, concepto);
+
+        resultado.observe(this, new Observer<ErrorCode>() {
+            @Override
+            public void onChanged(ErrorCode errorCode) {
+                resultado.removeObserver(this);
+                manejarResultadoTransaccion(errorCode);
+            }
+        });
+    }
+
+    /**
+     * Traduce el resultado del registro a feedback de usuario:
+     * {@code null} = éxito (Toast + limpieza del formulario); un
+     * {@link ErrorCode} = fallo de dominio (Toast con el mensaje correspondiente,
+     * desde {@code strings.xml}).
+     *
+     * @param errorCode código devuelto por el ViewModel ({@code null} si tuvo éxito)
+     */
+    private void manejarResultadoTransaccion(ErrorCode errorCode) {
+        if (errorCode == null) {
+            Toast.makeText(this, R.string.aCuentas_toast_movimiento_registrado,
+                    Toast.LENGTH_SHORT).show();
+            limpiarFormularioTransaccion();
+            return;
+        }
+
+        int mensaje;
+        switch (errorCode) {
+            case SALDO_INSUFICIENTE:
+                mensaje = R.string.aCuentas_toast_error_saldo_insuficiente;
+                break;
+            case CUENTA_NO_ENCONTRADA:
+                mensaje = R.string.aCuentas_toast_error_cuenta_no_encontrada;
+                break;
+            case MONTO_INVALIDO:
+                mensaje = R.string.aCuentas_toast_error_monto_invalido;
+                break;
+            default:
+                mensaje = R.string.aCuentas_toast_movimiento_error;
+                break;
+        }
+        Toast.makeText(this, mensaje, Toast.LENGTH_SHORT).show();
+    }
+
+    /**
+     * Limpia el formulario de la Vista 2 tras un registro exitoso: monto,
+     * concepto, errores de validación y selección del spinner.
+     */
+    private void limpiarFormularioTransaccion() {
+        vistaTransaccion.inputMonto.setText(null);
+        vistaTransaccion.inputConcepto.setText(null);
+        vistaTransaccion.inputLayoutMonto.setError(null);
+        vistaTransaccion.inputLayoutConcepto.setError(null);
+        vistaTransaccion.inputLayoutCuenta.setError(null);
+        vistaTransaccion.spinnerCuentas.setText("", false);
+        cuentaSeleccionadaId = -1L;
     }
 
     /**

@@ -68,7 +68,7 @@
             android:layout_marginTop="16dp"
             android:hint="@string/aCuentas_transaccion_cuenta_hint">
 
-            <AutoCompleteTextView
+            <com.google.android.material.textfield.MaterialAutoCompleteTextView
                 android:id="@+id/spinnerCuentas"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
