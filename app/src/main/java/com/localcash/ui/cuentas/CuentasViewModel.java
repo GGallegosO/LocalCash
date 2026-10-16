@@ -80,4 +80,27 @@ public class CuentasViewModel extends AndroidViewModel {
     public LiveData<BigDecimal> getSaldoTotal() {
         return saldoTotal;
     }
+
+    /**
+     * Inserta una cuenta nueva en la base de datos, en un hilo secundario.
+     * <p>
+     * El {@code id} lo genera Room automáticamente ({@code autoGenerate}) y la moneda
+     * es siempre {@code CLP}. Al completarse la inserción, el {@code LiveData} del DAO
+     * emite el nuevo listado y la UI se actualiza sola.
+     * </p>
+     *
+     * @param nombre       Nombre de la cuenta
+     * @param tipo         Tipo de cuenta ({@code AHORRO} o {@code TARJETA})
+     * @param saldoInicial Saldo inicial en pesos CLP (sin centavos)
+     */
+    public void insertarCuenta(String nombre, String tipo, long saldoInicial) {
+        com.localcash.data.entities.Cuenta entidad = new com.localcash.data.entities.Cuenta();
+        entidad.setNombre(nombre);
+        entidad.setTipo(tipo);
+        entidad.setSaldo(saldoInicial);
+        entidad.setMoneda("CLP");
+
+        AppDatabase db = AppDatabase.getInstance(getApplication());
+        db.getExecutor().execute(() -> db.cuentaDao().insert(entidad));
+    }
 }
