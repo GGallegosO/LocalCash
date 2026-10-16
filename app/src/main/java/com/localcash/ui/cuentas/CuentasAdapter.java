@@ -35,6 +35,29 @@ public class CuentasAdapter extends RecyclerView.Adapter<CuentasAdapter.CuentasV
     /** Cuentas a mostrar. Lista vacía hasta que el ViewModel emita. */
     private List<Cuenta> cuentas = Collections.emptyList();
 
+    /** Callback de long-press; lo implementa la Activity para mostrar el menú. */
+    private OnCuentaLongClickListener longClickListener;
+
+    /**
+     * Callback que notifica a la UI que una fila fue mantenida presionada.
+     */
+    public interface OnCuentaLongClickListener {
+
+        /**
+         * @param cuenta Cuenta de la fila presionada (nunca {@code null})
+         */
+        void onCuentaLongClick(@NonNull Cuenta cuenta);
+    }
+
+    /**
+     * Registra el listener de long-press.
+     *
+     * @param listener Listener (típicamente la Activity)
+     */
+    public void setOnCuentaLongClickListener(@Nullable OnCuentaLongClickListener listener) {
+        this.longClickListener = listener;
+    }
+
     /**
      * Contenedor de la fila de {@code item_cuenta.xml}.
      * <p>
@@ -90,6 +113,15 @@ public class CuentasAdapter extends RecyclerView.Adapter<CuentasAdapter.CuentasV
         // Nombre y saldo en CLP (formato de presentación, p. ej. "$750.000 CLP")
         holder.tvNombreCuenta.setText(cuenta.getNombre());
         holder.tvMontoCuenta.setText(CurrencyFormatter.formatWithCurrency(cuenta.getSaldo()));
+
+        // Long-press: abre el menú de gestión (editar nombre/saldo, eliminar)
+        holder.itemView.setOnLongClickListener(v -> {
+            if (longClickListener != null) {
+                longClickListener.onCuentaLongClick(cuenta);
+                return true;
+            }
+            return false;
+        });
     }
 
     @Override

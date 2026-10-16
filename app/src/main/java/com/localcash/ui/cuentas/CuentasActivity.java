@@ -5,9 +5,12 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.Toolbar;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
@@ -16,6 +19,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.localcash.R;
+import com.localcash.data.entities.Cuenta;
 import com.localcash.databinding.ActivityCuentasBinding;
 import com.localcash.databinding.ViewCuentasBinding;
 import com.localcash.domain.model.TipoCuenta;
@@ -31,7 +35,8 @@ import com.localcash.ui.util.CurrencyFormatter;
  * lista de cuentas y saldo total consolidado se actualizan reactivamente.
  * </p>
  */
-public class CuentasActivity extends BaseActivity {
+public class CuentasActivity extends BaseActivity
+        implements CuentasAdapter.OnCuentaLongClickListener {
 
     /** Etiqueta de logs de la Activity. */
     private static final String TAG = "CuentasActivity";
@@ -108,6 +113,7 @@ public class CuentasActivity extends BaseActivity {
         viewModel = new ViewModelProvider(this).get(CuentasViewModel.class);
 
         CuentasAdapter adapter = new CuentasAdapter();
+        adapter.setOnCuentaLongClickListener(this);
         vistaCuentas.recyclerCuentas.setLayoutManager(new LinearLayoutManager(this));
         vistaCuentas.recyclerCuentas.setAdapter(adapter);
 
@@ -181,5 +187,157 @@ public class CuentasActivity extends BaseActivity {
                     Toast.LENGTH_SHORT).show();
             dialog.dismiss();
         });
+    }
+
+    /**
+     * Callback del long-press en una fila del RecyclerView
+     * ({@link CuentasAdapter.OnCuentaLongClickListener}): abre el menú de
+     * gestión de la cuenta presionada.
+     *
+     * @param cuenta Cuenta de la fila presionada
+     */
+    @Override
+    public void onCuentaLongClick(@NonNull Cuenta cuenta) {
+        mostrarOpcionesCuenta(cuenta);
+    }
+
+    /**
+     * Menú de acciones de una cuenta (editar nombre, editar saldo, eliminar).
+     * El título es el nombre de la cuenta (dato, no texto fijo).
+     *
+     * @param cuenta Cuenta sobre la que se actúa
+     */
+    private void mostrarOpcionesCuenta(@NonNull Cuenta cuenta) {
+        CharSequence[] opciones = {
+                getString(R.string.aCuentas_menu_editar_nombre),
+                getString(R.string.aCuentas_menu_editar_saldo),
+                getString(R.string.aCuentas_menu_eliminar)
+        };
+
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(cuenta.getNombre())
+                .setItems(opciones, (dialog, which) -> {
+                    switch (which) {
+                        case 0:
+                            mostrarDialogEditarNombre(cuenta);
+                            break;
+                        case 1:
+                            mostrarDialogEditarSaldo(cuenta);
+                            break;
+                        case 2:
+                            confirmarEliminarCuenta(cuenta);
+                            break;
+                        default:
+                            break;
+                    }
+                })
+                .show();
+    }
+
+    /**
+     * Diálogo para editar el nombre de una cuenta. El campo se precarga con el
+     * nombre actual y solo se persiste si no queda vacío (el diálogo permanece
+     * abierto ante error de validación).
+     *
+     * @param cuenta Cuenta a editar
+     */
+    private void mostrarDialogEditarNombre(@NonNull Cuenta cuenta) {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_editar_nombre_cuenta, null);
+        TextInputLayout inputLayoutNombre = dialogView.findViewById(R.id.inputLayoutEditarNombre);
+        TextInputEditText inputNombre = dialogView.findViewById(R.id.inputEditarNombre);
+
+        inputNombre.setText(cuenta.getNombre());
+        if (inputNombre.getText() != null) {
+            inputNombre.setSelection(inputNombre.getText().length());
+        }
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.aCuentas_dialog_editar_nombre_titulo)
+                .setView(dialogView)
+                .setPositiveButton(R.string.aCuentas_guardar, null)
+                .setNegativeButton(R.string.aCuentas_cancelar, null)
+                .create();
+        dialog.show();
+
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String nuevoNombre = inputNombre.getText() != null
+                    ? inputNombre.getText().toString().trim() : "";
+            if (nuevoNombre.isEmpty()) {
+                inputLayoutNombre.setError(getString(R.string.aCuentas_error_nombre_vacio));
+                return;
+            }
+            inputLayoutNombre.setError(null);
+            viewModel.editarNombreCuenta(cuenta.getId(), nuevoNombre);
+            dialog.dismiss();
+        });
+    }
+
+    /**
+     * Diálogo para editar el saldo de una cuenta. El campo se precarga con el
+     * saldo actual (valor numérico en pesos CLP). Observa el {@code LiveData}
+     * del ViewModel: {@code true} → Toast de éxito; {@code false} → mensaje de
+     * error (cuenta con transacciones registradas).
+     *
+     * @param cuenta Cuenta a editar
+     */
+    private void mostrarDialogEditarSaldo(@NonNull Cuenta cuenta) {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_editar_saldo_cuenta, null);
+        TextInputLayout inputLayoutSaldo = dialogView.findViewById(R.id.inputLayoutEditarSaldo);
+        TextInputEditText inputSaldo = dialogView.findViewById(R.id.inputEditarSaldo);
+
+        inputSaldo.setText(String.valueOf(cuenta.getSaldo()));
+        if (inputSaldo.getText() != null) {
+            inputSaldo.setSelection(inputSaldo.getText().length());
+        }
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.aCuentas_dialog_editar_saldo_titulo)
+                .setView(dialogView)
+                .setPositiveButton(R.string.aCuentas_guardar, null)
+                .setNegativeButton(R.string.aCuentas_cancelar, null)
+                .create();
+        dialog.show();
+
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            long nuevoSaldo;
+            try {
+                CharSequence texto = inputSaldo.getText();
+                nuevoSaldo = Long.parseLong(texto != null ? texto.toString().trim() : "");
+            } catch (NumberFormatException e) {
+                inputLayoutSaldo.setError(getString(R.string.aCuentas_error_saldo_invalido));
+                return;
+            }
+            inputLayoutSaldo.setError(null);
+
+            LiveData<Boolean> resultado = viewModel.editarSaldoCuenta(cuenta.getId(), nuevoSaldo);
+            resultado.observe(this, new Observer<Boolean>() {
+                @Override
+                public void onChanged(Boolean actualizado) {
+                    resultado.removeObserver(this);
+                    int mensaje = Boolean.TRUE.equals(actualizado)
+                            ? R.string.aCuentas_toast_saldo_actualizado
+                            : R.string.aCuentas_error_saldo_con_transacciones;
+                    Toast.makeText(CuentasActivity.this, mensaje, Toast.LENGTH_SHORT).show();
+                }
+            });
+            dialog.dismiss();
+        });
+    }
+
+    /**
+     * Diálogo de confirmación para eliminar (soft delete) una cuenta.
+     * No se borra la fila: {@code CuentasViewModel.desactivarCuenta} marca
+     * {@code activa = false} y la cuenta desaparece de la lista.
+     *
+     * @param cuenta Cuenta a eliminar
+     */
+    private void confirmarEliminarCuenta(@NonNull Cuenta cuenta) {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.aCuentas_dialog_eliminar_titulo)
+                .setMessage(getString(R.string.aCuentas_dialog_eliminar_mensaje, cuenta.getNombre()))
+                .setPositiveButton(R.string.aCuentas_eliminar,
+                        (dialog, which) -> viewModel.desactivarCuenta(cuenta.getId()))
+                .setNegativeButton(R.string.aCuentas_cancelar, null)
+                .show();
     }
 }
