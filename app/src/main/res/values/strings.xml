@@ -85,7 +85,6 @@
 
     <!-- Strings para View 1 - T15 -->
     <string name="aCuentas_saldo_total_label">Saldo Total</string>
-    <string name="aCuentas_saldo_total_demo">$1.250.000 CLP</string>
     <string name="aCuentas_fab_nueva_cuenta_desc">Agregar nueva cuenta</string>
     <string name="aCuentas_item_cuenta_icon_desc">Ícono de cuenta</string>
     <string name="aCuentas_nombre_cuenta">Cuenta</string>
@@ -106,4 +105,17 @@
     <!-- Tipos de cuenta (para placeholders futuros o adapters) -->
     <string name="aCuentas_tipo_ahorro">Ahorro</string>
     <string name="aCuentas_tipo_tarjeta">Tarjeta</string>
+
+    <!-- Strings para diálogo de nueva cuenta (T15.5) -->
+    <string name="aCuentas_dialog_nombre_hint">Nombre de la cuenta</string>
+    <string name="aCuentas_dialog_tipo_label">Tipo de cuenta</string>
+    <string name="aCuentas_dialog_saldo_hint">Saldo inicial</string>
+    <string name="aCuentas_dialog_saldo_default">0</string>
+
+    <!-- Strings del diálogo de nueva cuenta (T15.5) -->
+    <string name="aCuentas_dialog_titulo">Nueva cuenta</string>
+    <string name="aCuentas_dialog_guardar">Guardar</string>
+    <string name="aCuentas_dialog_cancelar">Cancelar</string>
+    <string name="aCuentas_toast_cuenta_creada">Cuenta creada exitosamente</string>
+    <string name="aCuentas_error_nombre_vacio">El nombre es obligatorio</string>
 </resources>
