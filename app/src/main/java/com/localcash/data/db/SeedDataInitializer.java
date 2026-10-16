@@ -47,6 +47,12 @@ public final class SeedDataInitializer extends RoomDatabase.Callback {
 
     private static final String MONEDA_DEMO = "CLP";
 
+    /**
+     * Cuenta activa: las cuentas semilla nacen activas (soft delete
+     * {@code activa = 0} se usa solo al "eliminar" desde la UI).
+     */
+    private static final int ACTIVA = 1;
+
     /** Constructor por defecto requerido por {@link RoomDatabase.Callback}. */
     public SeedDataInitializer() {
         super();
@@ -66,21 +72,23 @@ public final class SeedDataInitializer extends RoomDatabase.Callback {
         super.onCreate(db);
         db.execSQL(
                 "INSERT INTO " + TABLA_CUENTAS
-                        + " (nombre, tipo, saldo, moneda) VALUES (?, ?, ?, ?)",
+                        + " (nombre, tipo, saldo, moneda, activa) VALUES (?, ?, ?, ?, ?)",
                 new Object[]{
                         NOMBRE_CUENTA_AHORRO,
                         TIPO_CUENTA_AHORRO,
                         SALDO_APERTURA_AHORRO,
-                        MONEDA_DEMO
+                        MONEDA_DEMO,
+                        ACTIVA
                 });
         db.execSQL(
                 "INSERT INTO " + TABLA_CUENTAS
-                        + " (nombre, tipo, saldo, moneda) VALUES (?, ?, ?, ?)",
+                        + " (nombre, tipo, saldo, moneda, activa) VALUES (?, ?, ?, ?, ?)",
                 new Object[]{
                         NOMBRE_CUENTA_TARJETA,
                         TIPO_CUENTA_TARJETA,
                         SALDO_APERTURA_TARJETA,
-                        MONEDA_DEMO
+                        MONEDA_DEMO,
+                        ACTIVA
                 });
     }
 }
