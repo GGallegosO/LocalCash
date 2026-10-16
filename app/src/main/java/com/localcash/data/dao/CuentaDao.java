@@ -49,6 +49,20 @@ public interface CuentaDao {
     LiveData<List<Cuenta>> getAll();
 
     /**
+     * Obtiene una cuenta por su id de forma <b>bloqueante</b>.
+     * <p>
+     * Solo apta para hilos secundarios (se invoca dentro del
+     * {@code Executor} de {@link com.localcash.data.db.AppDatabase}).
+     * Devuelve {@code null} si no existe.
+     * </p>
+     *
+     * @param cuentaId Id de la cuenta
+     * @return Entidad {@link Cuenta} o {@code null} si no existe
+     */
+    @Query("SELECT * FROM cuentas WHERE id = :cuentaId")
+    Cuenta getCuentaById(long cuentaId);
+
+    /**
      * Actualiza una cuenta existente (nombre, tipo, saldo, moneda y el flag
      * {@code activa}). La fila se identifica por su {@code id}.
      * <p>

@@ -5,6 +5,7 @@ import android.app.Application;
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Transformations;
 
 import com.localcash.data.db.AppDatabase;
@@ -102,5 +103,91 @@ public class CuentasViewModel extends AndroidViewModel {
 
         AppDatabase db = AppDatabase.getInstance(getApplication());
         db.getExecutor().execute(() -> db.cuentaDao().insert(entidad));
+    }
+
+    /**
+     * Cambia el nombre de una cuenta existente, en un hilo secundario.
+     * <p>
+     * Carga la entidad, actualiza su nombre y persiste con {@code update}. Al
+     * completarse, el {@code LiveData} del DAO re-emite la lista y la UI se
+     * actualiza sola. Si la cuenta no existe, no se hace nada.
+     * </p>
+     *
+     * @param cuentaId    Id de la cuenta a editar
+     * @param nuevoNombre Nuevo nombre visible de la cuenta
+     */
+    public void editarNombreCuenta(long cuentaId, String nuevoNombre) {
+        AppDatabase db = AppDatabase.getInstance(getApplication());
+        db.getExecutor().execute(() -> {
+            Cuenta cuenta = db.cuentaDao().getCuentaById(cuentaId);
+            if (cuenta == null) {
+                return;
+            }
+            cuenta.setNombre(nuevoNombre);
+            db.cuentaDao().update(cuenta);
+        });
+    }
+
+    /**
+     * Edita el saldo de una cuenta, en un hilo secundario.
+     * <p>
+     * <b>Guarda de negocio:</b> el saldo solo es editable si la cuenta no tiene
+     * transacciones. Si ya tiene movimientos, el saldo es una proyección del
+     * historial y editarlo a mano lo corrompería; en ese caso se emite
+     * {@code false} y no se persiste nada.
+     * </p>
+     * <p>
+     * Devuelve un {@code LiveData<Boolean>} de un solo uso: {@code true} si el
+     * saldo se actualizó, {@code false} si la operación fue rechazada (cuenta
+     * con transacciones o inexistente). La UI traduce ese resultado a un
+     * mensaje ({@code @string/...}); el ViewModel no produce texto de usuario.
+     * </p>
+     *
+     * @param cuentaId   Id de la cuenta a editar
+     * @param nuevoSaldo Nuevo saldo en pesos CLP (sin centavos)
+     * @return LiveData con {@code true} si se actualizó, {@code false} si se rechazó
+     */
+    public LiveData<Boolean> editarSaldoCuenta(long cuentaId, long nuevoSaldo) {
+        MutableLiveData<Boolean> resultado = new MutableLiveData<>();
+        AppDatabase db = AppDatabase.getInstance(getApplication());
+        db.getExecutor().execute(() -> {
+            if (db.transaccionDao().contarTransaccionesSync(cuentaId) > 0) {
+                resultado.postValue(false);
+                return;
+            }
+            Cuenta cuenta = db.cuentaDao().getCuentaById(cuentaId);
+            if (cuenta == null) {
+                resultado.postValue(false);
+                return;
+            }
+            cuenta.setSaldo(nuevoSaldo);
+            db.cuentaDao().update(cuenta);
+            resultado.postValue(true);
+        });
+        return resultado;
+    }
+
+    /**
+     * Desactiva (soft delete) una cuenta existente, en un hilo secundario.
+     * <p>
+     * La fila <b>nunca se elimina</b> de la base de datos: solo se marca
+     * {@code activa = false}. Así se preserva el historial de transacciones
+     * ({@code ON DELETE CASCADE} no se dispara). Como {@code getAll()} filtra
+     * {@code activa = 1}, la cuenta desaparece de la lista automáticamente al
+     * re-emitirse el {@code LiveData}. Si la cuenta no existe, no se hace nada.
+     * </p>
+     *
+     * @param cuentaId Id de la cuenta a desactivar
+     */
+    public void desactivarCuenta(long cuentaId) {
+        AppDatabase db = AppDatabase.getInstance(getApplication());
+        db.getExecutor().execute(() -> {
+            Cuenta cuenta = db.cuentaDao().getCuentaById(cuentaId);
+            if (cuenta == null) {
+                return;
+            }
+            cuenta.setActiva(false);
+            db.cuentaDao().update(cuenta);
+        });
     }
 }
