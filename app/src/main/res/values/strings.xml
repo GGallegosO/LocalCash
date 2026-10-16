@@ -91,12 +91,6 @@
     <string name="aCuentas_tipo_efectivo">Efectivo</string>
     <string name="aCuentas_empty_cuentas">No hay cuentas registradas</string>
     <string name="aCuentas_nueva_cuenta">Nueva cuenta</string>
-    <string name="aCuentas_tipo_ingreso">Ingreso</string>
-    <string name="aCuentas_tipo_egreso">Egreso</string>
-    <string name="aCuentas_monto">Monto</string>
-    <string name="aCuentas_conta">Cuenta</string>
-    <string name="aCuentas_concepto">Concepto</string>
-    <string name="aCuentas_geolocalizacion">Geolocalizar</string>
     <string name="aCuentas_guardar">Guardar</string>
     <string name="aCuentas_sin_datos">No hay datos aún</string>
     <string name="aCuentas_titulo_mapa">Mapa</string>
@@ -135,4 +129,25 @@
     <!-- Strings de apoyo para la edición de saldo (T15.6) -->
     <string name="aCuentas_dialog_saldo_actual_hint">Saldo actual</string>
     <string name="aCuentas_error_saldo_invalido">Ingresa un saldo válido</string>
+
+    <!-- Strings de la Vista 2 - Transacción (T16) -->
+    <string name="aCuentas_transaccion_ingreso">Ingreso</string>
+    <string name="aCuentas_transaccion_egreso">Egreso</string>
+    <string name="aCuentas_transaccion_monto_hint">Monto</string>
+    <string name="aCuentas_transaccion_cuenta_hint">Cuenta</string>
+    <string name="aCuentas_transaccion_concepto_hint">Concepto</string>
+    <string name="aCuentas_transaccion_geolocalizacion">Geolocalizar transacción</string>
+    <string name="aCuentas_transaccion_guardar">Guardar Movimiento</string>
+
+    <!-- Validaciones de campos de la Vista 2 - Transacción (T16) -->
+    <string name="aCuentas_error_monto_vacio">Ingresa un monto mayor a 0</string>
+    <string name="aCuentas_error_concepto_vacio">El concepto es obligatorio</string>
+    <string name="aCuentas_error_cuenta_no_seleccionada">Selecciona una cuenta</string>
+
+    <!-- Avisos de resultado de la Vista 2 - Transacción (T16) -->
+    <string name="aCuentas_toast_movimiento_registrado">Movimiento registrado exitosamente</string>
+    <string name="aCuentas_toast_movimiento_error">No se pudo registrar el movimiento</string>
+    <string name="aCuentas_toast_error_saldo_insuficiente">Saldo insuficiente para realizar el egreso</string>
+    <string name="aCuentas_toast_error_cuenta_no_encontrada">La cuenta seleccionada no existe</string>
+    <string name="aCuentas_toast_error_monto_invalido">Ingresa un monto mayor a 0</string>
 </resources>
