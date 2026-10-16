@@ -7,26 +7,26 @@
 
 ## Estado de la sesión
 
-- **Alcance actual:** Capa Datos/Dominio (T1→T10) completada. Fase 3 UI: T11 a T15 **completadas al 100%**. Próxima tarea: **T16** (Conectar Vista 2 con Room y dominio).
-- **Completadas:** T1 a T14, y **T15 (Vista 1 conectada con Room, diálogo FAB para crear cuentas, y gestión completa de cuentas: editar nombre/saldo y soft delete)**.
+- **Alcance actual:** Capa Datos/Dominio (T1→T10) completada. Fase 3 UI: T11 a T16 **completadas al 100%**. Próxima tarea: **T17** (Modificar LoginActivity para redirigir a CuentasActivity).
+- **Completadas:** T1 a T15, y **T16 (Formulario de transacciones funcional: UI con MaterialButtonToggleGroup, selector de cuentas, validación de dominio vía TransaccionService, persistencia en Room y actualización de saldo)**.
 - **Reglas no negociables:**
   1. Dinero: `long` en entidades Room (pesos CLP directos, NO centavos, NO double). `BigDecimal` en modelos de dominio.
   2. Arquitectura: `domain/` NO importa `androidx.room` ni Android SDK (solo `java.*`).
   3. Testing: cobertura ≥70% en `data/` y `domain/` (`.agent.md` §5.3).
   4. Memoria: un `doc/007-cuentas.md` único va actualizado tras cada tarea (§7 del contrato).
-- **Siguiente tarea inmediata:** **T16** — Conectar Vista 2 (`view_transaccion`) con Room y `TransaccionService` para registrar movimientos (ingreso/egreso) funcionales.
+- **Siguiente tarea inmediata:** **T17** — Modificar `LoginActivity.java` para redirigir a `CuentasActivity` tras login exitoso (biometría o credenciales).
 
 ---
 
 ## Fichas de tarea
 
-| Campo | T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9 | T10 | T11 | T12 | T13 | T14 | T15 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **Fecha** | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-14 | 2026-10-14 | 2026-10-14 | 2026-10-15 | 2026-10-15 | 2026-10-15 |
-| **Tarea ejecutada** | Configurar Room en el proyecto | Crear entidades Room en `data/entities/` | Crear DAOs en `data/dao/` | Crear `AppDatabase.java` en `data/db/` | Crear modelos de dominio en `domain/model/` | Crear códigos de error en `domain/error/ErrorCode.java` | Crear `TransaccionService.java` en `domain/service/` | Crear tests unitarios de `TransaccionService` | Crear tests de DAOs (`CuentaDaoTest`, `TransaccionDaoTest`) | Crear `SeedDataInitializer.java` y registrar en `AppDatabase` | Crear menú `bottom_nav_menu.xml` + strings `aCuentas_` | Crear layout `activity_cuentas.xml` | Refinar layouts `view_*.xml` (UI visual) | Crear `CuentasActivity.java` con ViewBinding | Conectar Vista 1 con Room, diálogo FAB y gestión de cuentas (editar/eliminar) |
-| **Responsable** | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG |
-| **Duración estimada vs real** | 15 min vs ~5 min | 30 min vs ~10 min | 30 min vs ~10 min | 30 min vs ~15 min | 30 min vs ~15 min | 10 min vs ~5 min | 45 min vs ~15 min | 45 min vs ~15 min | 60 min vs ~40 min | 30 min vs ~10 min | 30 min vs ~10 min | 15 min vs ~5 min | 45 min vs ~20 min | 30 min vs ~20 min | 60 min vs ~45 min |
-| **Estado** | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | ✅ Completado | ✅ Completado | ✅ Completado |
+| Campo | T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9 | T10 | T11 | T12 | T13 | T14 | T15 | T16 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| **Fecha** | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-14 | 2026-10-14 | 2026-10-14 | 2026-10-15 | 2026-10-15 | 2026-10-15 | 2026-10-15 |
+| **Tarea ejecutada** | Configurar Room en el proyecto | Crear entidades Room en `data/entities/` | Crear DAOs en `data/dao/` | Crear `AppDatabase.java` en `data/db/` | Crear modelos de dominio en `domain/model/` | Crear códigos de error en `domain/error/ErrorCode.java` | Crear `TransaccionService.java` en `domain/service/` | Crear tests unitarios de `TransaccionService` | Crear tests de DAOs (`CuentaDaoTest`, `TransaccionDaoTest`) | Crear `SeedDataInitializer.java` y registrar en `AppDatabase` | Crear menú `bottom_nav_menu.xml` + strings `aCuentas_` | Crear layout `activity_cuentas.xml` | Refinar layouts `view_*.xml` (UI visual) | Crear `CuentasActivity.java` con ViewBinding | Conectar Vista 1 con Room, diálogo FAB y gestión de cuentas (editar/eliminar) | Conectar Vista 2 (Transacción) con Room y dominio (formulario + TransaccionViewModel) |
+| **Responsable** | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG |
+| **Duración estimada vs real** | 15 min vs ~5 min | 30 min vs ~10 min | 30 min vs ~10 min | 30 min vs ~15 min | 30 min vs ~15 min | 10 min vs ~5 min | 45 min vs ~15 min | 45 min vs ~15 min | 60 min vs ~40 min | 30 min vs ~10 min | 30 min vs ~10 min | 15 min vs ~5 min | 45 min vs ~20 min | 30 min vs ~20 min | 60 min vs ~45 min | 90 min vs ~40 min |
+| **Estado** | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | ✅ Completado | ✅ Completado | ✅ Completado | ✅ Completado |
 
 ---
 
@@ -60,6 +60,8 @@
 **T15 — Conectar Vista 1 (Cuentas) con Room:** Se implementó la lógica completa de la Vista 1 para mostrar datos reales de la base de datos. Se creó `CurrencyFormatter.java` (utilidad para formatear montos CLP con locale `es-CL`), `CuentasViewModel.java` (expone `LiveData<List<Cuenta>>` y `LiveData<BigDecimal>` del saldo total calculado vía `Transformations.map`), y `CuentasAdapter.java` (mapea cada cuenta a una fila visual con ícono según tipo, nombre y monto formateado). Se modificó `CuentasActivity.java` para observar los LiveData, configurar el RecyclerView con `LinearLayoutManager`, manejar el estado vacío (mostrar/ocultar `tvEmptyState`), y extender `BaseActivity` (usando `ThemeManager` para el toggle de tema, corrigiendo la T14). Se limpiaron textos hardcodeados de `view_cuentas.xml` e `item_cuenta.xml`, se corrigió la estructura del divisor en `item_cuenta.xml` (LinearLayout vertical), y se aplicó `?attr/colorSurfaceVariant` a la card de saldo (Decisión #35). Finalmente, se implementó el alta de cuentas desde el FAB con `MaterialAlertDialogBuilder` (método `mostrarDialogNuevaCuenta()`): infla `dialog_nueva_cuenta.xml`, valida el nombre sin cerrar el diálogo ante error, lee el tipo de `MaterialButtonToggleGroup` vía `TipoCuenta.name()`, parsea el saldo de forma segura (`NumberFormatException` → 0, con `Log.w`) e inserta con `CuentasViewModel.insertarCuenta(...)` en el Executor de `AppDatabase`. Verificación: `assembleDebug` exitoso, `lint` sin hallazgos nuevos, `testDebugUnitTest` 13/13 verde.
 
 **T15.6 — Gestión de Cuentas (Editar/Eliminar):** Se implementó el 'Soft Delete' (borrado lógico) para mantener la integridad referencial con las transacciones (`ON DELETE CASCADE`). Se agregó el campo `activa` a la entidad `Cuenta` y se realizó una **Migración Real de Room (v1 a v2)** con `ALTER TABLE` (cumpliendo §6.11, sin `fallbackToDestructiveMigration`). Se agregaron métodos al `CuentaDao` para actualizar, contar transacciones y filtrar solo cuentas activas. En el `CuentasViewModel` se agregaron métodos para editar nombre, editar saldo (validando que no existan transacciones, retornando `LiveData<Boolean>`) y desactivar cuentas. En la UI, se implementó un **Long-Press** en el `CuentasAdapter` que despliega un `MaterialAlertDialog` con opciones para editar nombre, editar saldo o eliminar (confirmación).
+
+**T16 — Formulario de Transacciones (Ingreso/Egreso):** Se implementó el formulario completo en `view_transaccion.xml` con `MaterialButtonToggleGroup` (Ingreso/Egreso), campos de monto y concepto, selector de cuentas activas (`MaterialAutoCompleteTextView`), switch de geolocalización (UI only) y botón de guardado. Se creó `TransaccionViewModel.java` que expone `LiveData<List<Cuenta>>` para el spinner y el método `registrarTransaccion(...)` que valida con `TransaccionService` (dominio), inserta la transacción en Room y actualiza el saldo de la cuenta. El ViewModel retorna `LiveData<ErrorCode>` (null = éxito, valor = error de dominio) para que la UI traduzca los mensajes. En `CuentasActivity.java` se implementó la validación de UI (campos vacíos), el mapeo de `ErrorCode` a strings de recurso, y la limpieza del formulario tras el éxito.
 
 ---
 
@@ -95,6 +97,7 @@
 - `app/src/main/res/drawable/ic_account_balance_wallet.xml` (T15) — Renombrado de `account_balance_wallet.xml` para estandarizar prefijo `ic_` (consistencia con `ic_savings`, `ic_credit_card`, etc.).
 - `app/src/main/res/layout/dialog_editar_nombre_cuenta.xml` (T15.6) — Diálogo con `TextInputLayout`/`TextInputEditText` para editar el nombre de una cuenta.
 - `app/src/main/res/layout/dialog_editar_saldo_cuenta.xml` (T15.6) — Diálogo con `TextInputLayout`/`TextInputEditText` para editar el saldo de una cuenta.
+- `app/src/main/java/com/localcash/ui/cuentas/TransaccionViewModel.java` (T16) — ViewModel que orquesta la validación de dominio, persistencia de transacción y actualización de saldo. Expone `LiveData<ErrorCode>` para feedback reactivo.
 
 **Modificados:**
 
@@ -130,6 +133,9 @@
 - (T15.6) `app/src/main/java/com/localcash/ui/cuentas/CuentasAdapter.java`: Implementado `OnCuentaLongClickListener`.
 - (T15.6) `app/src/main/java/com/localcash/ui/cuentas/CuentasActivity.java`: Lógica de diálogos para editar/eliminar y observación de validaciones.
 - (T15.6) `app/src/main/res/values/strings.xml`: Agregados strings para menús y diálogos de gestión.
+- `app/src/main/res/layout/view_transaccion.xml` (T16) — Formulario completo con MaterialButtonToggleGroup, TextInputLayout para monto/concepto, MaterialAutoCompleteTextView para selector de cuentas, MaterialSwitch y botón de guardado.
+- `app/src/main/java/com/localcash/ui/cuentas/CuentasActivity.java` (T16) — Agregada lógica de Vista 2: inicialización de TransaccionViewModel, configuración del spinner de cuentas, validación de UI, llamada al ViewModel y mapeo de ErrorCode a strings.
+- `app/src/main/res/values/strings.xml` (T16) — Agregados strings de formulario de transacción, validación y mensajes de error/éxito.
 
 ---
 
@@ -282,6 +288,10 @@
 49. **`LiveData<Boolean>` para validaciones de negocio en el ViewModel:** El método `editarSaldoCuenta` retorna `LiveData<Boolean>` (true si se actualizó, false si hay transacciones). El ViewModel no produce texto de error (cumple §5.4); la UI traduce el `false` al string `@string/aCuentas_error_saldo_con_transacciones`.
    _Justificación:_ Mantener el ViewModel libre de texto de usuario respeta `.agent.md` §5.4 (el dominio/ViewModel emiten códigos o estados; `ui/` traduce). Se prefirió `Boolean` a `MutableLiveData<String>` precisamente para no incrustar literales de UI en el ViewModel.
 
+50. **`LiveData<ErrorCode>` en lugar de `LiveData<Boolean>` en TransaccionViewModel:** El ViewModel retorna el código de error de dominio (null = éxito) en lugar de un boolean, permitiendo que la UI traduzca el error específico al string correspondiente. Cumple §5.4 (ViewModel no produce texto de UI).
+51. **`MaterialAutoCompleteTextView` en lugar de `AutoCompleteTextView`:** El widget oficial de Material Components elimina warnings de lint (LabelFor) y mantiene consistencia visual con el resto de la app.
+52. **Validación en dos capas (UI + Dominio):** La UI valida campos vacíos (monto, concepto, cuenta seleccionada) antes de llamar al ViewModel. El dominio valida reglas de negocio (saldo insuficiente, monto inválido) vía `TransaccionService`.
+
 ---
 
 ## Lecciones Aprendidas
@@ -323,12 +333,14 @@
 - **T15.6:** Para validar reglas de negocio antes de una escritura en Room (ej: 'no editar saldo si hay transacciones'), se deben usar consultas síncronas (`@Query` sin LiveData) dentro del `db.getExecutor().execute()`, ya que el LiveData no se puede leer de forma bloqueante.
 - **T15.6:** El patrón nativo de Android para acciones secundarias en listas (editar/eliminar) es el **Long-Press** (mantener presionado) sobre el ítem del RecyclerView, desplegando un menú de opciones.
 - **T15.6:** Al agregar una columna con `ALTER TABLE ... DEFAULT`, el campo correspondiente de la entidad debe declarar el mismo `@ColumnInfo(defaultValue = ...)`; de lo contrario, la validación de esquema de Room puede rechazar la migración por discrepancia (y el `exportSchema = true` deja la prueba dura en `app/schemas/.../2.json`).
+- **T16:** Para obtener el ID de la cuenta seleccionada en un `MaterialAutoCompleteTextView`, se mantiene una lista local (`cuentasSpinner`) en el mismo orden que el `ArrayAdapter`, y se usa `setOnItemClickListener` para guardar el ID por posición.
+- **T16:** El patrón `LiveData<ErrorCode>` (null = éxito) es más expresivo que `LiveData<Boolean>` porque permite mapear múltiples errores de dominio a mensajes específicos en la UI sin que el ViewModel conozca los strings.
 
 ---
 
 ## Próximos Pasos
 
-1. **Fase 3 UI — T15 completada.** Siguiente tarea: **T16** — Conectar Vista 2 (`view_transaccion`) con Room y `TransaccionService` para registrar movimientos (ingreso/egreso) funcionales. Crear `TransaccionViewModel`, formulario con validación, y persistencia de transacciones.
+1. **Fase 3 UI — T16 completada.** Siguiente tarea: **T17** — Modificar `LoginActivity.java` para redirigir a `CuentasActivity` tras login exitoso (biometría o credenciales).
 
 2. **T12–T18 — Fase 3 UI:** crear layouts de vistas (T12, T13), `CuentasActivity.java` (T14), conectar Vista 1 con Room (T15), conectar Vista 2 con Room y dominio (T16), modificar `LoginActivity.java` (T17), actualizar `AndroidManifest.xml` y `strings.xml` (T18). Reglas de UI: cero colores hardcodeados (solo atributos Material 3), sin `ConstraintLayout` (solo `LinearLayout`/`RelativeLayout`), `MaterialButton` con `icon` y no `app:drawableStartCompat`.
 
@@ -355,7 +367,7 @@
 | T13 | Refinar layouts `view_*.xml` (UI visual) | ✅ Completado | 2026-10-15 |
 | T14 | Crear `CuentasActivity.java` en `ui/cuentas/` | ✅ Completado | 2026-10-15 |
 | T15 | Conectar Vista 1 (Cuentas) con Room y gestión completa (crear/editar/eliminar) | ✅ Completado | 2026-10-15 |
-| T16 | Conectar Vista 2 (Transacción) con Room y dominio | ⬜ Pendiente | — |
+| T16 | Formulario de transacciones funcional (Ingreso/Egreso) con validación de dominio y persistencia | ✅ Completado | 2026-10-15 |
 | T17 | Modificar `LoginActivity.java` | ⬜ Pendiente | — |
 | T18 | Actualizar `AndroidManifest.xml` y `strings.xml` | ⬜ Pendiente | — |
 | T19 | Verificación final y documentación | ⬜ Pendiente | — |
