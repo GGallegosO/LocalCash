@@ -112,4 +112,11 @@
     <string name="aCuentas_dialog_tipo_label">Tipo de cuenta</string>
     <string name="aCuentas_dialog_saldo_hint">Saldo inicial</string>
     <string name="aCuentas_dialog_saldo_default">0</string>
+
+    <!-- Strings del diálogo de nueva cuenta (T15.5) -->
+    <string name="aCuentas_dialog_titulo">Nueva cuenta</string>
+    <string name="aCuentas_dialog_guardar">Guardar</string>
+    <string name="aCuentas_dialog_cancelar">Cancelar</string>
+    <string name="aCuentas_toast_cuenta_creada">Cuenta creada exitosamente</string>
+    <string name="aCuentas_error_nombre_vacio">El nombre es obligatorio</string>
 </resources>
