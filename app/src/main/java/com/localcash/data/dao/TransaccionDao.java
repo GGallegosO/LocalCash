@@ -40,6 +40,21 @@ public interface TransaccionDao {
     LiveData<List<Transaccion>> getByCuentaId(long cuentaId);
 
     /**
+     * Cuenta las transacciones de una cuenta de forma <b>bloqueante</b>.
+     * <p>
+     * Solo apta para hilos secundarios (se invoca dentro del
+     * {@code Executor} de {@link com.localcash.data.db.AppDatabase}). Se usa
+     * como guarda transaccional antes de editar el saldo de una cuenta: si
+     * ya tiene movimientos, el saldo proviene del historial y no se edita a mano.
+     * </p>
+     *
+     * @param cuentaId Id de la cuenta
+     * @return Número de transacciones de la cuenta
+     */
+    @Query("SELECT COUNT(*) FROM transacciones WHERE cuentaId = :cuentaId")
+    int contarTransaccionesSync(long cuentaId);
+
+    /**
      * Observa todos los movimientos de todas las cuentas,
      * en orden cronológico inverso.
      *

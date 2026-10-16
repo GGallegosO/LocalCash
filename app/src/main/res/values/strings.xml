@@ -118,4 +118,21 @@
     <string name="aCuentas_dialog_cancelar">Cancelar</string>
     <string name="aCuentas_toast_cuenta_creada">Cuenta creada exitosamente</string>
     <string name="aCuentas_error_nombre_vacio">El nombre es obligatorio</string>
+
+    <!-- Strings de gestión de cuentas: editar/eliminar (T15.6) -->
+    <string name="aCuentas_menu_editar_nombre">Editar nombre</string>
+    <string name="aCuentas_menu_editar_saldo">Editar saldo</string>
+    <string name="aCuentas_menu_eliminar">Eliminar cuenta</string>
+    <string name="aCuentas_dialog_editar_nombre_titulo">Editar nombre de cuenta</string>
+    <string name="aCuentas_dialog_editar_saldo_titulo">Editar saldo</string>
+    <string name="aCuentas_dialog_eliminar_titulo">Eliminar cuenta</string>
+    <string name="aCuentas_dialog_eliminar_mensaje">¿Eliminar cuenta %1$s? Esta acción no se puede deshacer</string>
+    <string name="aCuentas_toast_saldo_actualizado">Saldo actualizado exitosamente</string>
+    <string name="aCuentas_error_saldo_con_transacciones">No se puede editar el saldo de una cuenta con transacciones registradas</string>
+    <string name="aCuentas_cancelar">Cancelar</string>
+    <string name="aCuentas_eliminar">Eliminar</string>
+
+    <!-- Strings de apoyo para la edición de saldo (T15.6) -->
+    <string name="aCuentas_dialog_saldo_actual_hint">Saldo actual</string>
+    <string name="aCuentas_error_saldo_invalido">Ingresa un saldo válido</string>
 </resources>

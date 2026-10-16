@@ -2,9 +2,12 @@ package com.localcash.data.db;
 
 import android.content.Context;
 
+import androidx.annotation.NonNull;
 import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
+import androidx.room.migration.Migration;
+import androidx.sqlite.db.SupportSQLiteDatabase;
 
 import com.localcash.data.dao.CuentaDao;
 import com.localcash.data.dao.TransaccionDao;
@@ -32,12 +35,26 @@ import java.util.concurrent.Executors;
  */
 @Database(
         entities = {Cuenta.class, Transaccion.class},
-        version = 1,
+        version = 2,
         exportSchema = true
 )
 public abstract class AppDatabase extends RoomDatabase {
 
     private static final String DATABASE_NAME = "localcash.db";
+
+    /**
+     * Migración real del esquema 1 → 2: agrega la columna {@code activa}
+     * (soft delete) a la tabla {@code cuentas}. Se usa {@code ALTER TABLE}
+     * en lugar de borrar y recrear (nunca se pierde información financiera).
+     * {@code fallbackToDestructiveMigration()} está prohibido ({@code .agent.md} §6.11).
+     */
+    public static final Migration MIGRATION_1_2 = new Migration(1, 2) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL(
+                    "ALTER TABLE cuentas ADD COLUMN activa INTEGER NOT NULL DEFAULT 1");
+        }
+    };
 
     /** Instante única (double-checked locking). volatile: publicación segura entre hilos. */
     private static volatile AppDatabase instance;
@@ -66,6 +83,7 @@ public abstract class AppDatabase extends RoomDatabase {
                                     DATABASE_NAME
                             )
                             // fallbackToDestructiveMigration() PROHIBIDO (.agent.md §6.11)
+                            .addMigrations(MIGRATION_1_2)
                             .addCallback(new SeedDataInitializer())
                             .build();
                 }

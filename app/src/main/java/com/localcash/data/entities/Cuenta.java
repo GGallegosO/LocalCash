@@ -40,6 +40,20 @@ public class Cuenta {
     @ColumnInfo(defaultValue = "CLP")
     private String moneda;
 
+    /**
+     * Indica si la cuenta está activa. El "borrado" de una cuenta es lógico
+     * (soft delete): la fila nunca se elimina físicamente para no romper el
+     * historial de transacciones (ON DELETE CASCADE), solo se marca
+     * {@code activa = false} (persistido como {@code 1}/{@code 0}).
+     * <p>
+     * El {@code defaultValue = "1"} mantiene la entidad sincronizada con la
+     * migración {@code MIGRATION_1_2} (misma DDL en instalación nueva y en
+     * actualización), igual que el patrón de {@code moneda}.
+     * </p>
+     */
+    @ColumnInfo(defaultValue = "1")
+    private boolean activa = true;
+
     /** Constructor vacío requerido por Room. */
     public Cuenta() {
     }
@@ -51,6 +65,7 @@ public class Cuenta {
         this.tipo = tipo;
         this.saldo = saldo;
         this.moneda = moneda;
+        this.activa = true;
     }
 
     public long getId() {
@@ -91,5 +106,13 @@ public class Cuenta {
 
     public void setMoneda(String moneda) {
         this.moneda = moneda;
+    }
+
+    public boolean isActiva() {
+        return activa;
+    }
+
+    public void setActiva(boolean activa) {
+        this.activa = activa;
     }
 }

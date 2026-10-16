@@ -5,6 +5,7 @@ import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.Query;
+import androidx.room.Update;
 
 import com.localcash.data.entities.Cuenta;
 
@@ -34,13 +35,57 @@ public interface CuentaDao {
     void insert(Cuenta cuenta);
 
     /**
-     * Observa todas las cuentas. Se re-emite automáticamente ante cualquier
-     * cambio en la tabla.
+     * Observa todas las cuentas <b>activas</b>. Se re-emite automáticamente
+     * ante cualquier cambio en la tabla.
+     * <p>
+     * Las cuentas "eliminadas" son un soft delete ({@code activa = false}):
+     * siguen en la BD para preservar el historial de transacciones, pero no
+     * se muestran.
+     * </p>
      *
-     * @return LiveData con la lista de cuentas
+     * @return LiveData con la lista de cuentas activas
      */
-    @Query("SELECT * FROM cuentas")
+    @Query("SELECT * FROM cuentas WHERE activa = 1")
     LiveData<List<Cuenta>> getAll();
+
+    /**
+     * Obtiene una cuenta por su id de forma <b>bloqueante</b>.
+     * <p>
+     * Solo apta para hilos secundarios (se invoca dentro del
+     * {@code Executor} de {@link com.localcash.data.db.AppDatabase}).
+     * Devuelve {@code null} si no existe.
+     * </p>
+     *
+     * @param cuentaId Id de la cuenta
+     * @return Entidad {@link Cuenta} o {@code null} si no existe
+     */
+    @Query("SELECT * FROM cuentas WHERE id = :cuentaId")
+    Cuenta getCuentaById(long cuentaId);
+
+    /**
+     * Actualiza una cuenta existente (nombre, tipo, saldo, moneda y el flag
+     * {@code activa}). La fila se identifica por su {@code id}.
+     * <p>
+     * La decisión de negocio de <i>qué</i> se puede editar (p. ej. el saldo
+     * solo si no hay transacciones) vive en el ViewModel/servicio de dominio;
+     * este método solo persiste el estado resultante.
+     * </p>
+     *
+     * @param cuenta Cuenta con los valores actualizados
+     */
+    @Update
+    void update(Cuenta cuenta);
+
+    /**
+     * Cuenta las transacciones asociadas a una cuenta. Se usa para validar
+     * si el saldo es editable: si la cuenta ya tiene movimientos, cambiar el
+     * saldo a mano rompería el historial.
+     *
+     * @param cuentaId Id de la cuenta
+     * @return LiveData con el número de transacciones de la cuenta
+     */
+    @Query("SELECT COUNT(*) FROM transacciones WHERE cuentaId = :cuentaId")
+    LiveData<Integer> contarTransacciones(long cuentaId);
 
     /**
      * Actualiza el saldo de una cuenta con valor absoluto en pesos CLP.
