@@ -1,29 +1,115 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- Vista 2 (Transacción): formulario para registrar un movimiento (T13/T16).
+     Reglas de UI: cero colores/textos hardcodeados (solo ?attr/... y @string/...),
+     atributos Material 3 y selector de cuentas con dropdown ExposedDropdownMenu. -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:fillViewport="true">
 
-    <Button
-        android:id="@+id/toggleIngreso"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/aCuentas_tipo_ingreso"
-        android:textColor="?attr/colorOnPrimary" />
-
-    <Button
-        android:id="@+id/toggleEgreso"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/aCuentas_tipo_egreso"
-        android:textColor="?attr/colorOnPrimary" />
-
-    <Button
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="@string/aCuentas_guardar"
-        android:backgroundTint="?attr/colorPrimary"
-        android:textColor="?attr/colorOnPrimary" />
-</LinearLayout>
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Toggle segmentado Ingreso / Egreso -->
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/toggleTipoTransaccion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:selectionRequired="true"
+            app:singleSelection="true">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnIngreso"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/aCuentas_transaccion_ingreso" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnEgreso"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/aCuentas_transaccion_egreso" />
+
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+
+        <!-- Monto del movimiento -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/inputLayoutMonto"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:hint="@string/aCuentas_transaccion_monto_hint">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputMonto"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                tools:text="50000" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Selector de cuenta: dropdown Material 3 -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/inputLayoutCuenta"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:hint="@string/aCuentas_transaccion_cuenta_hint">
+
+            <AutoCompleteTextView
+                android:id="@+id/spinnerCuentas"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="none"
+                tools:text="Cuenta Corriente" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Concepto libre -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/inputLayoutConcepto"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:hint="@string/aCuentas_transaccion_concepto_hint">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputConcepto"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                tools:text="Supermercado" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Geolocalización (solo UI por ahora; feature 008) -->
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/switchGeolocalizacion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/aCuentas_transaccion_geolocalizacion" />
+
+        <!-- Guardar movimiento -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnGuardarMovimiento"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="@string/aCuentas_transaccion_guardar" />
+
+    </LinearLayout>
+</ScrollView>
