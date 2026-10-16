@@ -7,8 +7,8 @@
 
 ## Estado de la sesión
 
-- **Alcance actual:** Capa Datos/Dominio (T1→T10) completada. Fase 3 UI: T11, T12, T13, T14 y T15 completadas. Próxima tarea: **T16** (Conectar Vista 2 con Room y dominio).
-- **Completadas:** T1 a T10 (Datos/Dominio), T11 (Menú navegación), T12 (`activity_cuentas.xml`), T13 (Layouts `view_*.xml` refinados visualmente), T14 (`CuentasActivity.java` con ViewBinding y navegación), **T15 (Vista 1 conectada con Room: CuentasViewModel, CuentasAdapter, LiveData, CurrencyFormatter)**.
+- **Alcance actual:** Capa Datos/Dominio (T1→T10) completada. Fase 3 UI: T11 a T15 completadas. Próxima tarea: **T16** (Conectar Vista 2 con Room y dominio).
+- **Completadas:** T1 a T14, y **T15 (Vista 1 conectada con Room: `CurrencyFormatter`, `CuentasViewModel`, `CuentasAdapter`, y diálogo FAB para agregar cuentas)**.
 - **Reglas no negociables:**
   1. Dinero: `long` en entidades Room (pesos CLP directos, NO centavos, NO double). `BigDecimal` en modelos de dominio.
   2. Arquitectura: `domain/` NO importa `androidx.room` ni Android SDK (solo `java.*`).
@@ -23,7 +23,7 @@
 | Campo | T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9 | T10 | T11 | T12 | T13 | T14 | T15 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | **Fecha** | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-14 | 2026-10-14 | 2026-10-14 | 2026-10-15 | 2026-10-15 | 2026-10-15 |
-| **Tarea ejecutada** | Configurar Room en el proyecto | Crear entidades Room en `data/entities/` | Crear DAOs en `data/dao/` | Crear `AppDatabase.java` en `data/db/` | Crear modelos de dominio en `domain/model/` | Crear códigos de error en `domain/error/ErrorCode.java` | Crear `TransaccionService.java` en `domain/service/` | Crear tests unitarios de `TransaccionService` | Crear tests de DAOs (`CuentaDaoTest`, `TransaccionDaoTest`) | Crear `SeedDataInitializer.java` y registrar en `AppDatabase` | Crear menú `bottom_nav_menu.xml` + strings `aCuentas_` | Crear layout `activity_cuentas.xml` | Refinar layouts `view_*.xml` (UI visual) | Crear `CuentasActivity.java` con ViewBinding | Conectar Vista 1 (Cuentas) con Room (ViewModel/Adapter/Formatter) |
+| **Tarea ejecutada** | Configurar Room en el proyecto | Crear entidades Room en `data/entities/` | Crear DAOs en `data/dao/` | Crear `AppDatabase.java` en `data/db/` | Crear modelos de dominio en `domain/model/` | Crear códigos de error en `domain/error/ErrorCode.java` | Crear `TransaccionService.java` en `domain/service/` | Crear tests unitarios de `TransaccionService` | Crear tests de DAOs (`CuentaDaoTest`, `TransaccionDaoTest`) | Crear `SeedDataInitializer.java` y registrar en `AppDatabase` | Crear menú `bottom_nav_menu.xml` + strings `aCuentas_` | Crear layout `activity_cuentas.xml` | Refinar layouts `view_*.xml` (UI visual) | Crear `CuentasActivity.java` con ViewBinding | Conectar Vista 1 con Room y agregar diálogo FAB |
 | **Responsable** | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG |
 | **Duración estimada vs real** | 15 min vs ~5 min | 30 min vs ~10 min | 30 min vs ~10 min | 30 min vs ~15 min | 30 min vs ~15 min | 10 min vs ~5 min | 45 min vs ~15 min | 45 min vs ~15 min | 60 min vs ~40 min | 30 min vs ~10 min | 30 min vs ~10 min | 15 min vs ~5 min | 45 min vs ~20 min | 30 min vs ~20 min | 60 min vs ~45 min |
 | **Estado** | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | ✅ Completado | ✅ Completado | ✅ Completado |
@@ -57,7 +57,7 @@
 **T13 (Fase Visual) — Refinar layouts de vistas:** Se completó el diseño visual de `view_cuentas.xml` siguiendo la referencia. Se implementó una `MaterialCardView` para el saldo total, un `RecyclerView` para la lista, un `TextView` para el estado vacío (`tvEmptyState`) y un `FloatingActionButton`. Se creó `item_cuenta.xml` con un diseño horizontal (ícono de tipo de cuenta, nombre con weight=1 y monto en negrita). Se centralizaron todos los textos en `strings.xml` con el prefijo `aCuentas_` y se aseguró el uso exclusivo de atributos Material 3.
 **T14 — Crear `CuentasActivity.java`:** Se creó la Activity principal usando `ActivityCuentasBinding`, configurando el Toolbar, el toggle de tema con `AppCompatDelegate.setDefaultNightMode()` y la navegación del `BottomNavigationView` que controla el `ViewFlipper`.
 
-**T15 — Conectar Vista 1 (Cuentas) con Room:** Se implementó la lógica completa de la Vista 1 para mostrar datos reales de la base de datos. Se creó `CurrencyFormatter.java` (utilidad para formatear montos CLP con locale `es-CL`), `CuentasViewModel.java` (expone `LiveData<List<Cuenta>>` y `LiveData<BigDecimal>` del saldo total calculado vía `Transformations.map`), y `CuentasAdapter.java` (mapea cada cuenta a una fila visual con ícono según tipo, nombre y monto formateado). Se modificó `CuentasActivity.java` para observar los LiveData, configurar el RecyclerView con `LinearLayoutManager`, manejar el estado vacío (mostrar/ocultar `tvEmptyState`), y extender `BaseActivity` (usando `ThemeManager` para el toggle de tema, corrigiendo la T14). Se limpiaron textos hardcodeados de `view_cuentas.xml` e `item_cuenta.xml`, se corrigió la estructura del divisor en `item_cuenta.xml` (LinearLayout vertical), y se aplicó `?attr/colorSurfaceVariant` a la card de saldo (Decisión #35). El FAB muestra un Toast "Próximamente". Verificación: `assembleDebug` exitoso, `lint` sin hallazgos nuevos, `testDebugUnitTest` 13/13 verde.
+**T15 — Conectar Vista 1 (Cuentas) con Room:** Se implementó la lógica completa de la Vista 1 para mostrar datos reales de la base de datos. Se creó `CurrencyFormatter.java` (utilidad para formatear montos CLP con locale `es-CL`), `CuentasViewModel.java` (expone `LiveData<List<Cuenta>>` y `LiveData<BigDecimal>` del saldo total calculado vía `Transformations.map`), y `CuentasAdapter.java` (mapea cada cuenta a una fila visual con ícono según tipo, nombre y monto formateado). Se modificó `CuentasActivity.java` para observar los LiveData, configurar el RecyclerView con `LinearLayoutManager`, manejar el estado vacío (mostrar/ocultar `tvEmptyState`), y extender `BaseActivity` (usando `ThemeManager` para el toggle de tema, corrigiendo la T14). Se limpiaron textos hardcodeados de `view_cuentas.xml` e `item_cuenta.xml`, se corrigió la estructura del divisor en `item_cuenta.xml` (LinearLayout vertical), y se aplicó `?attr/colorSurfaceVariant` a la card de saldo (Decisión #35). Finalmente, se implementó el alta de cuentas desde el FAB con `MaterialAlertDialogBuilder` (método `mostrarDialogNuevaCuenta()`): infla `dialog_nueva_cuenta.xml`, valida el nombre sin cerrar el diálogo ante error, lee el tipo de `MaterialButtonToggleGroup` vía `TipoCuenta.name()`, parsea el saldo de forma segura (`NumberFormatException` → 0, con `Log.w`) e inserta con `CuentasViewModel.insertarCuenta(...)` en el Executor de `AppDatabase`. Verificación: `assembleDebug` exitoso, `lint` sin hallazgos nuevos, `testDebugUnitTest` 13/13 verde.
 
 ---
 
@@ -89,6 +89,7 @@
 - `app/src/main/java/com/localcash/ui/util/CurrencyFormatter.java` (T15) — Utilidad `final` con métodos `format(long)`, `format(BigDecimal)`, `formatWithCurrency(long)`. Usa `Locale.forLanguageTag("es-CL")` y `NumberFormat.getCurrencyInstance()`. Cero dependencias Android SDK.
 - `app/src/main/java/com/localcash/ui/cuentas/CuentasViewModel.java` (T15) — `AndroidViewModel` que expone `LiveData<List<Cuenta>>` desde `CuentaDao.getAll()` y `LiveData<BigDecimal>` del saldo total calculado vía `Transformations.map`. Reutiliza `Cuenta.fromEntity()` para conversión `long→BigDecimal` (FQN por JLS §7.5.1).
 - `app/src/main/java/com/localcash/ui/cuentas/CuentasAdapter.java` (T15) — `RecyclerView.Adapter` con `ViewHolder` estático. Mapea tipo de cuenta a ícono (EFECTIVO/AHORRO/TARJETA), nombre y monto formateado. `setCuentas()` con notificaciones granulares (`notifyItemRangeInserted/Removed/Changed`).
+- `app/src/main/res/layout/dialog_nueva_cuenta.xml` (T15) — Formulario de diálogo para crear cuenta nueva con campos de nombre, tipo (Ahorro/Tarjeta) y saldo inicial.
 - `app/src/main/res/drawable/ic_account_balance_wallet.xml` (T15) — Renombrado de `account_balance_wallet.xml` para estandarizar prefijo `ic_` (consistencia con `ic_savings`, `ic_credit_card`, etc.).
 
 **Modificados:**
@@ -114,6 +115,9 @@
 - `app/src/main/res/layout/view_cuentas.xml` (T15) — `cardBackgroundColor=?attr/colorSurfaceVariant` (Decisión #35). `tvSaldoTotal` sin texto demo (solo `tools:text`). TextColor `?attr/colorOnSurfaceVariant`.
 - `app/src/main/java/com/localcash/ui/cuentas/CuentasActivity.java` (T15) — Conectada a Room: `ViewModelProvider` + `LinearLayoutManager` + observadores de lista (estado vacío) y saldo total. Extiende `BaseActivity` (usa `ThemeManager.setDarkMode()`). FAB con Toast "Próximamente". `setOnItemSelectedListener` en lugar de `setOnNavigationItemSelectedListener` (Material 1.14 deprecado).
 - `app/src/main/res/values/strings.xml` (T15) — Borrado `aCuentas_saldo_total_demo` (no usado). Agregado `aCuentas_fab_proximamente`.
+- `app/src/main/java/com/localcash/ui/cuentas/CuentasViewModel.java` (T15) — Agregado método `insertarCuenta(String, String, long)` que persiste la cuenta en Room vía `AppDatabase.getExecutor().execute()` (hilo secundario).
+- `app/src/main/java/com/localcash/ui/cuentas/CuentasActivity.java` (T15) — Reemplazado el Toast del FAB por `mostrarDialogNuevaCuenta()` (MaterialAlertDialog) con validación de nombre (sin cerrar el diálogo ante error), selección de tipo vía `TipoCuenta.name()` y parseo seguro de saldo (`NumberFormatException` → 0). Promoción de `viewModel` a campo de clase.
+- `app/src/main/res/values/strings.xml` (T15) — Agregados strings del diálogo (`aCuentas_dialog_titulo`, `aCuentas_dialog_guardar`, `aCuentas_dialog_cancelar`, `aCuentas_dialog_nombre_hint`, `aCuentas_dialog_tipo_label`, `aCuentas_dialog_saldo_hint`, `aCuentas_dialog_saldo_default`, `aCuentas_toast_cuenta_creada`, `aCuentas_error_nombre_vacio`). Eliminado `aCuentas_fab_proximamente` (sin uso).
 
 ---
 
@@ -245,6 +249,18 @@
 42. **`Locale.forLanguageTag("es-CL")` en lugar de `new Locale("es", "CL")`**
     _Justificación:_ El constructor `Locale(String, String)` está deprecado desde Java 19 y el daemon Gradle compila con JDK 21. `Locale.forLanguageTag("es-CL")` produce el mismo resultado (`es_CL`, lang `es`, country `CL`) sin warning de deprecación.
 
+43. **Inserción de la cuenta vía el Executor del `AppDatabase` (`insertarCuenta`)**
+    _Justificación:_ `CuentasViewModel.insertarCuenta(...)` delega la escritura en `AppDatabase.getExecutor().execute(...)` (hilo secundario), cumpliendo `.agent.md` §5.1 y las Decisiones #10/#13: el ViewModel orquesta, Room persiste fuera del hilo principal, y el `LiveData` del `DAO` notifica la UI automáticamente al insertarse.
+
+44. **Uso de `TipoCuenta.name()` para los valores persistidos (`AHORRO`/`TARJETA`)**
+    _Justificación:_ El tipo se obtiene del enum de dominio (`TipoCuenta.AHORRO.name()` / `TipoCuenta.TARJETA.name()`) en lugar de literales de texto. Evita "magic strings", mantiene consistencia con la capa de datos (que persiste `name()`) y no traduce datos: `AHORRO`/`TARJETA` son valores persistidos, no texto de UI.
+
+45. **Validación del diálogo sin cierre automático**
+    _Justificación:_ Con `setPositiveButton(listener)` el `AlertDialog` cierra siempre. Se pasa el listener como `null` y se sobreescribe el del botón positivo con `dialog.getButton(BUTTON_POSITIVE)` tras `show()`; así, si el nombre está vacío, se muestra `setError` en el `TextInputLayout` sin cerrar el diálogo (comportamiento estándar de Android para permitir corregir), y el cierre es explícito (`dialog.dismiss()`) solo en éxito.
+
+46. **Promoción de `viewModel` a campo de clase en `CuentasActivity`**
+    _Justificación:_ El ViewModel estaba como variable local de `configurarVistaCuentas()`, inaccesible para el nuevo `mostrarDialogNuevaCuenta()`. Promoverlo a campo es el cambio mínimo para que el diálogo pueda invocar `insertarCuenta(...)` sin duplicar la creación del ViewModel ni cambiar su ciclo de vida (`ViewModelProvider(this)` sigue ligado a la Activity).
+
 ---
 
 ## Lecciones Aprendidas
@@ -281,6 +297,8 @@
 - **T15:** `BaseActivity` + `ThemeManager` es el patrón correcto para Activities que necesitan toggle de tema persistente. `AppCompatDelegate.setDefaultNightMode()` directo no guarda la preferencia.
 - **T15:** Material Components 1.14 deprecó `setOnNavigationItemSelectedListener`. Migrar a `setOnItemSelectedListener` es trivial y cumple el DoD de cero warnings.
 - **T15:** `Locale.forLanguageTag("es-CL")` reemplaza al constructor deprecado `new Locale("es", "CL")` en JDK 21.
+- **T15:** Para evitar que un `AlertDialog` se cierre al fallar una validación, se debe obtener el botón positivo con `dialog.getButton()` después de `show()` y asignarle un `OnClickListener` propio que solo llame a `dialog.dismiss()` en caso de éxito.
+- **T15:** Usar `Enum.name()` para valores persistidos es más seguro que hardcodear Strings, ya que el compilador valida la existencia del valor y se mantiene una única fuente de verdad con el enum de dominio.
 
 ---
 
@@ -312,7 +330,7 @@
 | T12 | Crear layout `activity_cuentas.xml` | ✅ Completado | 2026-10-14 |
 | T13 | Refinar layouts `view_*.xml` (UI visual) | ✅ Completado | 2026-10-15 |
 | T14 | Crear `CuentasActivity.java` en `ui/cuentas/` | ✅ Completado | 2026-10-15 |
-| T15 | Conectar Vista 1 (Cuentas) con Room (ViewModel/Adapter/Formatter) | ✅ Completado | 2026-10-15 |
+| T15 | Conectar Vista 1 (Cuentas) con Room y agregar diálogo FAB | ✅ Completado | 2026-10-15 |
 | T16 | Conectar Vista 2 (Transacción) con Room y dominio | ⬜ Pendiente | — |
 | T17 | Modificar `LoginActivity.java` | ⬜ Pendiente | — |
 | T18 | Actualizar `AndroidManifest.xml` y `strings.xml` | ⬜ Pendiente | — |
