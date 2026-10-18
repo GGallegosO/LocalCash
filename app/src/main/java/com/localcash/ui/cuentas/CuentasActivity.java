@@ -117,14 +117,43 @@ public class CuentasActivity extends BaseActivity
         // Vista 3: Contactos
         getLayoutInflater().inflate(R.layout.view_contactos, binding.viewFlipper);
 
-        // Establecer la vista inicial
-        binding.viewFlipper.setDisplayedChild(0);
+        // Restaurar el índice del ViewFlipper desde el estado guardado (preserva la vista actual al cambiar tema)
+        if (savedInstanceState != null) {
+            int savedViewIndex = savedInstanceState.getInt("viewFlipperIndex", 0);
+            // Aplicar después de inflar las vistas pero antes de establecer los listeners
+            binding.viewFlipper.setDisplayedChild(savedViewIndex);
+            // También actualizar el elemento seleccionado del BottomNavigationView para mantener la sincronización
+            switch (savedViewIndex) {
+                case 0:
+                    binding.bottomNav.setSelectedItemId(R.id.nav_cuentas);
+                    break;
+                case 1:
+                    binding.bottomNav.setSelectedItemId(R.id.nav_nuevo);
+                    break;
+                case 2:
+                    binding.bottomNav.setSelectedItemId(R.id.nav_mapa);
+                    break;
+                case 3:
+                    binding.bottomNav.setSelectedItemId(R.id.nav_contactos);
+                    break;
+            }
+        } else {
+            // Establecer la vista inicial si no hay estado guardado
+            binding.viewFlipper.setDisplayedChild(0);
+        }
 
         // Conectar la Vista 1 con Room (ViewModel + Adapter)
         configurarVistaCuentas();
 
         // Conectar la Vista 2 con Room y dominio (ViewModel de transacciones)
         configurarVistaTransaccion();
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        // Guardar el índice actual del ViewFlipper para preservar la vista seleccionada
+        outState.putInt("viewFlipperIndex", binding.viewFlipper.getDisplayedChild());
     }
 
     /**
