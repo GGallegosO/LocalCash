@@ -22,17 +22,22 @@ import com.google.android.material.textfield.TextInputLayout;
 import com.localcash.R;
 import com.localcash.data.entities.Cuenta;
 import com.localcash.databinding.ActivityCuentasBinding;
+import com.localcash.databinding.ItemTransaccionBinding;
 import com.localcash.databinding.ViewCuentasBinding;
+import com.localcash.databinding.ViewHistorialBinding;
 import com.localcash.databinding.ViewTransaccionBinding;
 import com.localcash.domain.error.ErrorCode;
 import com.localcash.domain.model.TipoCuenta;
 import com.localcash.domain.model.TipoTransaccion;
+import com.localcash.domain.model.Transaccion;
 import com.localcash.ui.BaseActivity;
 import com.localcash.ui.theme.ThemeManager;
 import com.localcash.ui.util.CurrencyFormatter;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Activity principal de LocalCash (Módulo 1): 4 vistas en un {@code ViewFlipper}
@@ -53,8 +58,14 @@ public class CuentasActivity extends BaseActivity
     /** Binding de la Vista 1 (se infla dentro del ViewFlipper, fuera de activity_cuentas.xml). */
     private ViewCuentasBinding vistaCuentas;
 
+    /** Binding de la Vista 1 (Historial/Movimientos), inflado dentro del ViewFlipper. */
+    private ViewHistorialBinding vistaHistorial;
+
     /** Binding de la Vista 2 (Transacción), inflado dentro del ViewFlipper. */
     private ViewTransaccionBinding vistaTransaccion;
+
+    /** Adapter para el RecyclerView del historial. */
+    private HistorialAdapter historialAdapter;
 
     /** ViewModel de la Vista 1: usado para insertar cuentas desde el diálogo. */
     private CuentasViewModel viewModel;
@@ -94,7 +105,7 @@ public class CuentasActivity extends BaseActivity
                 binding.viewFlipper.setDisplayedChild(0);
                 actualizarTituloToolbar(0);
                 return true;
-            } else if (itemId == R.id.nav_nuevo) {
+            } else if (itemId == R.id.nav_movimientos) {
                 binding.viewFlipper.setDisplayedChild(1);
                 actualizarTituloToolbar(1);
                 return true;
@@ -113,12 +124,15 @@ public class CuentasActivity extends BaseActivity
         // Inflar los 4 layouts internos dentro del ViewFlipper
         // Vista 0: Cuentas (binding propio: sus vistas no forman parte de activity_cuentas.xml)
         vistaCuentas = ViewCuentasBinding.inflate(getLayoutInflater(), binding.viewFlipper, true);
-        // Vista 1: Transacción
+        // Vista 1: Historial/Movimientos
+        vistaHistorial = ViewHistorialBinding.inflate(
+                getLayoutInflater(), binding.viewFlipper, true);
+        // Vista 2: Transacción (formulario)
         vistaTransaccion = ViewTransaccionBinding.inflate(
                 getLayoutInflater(), binding.viewFlipper, true);
-        // Vista 2: Mapa
+        // Vista 3: Mapa
         getLayoutInflater().inflate(R.layout.view_mapa, binding.viewFlipper);
-        // Vista 3: Contactos
+        // Vista 4: Contactos
         getLayoutInflater().inflate(R.layout.view_contactos, binding.viewFlipper);
 
         // Restaurar el índice del ViewFlipper desde el estado guardado (preserva la vista actual al cambiar tema)
@@ -132,7 +146,7 @@ public class CuentasActivity extends BaseActivity
                     binding.bottomNav.setSelectedItemId(R.id.nav_cuentas);
                     break;
                 case 1:
-                    binding.bottomNav.setSelectedItemId(R.id.nav_nuevo);
+                    binding.bottomNav.setSelectedItemId(R.id.nav_movimientos);
                     break;
                 case 2:
                     binding.bottomNav.setSelectedItemId(R.id.nav_mapa);
@@ -152,7 +166,10 @@ public class CuentasActivity extends BaseActivity
         // Conectar la Vista 1 con Room (ViewModel + Adapter)
         configurarVistaCuentas();
 
-        // Conectar la Vista 2 con Room y dominio (ViewModel de transacciones)
+        // Conectar la Vista 2 (Historial/Movimientos) con RecyclerView y datos mock
+        configurarVistaHistorial();
+
+        // Conectar la Vista 3 (Transacción) con Room y dominio (ViewModel de transacciones)
         configurarVistaTransaccion();
     }
 
@@ -191,7 +208,143 @@ public class CuentasActivity extends BaseActivity
     }
 
     /**
-     * Conecta el formulario de la Vista 2 (Transacción) con
+     * Configura la Vista 2 (Historial/Movimientos) con RecyclerView, adapter y datos mock.
+     * El FAB navega a la vista del formulario (Vista 3).
+     */
+    private void configurarVistaHistorial() {
+        historialAdapter = new HistorialAdapter();
+        vistaHistorial.recyclerHistorial.setLayoutManager(new LinearLayoutManager(this));
+        vistaHistorial.recyclerHistorial.setAdapter(historialAdapter);
+
+        // Generar datos mock para el historial
+        List<Transaccion> transaccionesMock = generarTransaccionesMock();
+        historialAdapter.setTransacciones(transaccionesMock);
+
+        // Mostrar/ocultar estado vacío según haya datos
+        boolean hayTransacciones = !transaccionesMock.isEmpty();
+        vistaHistorial.recyclerHistorial.setVisibility(hayTransacciones ? View.VISIBLE : View.GONE);
+        vistaHistorial.tvEmptyHistorial.setVisibility(hayTransacciones ? View.GONE : View.VISIBLE);
+
+        // FAB: navegar a la vista del formulario de transacción (Vista 3)
+        vistaHistorial.fabNuevaTransaccion.setOnClickListener(v -> {
+            binding.viewFlipper.setDisplayedChild(2); // Vista 3 = índice 2 (Transacción)
+            binding.bottomNav.setSelectedItemId(R.id.nav_movimientos); // Mantener seleccionado "Movimientos"
+            actualizarTituloToolbar(2);
+        });
+    }
+
+    /**
+     * Genera una lista mock de 10 transacciones variadas para el historial.
+     *
+     * @return Lista de transacciones mock
+     */
+    private List<Transaccion> generarTransaccionesMock() {
+        List<Transaccion> lista = new ArrayList<>();
+        Calendar cal = Calendar.getInstance();
+
+        // Transacción 1: Ingreso - Sueldo
+        cal.add(Calendar.DAY_OF_MONTH, -1);
+        lista.add(new Transaccion(
+                1, 1, TipoTransaccion.INGRESO,
+                new java.math.BigDecimal("500000"),
+                "Sueldo Octubre",
+                cal.getTimeInMillis()
+        ));
+
+        // Transacción 2: Egreso - Supermercado
+        cal.add(Calendar.HOUR_OF_DAY, -2);
+        lista.add(new Transaccion(
+                2, 1, TipoTransaccion.EGRESO,
+                new java.math.BigDecimal("45000"),
+                "Supermercado Jumbo",
+                cal.getTimeInMillis()
+        ));
+
+        // Transacción 3: Egreso - Transporte
+        cal.add(Calendar.DAY_OF_MONTH, -1);
+        cal.add(Calendar.HOUR_OF_DAY, 5);
+        lista.add(new Transaccion(
+                3, 2, TipoTransaccion.EGRESO,
+                new java.math.BigDecimal("2800"),
+                "Metro / Bus",
+                cal.getTimeInMillis()
+        ));
+
+        // Transacción 4: Ingreso - Transferencia recibida
+        cal.add(Calendar.DAY_OF_MONTH, -2);
+        cal.add(Calendar.HOUR_OF_DAY, 3);
+        lista.add(new Transaccion(
+                4, 1, TipoTransaccion.INGRESO,
+                new java.math.BigDecimal("25000"),
+                "Transferencia de Juan",
+                cal.getTimeInMillis()
+        ));
+
+        // Transacción 5: Egreso - Restaurante
+        cal.add(Calendar.DAY_OF_MONTH, -3);
+        cal.add(Calendar.HOUR_OF_DAY, -4);
+        lista.add(new Transaccion(
+                5, 2, TipoTransaccion.EGRESO,
+                new java.math.BigDecimal("18500"),
+                "Almuerzo en El Palacio",
+                cal.getTimeInMillis()
+        ));
+
+        // Transacción 6: Egreso - Farmacia
+        cal.add(Calendar.DAY_OF_MONTH, -4);
+        cal.add(Calendar.HOUR_OF_DAY, 2);
+        lista.add(new Transaccion(
+                6, 3, TipoTransaccion.EGRESO,
+                new java.math.BigDecimal("12000"),
+                "Farmacia Cruz Verde",
+                cal.getTimeInMillis()
+        ));
+
+        // Transacción 7: Ingreso - Venta artículo
+        cal.add(Calendar.DAY_OF_MONTH, -5);
+        cal.add(Calendar.HOUR_OF_DAY, -1);
+        lista.add(new Transaccion(
+                7, 1, TipoTransaccion.INGRESO,
+                new java.math.BigDecimal("35000"),
+                "Venta celular usado",
+                cal.getTimeInMillis()
+        ));
+
+        // Transacción 8: Egreso - Suscripción
+        cal.add(Calendar.DAY_OF_MONTH, -7);
+        cal.add(Calendar.HOUR_OF_DAY, 4);
+        lista.add(new Transaccion(
+                8, 2, TipoTransaccion.EGRESO,
+                new java.math.BigDecimal("8900"),
+                "Netflix / Spotify",
+                cal.getTimeInMillis()
+        ));
+
+        // Transacción 9: Egreso - Comida delivery
+        cal.add(Calendar.DAY_OF_MONTH, -8);
+        cal.add(Calendar.HOUR_OF_DAY, -3);
+        lista.add(new Transaccion(
+                9, 3, TipoTransaccion.EGRESO,
+                new java.math.BigDecimal("15000"),
+                "PedidosYa - Sushi",
+                cal.getTimeInMillis()
+        ));
+
+        // Transacción 10: Ingreso - Freelance
+        cal.add(Calendar.DAY_OF_MONTH, -10);
+        cal.add(Calendar.HOUR_OF_DAY, 6);
+        lista.add(new Transaccion(
+                10, 1, TipoTransaccion.INGRESO,
+                new java.math.BigDecimal("75000"),
+                "Proyecto freelance",
+                cal.getTimeInMillis()
+        ));
+
+        return lista;
+    }
+
+    /**
+     * Conecta el formulario de la Vista 3 (Transacción) con
      * {@link TransaccionViewModel}: puebla el selector de cuentas activas y
      * enlaza el botón "Guardar Movimiento".
      */
@@ -549,7 +702,9 @@ public class CuentasActivity extends BaseActivity
     /**
      * Actualiza el título del Toolbar/ActionBar según la vista activa del ViewFlipper.
      *
-     * @param viewIndex índice de la vista mostrada (0=Cuentas, 1=Nuevo, 2=Mapa, 3=Contactos)
+     * @param viewIndex índice de la vista mostrada
+     *                  0=Cuentas, 1=Movimientos/Historial, 2=Transacción/Formulario,
+     *                  3=Mapa, 4=Contactos
      */
     private void actualizarTituloToolbar(int viewIndex) {
         ActionBar ab = getSupportActionBar();
@@ -557,12 +712,15 @@ public class CuentasActivity extends BaseActivity
             int tituloRes;
             switch (viewIndex) {
                 case 1:
-                    tituloRes = R.string.aCuentas_toolbar_nuevo;
+                    tituloRes = R.string.aCuentas_toolbar_movimientos;
                     break;
                 case 2:
-                    tituloRes = R.string.aCuentas_toolbar_mapa;
+                    tituloRes = R.string.aCuentas_toolbar_nuevo;
                     break;
                 case 3:
+                    tituloRes = R.string.aCuentas_toolbar_mapa;
+                    break;
+                case 4:
                     tituloRes = R.string.aCuentas_toolbar_contactos;
                     break;
                 case 0:

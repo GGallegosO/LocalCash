@@ -77,7 +77,7 @@
     <string name="aCuentas_toggle_tema_desc">Cambiar tema claro/oscuro</string>
     <string name="aCuentas_logo_desc">Logo Módulo Cuentas</string>
     <string name="aCuentas_nav_cuentas">Cuentas</string>
-    <string name="aCuentas_nav_nuevo">Nuevo</string>
+    <string name="aCuentas_nav_movimientos">Movimientos</string>
     <string name="aCuentas_nav_mapa">Mapa</string>
     <string name="aCuentas_nav_contactos">Contactos</string>
     <!-- Strings para ViewFlipper T13 -->
@@ -85,6 +85,7 @@
 
     <!-- Títulos de Toolbar por vista del ViewFlipper -->
     <string name="aCuentas_toolbar_cuentas">Mis Cuentas</string>
+    <string name="aCuentas_toolbar_movimientos">Movimientos</string>
     <string name="aCuentas_toolbar_nuevo">Nuevo Movimiento</string>
     <string name="aCuentas_toolbar_mapa">Mapa</string>
     <string name="aCuentas_toolbar_contactos">Contactos</string>
@@ -135,6 +136,11 @@
     <!-- Strings de apoyo para la edición de saldo (T15.6) -->
     <string name="aCuentas_dialog_saldo_actual_hint">Saldo actual</string>
     <string name="aCuentas_error_saldo_invalido">Ingresa un saldo válido</string>
+
+    <!-- Strings para historial de transacciones (Feature 008) -->
+    <string name="aCuentas_item_transaccion_icon_desc">Ícono de transacción</string>
+    <string name="aCuentas_empty_historial">No hay movimientos registrados</string>
+    <string name="aCuentas_fab_nueva_transaccion_desc">Agregar nuevo movimiento</string>
 
     <!-- Strings de la Vista 2 - Transacción (T16) -->
     <string name="aCuentas_transaccion_ingreso">Ingreso</string>

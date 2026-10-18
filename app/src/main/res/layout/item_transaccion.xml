@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fila del historial de transacciones -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <!-- Fila principal: icono + descripción + monto -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="16dp">
+
+        <!-- Icono: flecha arriba (ingreso) o flecha abajo (egreso) -->
+        <ImageView
+            android:id="@+id/ivIconoTransaccion"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:contentDescription="@string/aCuentas_item_transaccion_icon_desc"
+            app:tint="?attr/colorOnSurface"
+            tools:src="@drawable/ic_arrow_upward" />
+
+        <!-- Descripción y fecha -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvDescripcion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?attr/textAppearanceBodyLarge"
+                android:textColor="?attr/colorOnSurface"
+                tools:text="Supermercado" />
+
+            <TextView
+                android:id="@+id/tvFecha"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                tools:text="18/10/2026 14:30" />
+
+        </LinearLayout>
+
+        <!-- Monto: verde para ingresos, rojo para egresos -->
+        <TextView
+            android:id="@+id/tvMonto"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:textAppearance="?attr/textAppearanceBodyLarge"
+            android:textStyle="bold"
+            tools:text="+$50.000" />
+
+    </LinearLayout>
+
+    <!-- Divisor entre filas -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginStart="64dp"
+        android:background="?attr/colorOutlineVariant" />
+
+</LinearLayout>
