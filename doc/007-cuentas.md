@@ -16,17 +16,6 @@
   4. Memoria: un `doc/007-cuentas.md` único va actualizado tras cada tarea (§7 del contrato).
 - **Siguiente tarea inmediata:** **T17** — Modificar `LoginActivity.java` para redirigir a `CuentasActivity` tras login exitoso (biometría o credenciales).
 
----
-
-## Fichas de tarea
-
-| Campo | T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9 | T10 | T11 | T12 | T13 | T14 | T15 | T16 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **Fecha** | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-07 | 2026-10-14 | 2026-10-14 | 2026-10-14 | 2026-10-15 | 2026-10-15 | 2026-10-15 | 2026-10-15 |
-| **Tarea ejecutada** | Configurar Room en el proyecto | Crear entidades Room en `data/entities/` | Crear DAOs en `data/dao/` | Crear `AppDatabase.java` en `data/db/` | Crear modelos de dominio en `domain/model/` | Crear códigos de error en `domain/error/ErrorCode.java` | Crear `TransaccionService.java` en `domain/service/` | Crear tests unitarios de `TransaccionService` | Crear tests de DAOs (`CuentaDaoTest`, `TransaccionDaoTest`) | Crear `SeedDataInitializer.java` y registrar en `AppDatabase` | Crear menú `bottom_nav_menu.xml` + strings `aCuentas_` | Crear layout `activity_cuentas.xml` | Refinar layouts `view_*.xml` (UI visual) | Crear `CuentasActivity.java` con ViewBinding | Conectar Vista 1 con Room, diálogo FAB y gestión de cuentas (editar/eliminar) | Conectar Vista 2 (Transacción) con Room y dominio (formulario + TransaccionViewModel) |
-| **Responsable** | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG | GG |
-| **Duración estimada vs real** | 15 min vs ~5 min | 30 min vs ~10 min | 30 min vs ~10 min | 30 min vs ~15 min | 30 min vs ~15 min | 10 min vs ~5 min | 45 min vs ~15 min | 45 min vs ~15 min | 60 min vs ~40 min | 30 min vs ~10 min | 30 min vs ~10 min | 15 min vs ~5 min | 45 min vs ~20 min | 30 min vs ~20 min | 60 min vs ~45 min | 90 min vs ~40 min |
-| **Estado** | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | Completado | ✅ Completado | ✅ Completado | ✅ Completado | ✅ Completado |
 
 ---
 
