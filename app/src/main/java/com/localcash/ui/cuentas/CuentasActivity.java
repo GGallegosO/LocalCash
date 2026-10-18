@@ -92,15 +92,19 @@ public class CuentasActivity extends BaseActivity
             int itemId = item.getItemId();
             if (itemId == R.id.nav_cuentas) {
                 binding.viewFlipper.setDisplayedChild(0);
+                actualizarTituloToolbar(0);
                 return true;
             } else if (itemId == R.id.nav_nuevo) {
                 binding.viewFlipper.setDisplayedChild(1);
+                actualizarTituloToolbar(1);
                 return true;
             } else if (itemId == R.id.nav_mapa) {
                 binding.viewFlipper.setDisplayedChild(2);
+                actualizarTituloToolbar(2);
                 return true;
             } else if (itemId == R.id.nav_contactos) {
                 binding.viewFlipper.setDisplayedChild(3);
+                actualizarTituloToolbar(3);
                 return true;
             }
             return false;
@@ -137,9 +141,12 @@ public class CuentasActivity extends BaseActivity
                     binding.bottomNav.setSelectedItemId(R.id.nav_contactos);
                     break;
             }
+            // Actualizar el título del Toolbar según la vista restaurada
+            actualizarTituloToolbar(savedViewIndex);
         } else {
             // Establecer la vista inicial si no hay estado guardado
             binding.viewFlipper.setDisplayedChild(0);
+            actualizarTituloToolbar(0);
         }
 
         // Conectar la Vista 1 con Room (ViewModel + Adapter)
@@ -537,5 +544,33 @@ public class CuentasActivity extends BaseActivity
                         (dialog, which) -> viewModel.desactivarCuenta(cuenta.getId()))
                 .setNegativeButton(R.string.aCuentas_cancelar, null)
                 .show();
+    }
+
+    /**
+     * Actualiza el título del Toolbar/ActionBar según la vista activa del ViewFlipper.
+     *
+     * @param viewIndex índice de la vista mostrada (0=Cuentas, 1=Nuevo, 2=Mapa, 3=Contactos)
+     */
+    private void actualizarTituloToolbar(int viewIndex) {
+        ActionBar ab = getSupportActionBar();
+        if (ab != null) {
+            int tituloRes;
+            switch (viewIndex) {
+                case 1:
+                    tituloRes = R.string.aCuentas_toolbar_nuevo;
+                    break;
+                case 2:
+                    tituloRes = R.string.aCuentas_toolbar_mapa;
+                    break;
+                case 3:
+                    tituloRes = R.string.aCuentas_toolbar_contactos;
+                    break;
+                case 0:
+                default:
+                    tituloRes = R.string.aCuentas_toolbar_cuentas;
+                    break;
+            }
+            ab.setTitle(tituloRes);
+        }
     }
 }
