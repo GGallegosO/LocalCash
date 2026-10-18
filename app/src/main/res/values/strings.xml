@@ -83,6 +83,12 @@
     <!-- Strings para ViewFlipper T13 -->
     <string name="aCuentas_saldo_total">Saldo total</string>
 
+    <!-- Títulos de Toolbar por vista del ViewFlipper -->
+    <string name="aCuentas_toolbar_cuentas">Mis Cuentas</string>
+    <string name="aCuentas_toolbar_nuevo">Nuevo Movimiento</string>
+    <string name="aCuentas_toolbar_mapa">Mapa</string>
+    <string name="aCuentas_toolbar_contactos">Contactos</string>
+
     <!-- Strings para View 1 - T15 -->
     <string name="aCuentas_saldo_total_label">Saldo Total</string>
     <string name="aCuentas_fab_nueva_cuenta_desc">Agregar nueva cuenta</string>
