@@ -62,4 +62,21 @@ public interface TransaccionDao {
      */
     @Query("SELECT * FROM transacciones ORDER BY fecha DESC")
     LiveData<List<Transaccion>> getAll();
+
+    /**
+     * Observa los movimientos <b>geolocalizados</b> (con ambas coordenadas),
+     * en orden cronológico inverso.
+     * <p>
+     * Alimenta la pestaña "Mapa" en modo lectura. La regla "ambas o ninguna" del
+     * dominio garantiza que un movimiento con {@code latitud} no nula también
+     * tiene {@code longitud} no nula; el filtro se apoya en el índice parcial
+     * {@code idx_transacciones_geo} (data-model.md).
+     * </p>
+     *
+     * @return LiveData con los movimientos que tienen ubicación
+     */
+    @Query("SELECT * FROM transacciones "
+            + "WHERE latitud IS NOT NULL AND longitud IS NOT NULL "
+            + "ORDER BY fecha DESC")
+    LiveData<List<Transaccion>> getConUbicacion();
 }
