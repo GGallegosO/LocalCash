@@ -12,6 +12,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.Toolbar;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
@@ -21,6 +22,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.localcash.R;
+import com.localcash.data.db.AppDatabase;
 import com.localcash.data.entities.Cuenta;
 import com.localcash.databinding.ActivityCuentasBinding;
 import com.localcash.databinding.BottomSheetTransaccionBinding;
@@ -44,7 +46,9 @@ import java.util.Locale;
  * controladas por un {@code BottomNavigationView}.
  * <p>
  * La Vista 1 (Cuentas) está conectada a Room vía {@link CuentasViewModel}:
- * lista de cuentas y saldo total consolidado se actualizan reactivamente.
+ * lista de cuentas y saldo total consolidado se actualizan reactivamente. La
+ * Vista 2 (Movimientos) está conectada a Room vía {@link HistorialViewModel}:
+ * el historial de movimientos se actualiza reactivamente.
  * </p>
  */
 public class CuentasActivity extends BaseActivity
@@ -72,6 +76,9 @@ public class CuentasActivity extends BaseActivity
 
     /** ViewModel de la Vista 2: registra movimientos (ingreso/egreso). */
     private TransaccionViewModel transaccionViewModel;
+
+    /** ViewModel del historial (Movimientos): observa Room y expone el dominio. */
+    private HistorialViewModel historialViewModel;
 
     /** Cuentas activas asociadas, en el mismo orden que el adapter del spinner. */
     private final List<Cuenta> cuentasSpinner = new ArrayList<>();
@@ -169,7 +176,7 @@ public class CuentasActivity extends BaseActivity
         // Conectar la Vista 1 con Room (ViewModel + Adapter)
         configurarVistaCuentas();
 
-        // Conectar la Vista 2 (Historial/Movimientos) con RecyclerView y datos mock
+        // Conectar la Vista 2 (Historial/Movimientos) con Room (ViewModel + Adapter)
         configurarVistaHistorial();
 
         // Preparar el ViewModel de transacciones (alimenta el BottomSheet del FAB)
@@ -211,27 +218,49 @@ public class CuentasActivity extends BaseActivity
     }
 
     /**
-     * Configura la Vista 2 (Historial/Movimientos) con RecyclerView, adapter y datos mock.
-     * El FAB abre el BottomSheet de registro de movimientos.
+     * Configura la Vista 2 (Historial/Movimientos): conecta el RecyclerView con
+     * el {@link HistorialViewModel}, que observa Room y entrega la lista de
+     * movimientos en modelo de dominio. El FAB abre el BottomSheet de registro.
+     * <p>
+     * La lista y el estado vacío se actualizan solos ante cada cambio en la tabla
+     * {@code transacciones} (LiveData): un movimiento guardado aparece sin
+     * recargar la pantalla a mano.
+     * </p>
      */
     private void configurarVistaHistorial() {
         historialAdapter = new HistorialAdapter();
         vistaHistorial.recyclerHistorial.setLayoutManager(new LinearLayoutManager(this));
         vistaHistorial.recyclerHistorial.setAdapter(historialAdapter);
 
-        // Generar datos mock para el historial
-        List<Transaccion> transaccionesMock = generarTransaccionesMock();
-        historialAdapter.setTransacciones(transaccionesMock);
+        // El ViewModel recibe el DAO por constructor: no sirve la fábrica por
+        // defecto, se necesita una ViewModelProvider.Factory que lo construya.
+        historialViewModel = new ViewModelProvider(this, new ViewModelProvider.Factory() {
+            @NonNull
+            @Override
+            @SuppressWarnings("unchecked")
+            public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
+                return (T) new HistorialViewModel(
+                        AppDatabase.getInstance(getApplicationContext()).transaccionDao());
+            }
+        }).get(HistorialViewModel.class);
 
-        // Mostrar/ocultar estado vacío según haya datos
-        boolean hayTransacciones = !transaccionesMock.isEmpty();
-        vistaHistorial.recyclerHistorial.setVisibility(hayTransacciones ? View.VISIBLE : View.GONE);
-        vistaHistorial.tvEmptyHistorial.setVisibility(hayTransacciones ? View.GONE : View.VISIBLE);
+        // La lista y el estado vacío reaccionan a la base de datos (LiveData).
+        historialViewModel.getTransacciones().observe(this, transacciones -> {
+            List<Transaccion> lista = transacciones != null ? transacciones : new ArrayList<>();
+            boolean hayTransacciones = !lista.isEmpty();
+            historialAdapter.setTransacciones(lista);
+            vistaHistorial.recyclerHistorial.setVisibility(
+                    hayTransacciones ? View.VISIBLE : View.GONE);
+            vistaHistorial.tvEmptyHistorial.setVisibility(
+                    hayTransacciones ? View.GONE : View.VISIBLE);
+        });
 
         // FAB: abrir el BottomSheet para registrar un movimiento nuevo.
         vistaHistorial.fabNuevaTransaccion.setOnClickListener(v -> mostrarBottomSheetTransaccion());
     }
 
+    // TODO(T9): eliminar definitivamente los datos de prueba. Este método ya no
+    // se invoca (el historial se alimenta de Room desde T8e); se conserva hasta T9.
     /**
      * Genera una lista mock de 10 transacciones variadas para el historial.
      *

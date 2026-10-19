@@ -1,7 +1,9 @@
 # tasks.md — Checklist Secuencial de Ejecución
 
 > **Identificación:** 008-historial | **Derivado de:** `spec.md` + `plan.md`
-> **Estado global:** Parcial — Fases 1-3 cerradas salvo el cableado a datos reales; Fases 4-5 pendientes.
+> **Estado global:** Parcialmente completado (Fase 2 avanzada) — el historial ya se alimenta de Room y
+> se refresca por LiveData. Pendientes inmediatos: T9 (eliminación de datos mock) y T12 (saldo);
+> además, las Fases 4-5.
 >
 > **Propósito de este documento:** Descomponer la implementación en pasos ejecutables, ordenados y
 > verificables. Cada casilla marcada `[x]` debe corresponder a un cambio real comprobable (tests
@@ -31,7 +33,7 @@
       El índice guardado se acota a 0..3 para no referenciar una vista eliminada.
       *Criterio de salida:* rotación/cambio de tema no rompe la navegación.
 
-## Fase 2 — Historial (parcial) ⏳
+## Fase 2 — Historial (avanzada; quedan T9 y T12) ⏳
 
 - [x] **T5. Layout de la vista de historial.**
       `view_historial.xml`: lista desplazable, estado vacío y botón flotante.
@@ -39,17 +41,19 @@
       `HistorialAdapter.java` + `item_transaccion.xml` (icono, concepto, fecha, monto con signo/color).
 - [x] **T7. Poblar la lista para validar la UI (datos de prueba — TEMPORAL).**
       `generarTransaccionesMock()` con 10 movimientos. **Es deuda técnica: se elimina en T9.**
-- [ ] **T8. Cablear el historial a los datos reales.**
-      Crear `HistorialViewModel` que observe `TransaccionDao.getAll()` y mapee entidades → dominio.
+- [x] **T8. Cablear el historial a los datos reales.**
+      `HistorialViewModel` (T8a-c) observa `TransaccionDao.getAll()` y mapea entidades → dominio;
+      `CuentasActivity` (T8e) lo instancia con una `ViewModelProvider.Factory` y alimenta el adapter.
       *Criterio de salida:* la lista muestra los movimientos persistidos, ordenados por fecha DESC.
 - [ ] **T9. Eliminar los datos de prueba.**
       Borrar `generarTransaccionesMock()` y su uso en `CuentasActivity`.
       *Criterio de salida:* ninguna referencia a datos mock en el historial.
-- [ ] **T10. Estado vacío real según los datos.**
-      Hoy el estado vacío se calcula sobre la lista mock; debe depender de la lista observable de la
-      base de datos.
-- [ ] **T11. Refresco dinámico tras registrar (CA-6).**
-      Un movimiento guardado desde el panel debe aparecer en la lista sin recargar.
+- [x] **T10. Estado vacío real según los datos.**
+      El estado vacío y la visibilidad de la lista dependen de la lista observable de la base de datos
+      (observador de `HistorialViewModel` en `CuentasActivity`).
+- [x] **T11. Refresco dinámico tras registrar (CA-6).**
+      El `LiveData` de Room re-emite al insertar, así que el movimiento aparece en la lista sin
+      recargar la pantalla.
 - [ ] **T12. Actualización dinámica del saldo total.**
       Verificar/garantizar que el saldo consolidado de las cuentas refleja el movimiento recién
       registrado en la vista de historial.
@@ -116,5 +120,6 @@
 | `./gradlew assembleDebug` | BUILD SUCCESSFUL | 18/10/2026 |
 | `./gradlew connectedCheck` | No ejecutado (requiere dispositivo) | — |
 
-> Estas verificaciones corresponden al estado **parcial** (sin geolocalización ni datos reales en el
-> historial). Deben repetirse al cerrar las Fases 4 y 5.
+> El historial ya se alimenta de Room (T8/T10/T11). Queda sin implementar la **geolocalización**
+> (Fase 4) y la limpieza de datos mock (T9). Estas verificaciones deben repetirse al cerrar las
+> Fases 4 y 5.

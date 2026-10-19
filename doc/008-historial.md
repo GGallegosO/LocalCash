@@ -1,8 +1,8 @@
-# doc/008-historial.md — Registro de Memoria: Historial de Movimientos (estado parcial)
+# doc/008-historial.md — Registro de Memoria: Historial de Movimientos (Fase 2 avanzada)
 
 > **Propósito de este archivo:** Dejar constancia de qué se decidió y qué se hizo en la Feature 008
 > (`spec/features/008-historial/`) y, sobre todo, **del estado real a la fecha**: una entrega
-> **parcial** con deuda técnica explícita. No describe el estado final, que aún no existe.
+> **parcialmente completada** con deuda técnica explícita. No describe el estado final, que aún no existe.
 
 ---
 
@@ -13,7 +13,7 @@
 | **Fecha** | 2026-10-18 |
 | **Tarea ejecutada** | Feature 008 — Historial de movimientos: lista, botón flotante y panel de registro |
 | **Responsable** | GG |
-| **Estado** | **Parcial** (En Progreso). No cumple todavía la Definition of Done completa. |
+| **Estado** | **Parcialmente completado (Fase 2 avanzada)**. Historial cableado a Room; faltan la geolocalización, la limpieza de datos mock (T9) y el saldo dinámico (T12). No cumple todavía la Definition of Done completa. |
 | **Rama** | `feat/008-historial` |
 
 ---
@@ -33,13 +33,15 @@ mapeo de la navegación inferior.
   éxito/error.
 - Navegación inferior con índices correctos (Mapa/Contactos ya no estaban cruzados) y títulos del
   encabezado alineados a la pestaña activa.
+- Historial cableado a Room mediante `HistorialViewModel`: la lista y el estado vacío se actualizan en
+  vivo y un movimiento recién guardado aparece sin recargar (T8/T10/T11).
 
 **Deuda técnica explícita (ver `tasks.md`):**
-- La lista todavía se alimenta de **datos de prueba** (`generarTransaccionesMock()`, 10 movimientos),
-  no de la base de datos. Un movimiento recién guardado se persiste pero **no aparece aún** en la lista.
+- Los **datos de prueba** (`generarTransaccionesMock()`) siguen en el código aunque **ya no se usan**:
+  el historial se alimenta de Room. Queda pendiente borrarlos definitivamente (T9).
 - La **geolocalización** está diseñada y especificada, pero **no implementada**: no hay columnas de
   coordenadas en la entidad, ni permisos en el manifiesto, ni captura real, ni migración de base de datos.
-- El **saldo total** no se refresca dinámicamente en la vista de historial tras registrar.
+- El **saldo total** no se refresca dinámicamente en la vista de historial tras registrar (T12).
 
 ---
 
@@ -49,12 +51,16 @@ mapeo de la navegación inferior.
 - `spec/features/008-historial/spec.md`, `plan.md`, `tasks.md`
 - `doc/008-historial.md` (este archivo)
 - `app/src/main/res/layout/bottom_sheet_transaccion.xml`
+- `app/src/main/java/com/localcash/ui/cuentas/HistorialViewModel.java` (T8a-c: observa el DAO de
+  transacciones y mapea entidades a dominio)
 - (de la entrega de lista) `app/src/main/res/layout/view_historial.xml`, `item_transaccion.xml`,
   `ui/cuentas/HistorialAdapter.java`
 
 **Modificados:**
 - `app/src/main/java/com/localcash/ui/cuentas/CuentasActivity.java` — navegación, botón flotante,
-  panel de registro, índices del contenedor de vistas y títulos.
+  panel de registro, índices del contenedor de vistas y títulos; y (T8e) observación del `LiveData` del
+  `HistorialViewModel` mediante una `ViewModelProvider.Factory` que inyecta el `TransaccionDao`,
+  reemplazando los datos mock por los datos reales de Room.
 - `app/src/main/res/values/strings.xml` — cadenas del título del panel; retiro de cadenas huérfanas.
 - `app/src/main/res/menu/bottom_nav_menu.xml` — pestaña "Nuevo" → "Movimientos".
 
@@ -84,6 +90,10 @@ mapeo de la navegación inferior.
 5. **Los datos mock son temporales y verificables.**
    *Justificación:* permiten validar la UI del historial antes del cableado a la base de datos; se
    marcan como deuda técnica para no confundirlos con datos reales.
+6. **El `HistorialViewModel` expone el modelo de dominio, no la entidad de Room.**
+   *Justificación:* el `HistorialAdapter` consume dominio; la conversión se concentra en un único punto
+   (`mapearADominio`). El DAO se inyecta por constructor con una `ViewModelProvider.Factory` (DI simple
+   y testeable, sin Hilt/Dagger).
 
 ---
 
@@ -95,8 +105,12 @@ mapeo de la navegación inferior.
 - `./gradlew assembleDebug`: BUILD SUCCESSFUL (`app/build/outputs/apk/debug/app-debug.apk`).
 - `./gradlew connectedCheck`: **no ejecutado** (requiere dispositivo/emulador activo).
 
-> Estas validaciones cubren el estado **parcial**. No habilitan el cierre de la feature: faltan los
-> criterios CA-1, CA-6 y CA-7 y la verificación de migración.
+> Estas validaciones cubren el estado **parcialmente completado**. No habilitan el cierre de la
+> feature: faltan la geolocalización (CA-7), la limpieza de datos mock (T9) y la verificación de
+> migración.
+
+- Re-verificado en el cableado a Room (T8e, 2026-10-19): `./gradlew assembleDebug` y `./gradlew lint`
+  → BUILD SUCCESSFUL (0 errores, 41 advertencias preexistentes, 0 nuevas).
 
 ---
 
@@ -117,11 +131,14 @@ mapeo de la navegación inferior.
 
 ## Próximos pasos pendientes
 
-1. **Cablear el historial a la base de datos** y eliminar los datos de prueba (T8, T9, T10).
-2. **Refrescar la lista y el saldo** tras registrar un movimiento (T11, T12, T17).
-3. **Implementar la geolocalización**: columnas, migración 2→3, permisos, captura y persistencia
-   (T19-T26).
+1. **T9 — Limpieza de datos mock:** eliminar `generarTransaccionesMock()` (ya sin uso) y sus imports.
+   Es el pendiente inmediato.
+2. **T12 — Actualización dinámica del saldo total** tras registrar un movimiento.
+3. **Implementar la geolocalización** (Fase 4): columnas, migración 2→3, permisos, captura y
+   persistencia (T19-T26).
 4. **Verificar la migración** y cubrir los criterios de aceptación con tests (T27, T28).
 5. **Ejecutar la Definition of Done completa** (incluido `connectedCheck`) y cerrar el registro (T29, T30).
+
+**Ya resueltas:** T8 (cableado a Room), T10 (estado vacío real) y T11 (refresco dinámico por LiveData).
 
 Estos pasos están detallados y estado-lizados en `spec/features/008-historial/tasks.md`.
