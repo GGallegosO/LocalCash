@@ -51,6 +51,15 @@ android {
             }
         }
     }
+    sourceSets {
+        // Room MigrationTestHelper (Feature 009, T15): Robolectric resuelve los assets
+        // desde el variant `debug` (mergeDebugAssets), no desde el source set `test`.
+        // Se exponen los esquemas exportados solo en debug (nunca en release); el coste
+        // es unos KB en el APK de debug.
+        debug {
+            assets.srcDirs += files("$projectDir/schemas".toString())
+        }
+    }
 }
 
 dependencies {

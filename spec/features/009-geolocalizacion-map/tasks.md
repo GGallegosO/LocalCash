@@ -96,9 +96,12 @@
       `TransaccionDaoGeoTest` (Room in-memory): ida y vuelta `toEntity`/`fromEntity` con coordenadas
       válidas; sin ubicación → columnas `NULL` y fuera de `getConUbicacion()`; coordenada incompleta →
       excluida de la consulta y rechazada al mapear a dominio. ✅
-- [ ] **T15. Test de migración 2 → 3.**
-      `MigracionV2V3Test`: sembrar datos en v2, migrar y comprobar que no se perdió información ni se
-      corrompió el índice.
+- [x] **T15. Test de migración 2 → 3.**
+      `MigracionV2V3Test` (Room `MigrationTestHelper` + Robolectric): siembra datos en v2, aplica
+      `MIGRATION_2_3` y valida contra `3.json`; comprueba las columnas `latitud`/`longitud`/`direccionLugar`,
+      el índice `idx_transacciones_geo` (lat, lon) y que los datos v2 sobreviven con la geo en `NULL`. ✅
+      *(Los esquemas se exponen a Robolectric solo en el variant `debug`: el source set `test` no llega a
+      `mergeDebugAssets`, que es de donde Robolectric lee los assets.)*
 
 ## Fase 5 — Cierre y verificación
 
