@@ -184,7 +184,4 @@
     <string name="mapa_zoom_in">Acercar</string>
     <string name="mapa_zoom_out">Alejar</string>
     <string name="mapa_atribucion_osm">© OpenStreetMap contributors</string>
-
-    <!-- Strings de la pestaña "Mapa" en modo lectura (Feature 009, T10-T12) -->
-    <string name="mapa_sin_movimientos">Sin movimientos geolocalizados</string>
 </resources>

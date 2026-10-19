@@ -3,8 +3,8 @@
   Vista 2 (Mapa): modo lectura de los movimientos geolocalizados
   (Feature 009, T10-T12).
 
-  Contiene el MapView de osmdroid, los controles de zoom, la atribución
-  obligatoria de OpenStreetMap y el mensaje de estado vacío. La Activity
+  Contiene el MapView de osmdroid, los controles de zoom y la atribución
+  obligatoria de OpenStreetMap. La Activity
   (CuentasActivity) es quien conecta el MapView al TileSource local
   (TeselasLocales, offline) y dibuja un pin por movimiento geolocalizado a
   través de MapaLecturaController.
@@ -88,26 +88,5 @@
         android:textSize="12sp"
         app:layout_constraintBottom_toBottomOf="@id/mapaLectura"
         app:layout_constraintStart_toStartOf="@id/mapaLectura" />
-
-    <!--
-      Estado vacío: se muestra cuando no hay ningún movimiento geolocalizado.
-      CuentasActivity alterna su visibilidad según la lista que emite el
-      MapaViewModel. Va después del MapView para dibujarse por encima.
-    -->
-    <TextView
-        android:id="@+id/tvSinMovimientos"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="24dp"
-        android:background="?attr/colorSurface"
-        android:padding="16dp"
-        android:text="@string/mapa_sin_movimientos"
-        android:textAppearance="?attr/textAppearanceBodyLarge"
-        android:textColor="?attr/colorOnSurfaceVariant"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="@id/mapaLectura"
-        app:layout_constraintEnd_toEndOf="@id/mapaLectura"
-        app:layout_constraintStart_toStartOf="@id/mapaLectura"
-        app:layout_constraintTop_toTopOf="@id/mapaLectura" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

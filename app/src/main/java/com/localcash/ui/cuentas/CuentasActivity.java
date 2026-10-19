@@ -355,11 +355,11 @@ public class CuentasActivity extends BaseActivity
             }
         }).get(MapaViewModel.class);
 
-        // Un pin por movimiento geolocalizado; si no hay ninguno, estado vacío.
+        // Un pin por movimiento geolocalizado. Sin movimientos no se superpone
+        // ningún mensaje: el mapa queda limpio para que el usuario lo explore.
         mapaViewModel.getTransaccionesConUbicacion().observe(this, transacciones -> {
             List<Transaccion> lista = transacciones != null ? transacciones : new ArrayList<>();
             mapaController.mostrarMovimientos(lista);
-            vistaMapa.tvSinMovimientos.setVisibility(lista.isEmpty() ? View.VISIBLE : View.GONE);
         });
     }
 

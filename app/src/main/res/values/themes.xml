@@ -25,6 +25,9 @@
         <!-- Background -->
         <item name="android:colorBackground">@color/md_theme_light_background</item>
         <item name="colorOnBackground">@color/md_theme_light_onBackground</item>
+        <!-- Fondo de ventana = fondo de la app: evita el flash negro durante
+             recreate() al cambiar de tema o al arrancar la Activity. -->
+        <item name="android:windowBackground">@color/md_theme_light_background</item>
         <!-- Typography -->
         <item name="textAppearanceHeadlineLarge">@style/TextAppearance.HeadlineLarge</item>
         <item name="textAppearanceLabelLarge">@style/TextAppearance.LabelLarge</item>
