@@ -20,6 +20,7 @@
 | `data/entities/ItemCompra.java` | Entidad Room: id, lugarCompraId (FK), nombre, cantidad, estaComprado | CREAR | MEDIA |
 | `data/dao/LugarCompraDao.java` | DAO de lugares de compra (CRUD + consulta con @Relation a items) | CREAR | MEDIA |
 | `data/dao/ItemCompraDao.java` | DAO de items (insertar, eliminar, marcar comprado) | CREAR | BAJA |
+| `data/relations/LugarCompraConItems.java` | POJO `@Embedded` + `@Relation` (lugar con su lista de items) | CREAR | BAJA |
 | `data/db/AppDatabase.java` | `version = 4` + `MIGRATION_3_4` (no destructiva) + esquemas exportados `4.json` | MODIFICAR | ALTA |
 | `ui/mapa/MapaLecturaController.java` | Detectar long press en el `MapView` y lanzar el diálogo de creación | MODIFICAR | ALTA |
 | `ui/mapa/PinMapa.java` | Soporte para el color `@color/mapa_pin_compra` (distinto al de movimientos) | MODIFICAR | BAJA |
@@ -44,6 +45,34 @@
   `LugarCompra` tras confirmación.
 - **Errores posibles:** tipo de lugar vacío → error de validación; item sin nombre o cantidad inválida
   → error de validación; eliminación sin confirmación → no se borra.
+
+### 1.1 Esquema de Base de Datos (Room)
+
+**Tabla `lugar_compra`** (entidad `LugarCompra`):
+
+| Columna | Tipo Java | Tipo SQLite | Restricción |
+|---|---|---|---|
+| `id` | `long` | `INTEGER` | `PK` · `AUTOINCREMENT` |
+| `latitud` | `double` | `REAL` | `NOT NULL` |
+| `longitud` | `double` | `REAL` | `NOT NULL` |
+| `tipoLugar` | `String` | `TEXT` | `NOT NULL` |
+| `gastoPromedio` | `long` | `INTEGER` | `NOT NULL` · pesos CLP |
+| `fechaCreacion` | `long` | `INTEGER` | `NOT NULL` · epoch millis |
+
+**Tabla `item_compra`** (entidad `ItemCompra`):
+
+| Columna | Tipo Java | Tipo SQLite | Restricción |
+|---|---|---|---|
+| `id` | `long` | `INTEGER` | `PK` · `AUTOINCREMENT` |
+| `lugarCompraId` | `long` | `INTEGER` | `FK → lugar_compra(id)` · `ON DELETE CASCADE` · índice |
+| `nombre` | `String` | `TEXT` | `NOT NULL` |
+| `cantidad` | `int` | `INTEGER` | `NOT NULL` (unidades; `≥ 1` en dominio) |
+| `estaComprado` | `boolean` | `INTEGER` | `NOT NULL` (`1`/`0`) |
+
+- **Relación:** uno-a-muchos `LugarCompra → ItemCompra`, resuelta con `@Relation` en
+  `LugarCompraConItems` y `@Transaction` en el DAO.
+- **Migración:** `MIGRATION_3_4` crea solo las dos tablas nuevas y el índice
+  `idx_item_compra_lugar`; no altera las tablas existentes.
 
 ---
 
@@ -86,6 +115,15 @@
    - Justificación: `.agent.md` §6.11 prohíbe `fallbackToDestructiveMigration()` y `DROP TABLE`;
      nunca se pierde información financiera.
    - Consecuencia aceptada: test obligatorio `MigracionV3V4Test`.
+
+6. **`gastoPromedio` como `long` (pesos CLP), no `Double`.**
+   - Opciones consideradas: (a) `Double` (promedio fraccionario); (b) `long` en pesos CLP.
+   - Decisión: **(b) `long`**, porque es dinero y `.agent.md` §6.10 prohíbe `REAL`/`double` en la
+     capa de datos; los pesos chilenos no tienen centavos en circulación.
+   - Justificación: mantiene la aritmética exacta y la coherencia con `Cuenta.saldo` y
+     `Transaccion.monto`. La conversión a `BigDecimal` (si se necesita) vive en `domain/`.
+   - Consecuencia aceptada: el promedio se redondea al peso al persistirse; el formulario puede
+     capturarlo como entero.
 
 ---
 

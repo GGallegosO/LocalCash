@@ -25,7 +25,7 @@
 
 - [ ] **T2. Crear la entidad `LugarCompra` (Room).**
       `id` (PK), `latitud` (Double), `longitud` (Double), `tipoLugar` (String),
-      `gastoPromedio` (Double), `fechaCreacion` (Long).
+      `gastoPromedio` (long, pesos CLP — dinero entero, `.agent.md` §6.10), `fechaCreacion` (Long).
       *Criterio de salida:* entidad compila y Room la reconoce.
       Responsable: [RESPONSABLE] | Estimación: [ESTIMACION]
 

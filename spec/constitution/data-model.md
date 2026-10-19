@@ -63,6 +63,8 @@ erDiagram
     COMPRAS_GRUPALES |o--o{ DEUDAS_PARTICIPANTES : "genera"
     ITEMS_COMPRA |o--o{ DEUDAS_PARTICIPANTES : "asigna elemento a"
 
+    LUGAR_COMPRA ||--o{ ITEM_COMPRA : "contiene"
+
     CONTACTOS {
         INTEGER id PK
         TEXT nombre
@@ -127,6 +129,23 @@ erDiagram
         INTEGER precio_unitario
         INTEGER cantidad
         INTEGER monto_subtotal
+    }
+
+    LUGAR_COMPRA {
+        INTEGER id PK
+        REAL latitud
+        REAL longitud
+        TEXT tipoLugar
+        INTEGER gastoPromedio
+        INTEGER fechaCreacion
+    }
+
+    ITEM_COMPRA {
+        INTEGER id PK
+        INTEGER lugarCompraId FK
+        TEXT nombre
+        INTEGER cantidad
+        INTEGER estaComprado
     }
 
     DEUDAS_PARTICIPANTES {
@@ -490,6 +509,50 @@ CREATE INDEX idx_categorias_tipo
 ---
 
 
+### 3.10 LUGAR_COMPRA (Feature 010 — lista de compras geolocalizada)
+
+- **Propósito:** Lugar geográfico donde el usuario planifica una compra (supermercado, farmacia,
+  ferretería u otro). Agrupa una lista de ítems.
+- **Ciclo de vida:** creado desde la pestaña "Mapa" con una pulsación larga; eliminable con
+  confirmación explícita. Al eliminarlo, sus ítems se eliminan en cascada.
+
+| Campo | Tipo SQLite | Clave / Restricción | Nullable | Descripción y regla de negocio |
+|---|---|---|---|---|
+| `id` | `INTEGER` | `PK` · `AUTOINCREMENT` | No | Identificador local. |
+| `latitud` | `REAL` | `NOT NULL` | No | Latitud WGS84 (grados). |
+| `longitud` | `REAL` | `NOT NULL` | No | Longitud WGS84 (grados). |
+| `tipoLugar` | `TEXT` | `NOT NULL` | No | Supermercado, Farmacia, Ferretería u otro definido por el usuario. |
+| `gastoPromedio` | `INTEGER` | `NOT NULL` · pesos CLP | No | Gasto promedio estimado en pesos CLP. Es dinero: nunca `REAL`/`double` (`.agent.md` §6.10). |
+| `fechaCreacion` | `INTEGER` | `NOT NULL` | No | Momento de creación en epoch millis (UTC). |
+
+- **Índices:** ninguno adicional; la PK sirve las búsquedas por id.
+- **Eliminación:** FÍSICA, con `ON DELETE CASCADE` hacia `ITEM_COMPRA`.
+
+> **Nota de implementación (Room):** la tabla física se llama `lugar_compra` y las columnas usan
+> camelCase (`tipoLugar`, `gastoPromedio`, `fechaCreacion`), igual que las entidades Room existentes.
+> La notación de esta sección es la del modelo lógico.
+
+### 3.11 ITEM_COMPRA (Feature 010 — lista de compras geolocalizada)
+
+- **Propósito:** Ítem de una lista de compras asociada a un `LUGAR_COMPRA`.
+- **Ciclo de vida:** creado/eliminado desde la actividad de detalle; se marca como comprado o
+  pendiente. Desaparece en cascada al eliminar su lugar.
+
+| Campo | Tipo SQLite | Clave / Restricción | Nullable | Descripción y regla de negocio |
+|---|---|---|---|---|
+| `id` | `INTEGER` | `PK` · `AUTOINCREMENT` | No | Identificador local. |
+| `lugarCompraId` | `INTEGER` | `FK → LUGAR_COMPRA(id)` · `NOT NULL` · `ON DELETE CASCADE` | No | Lugar al que pertenece el ítem. |
+| `nombre` | `TEXT` | `NOT NULL` | No | Nombre del producto o servicio. |
+| `cantidad` | `INTEGER` | `NOT NULL` | No | Unidades (conteo entero). La regla `cantidad ≥ 1` se valida en dominio; Room no permite `CHECK` en `@Entity`. |
+| `estaComprado` | `INTEGER` | `NOT NULL` | No | Estado del ítem, persistido como `1` (comprado) / `0` (pendiente). |
+
+- **Índices:** `idx_item_compra_lugar` sobre `lugarCompraId` (columna hija de la FK).
+- **Eliminación:** FÍSICA, en cascada desde `LUGAR_COMPRA`.
+
+> **No confundir** con `ITEMS_COMPRA` (§3.7), que pertenece a las compras grupales de la Fase 3 y
+> tiene una semántica distinta (precio unitario, subtotal, deudas). `ITEM_COMPRA` es la lista personal
+> de una compra planificada por lugar.
+
 ## 4. Relaciones y Cardinalidades
 
 | Origen | Destino | Cardinalidad | Semántica de la relación | Integridad referencial |
@@ -691,6 +754,9 @@ UPDATE DEUDAS_PARTICIPANTES
 | `user_version` | Cambios | Estado |
 |---|---|---|
 | 1 | Versión inicial: las 8 tablas, sus `CHECK`, `FOREIGN KEY` e índices (§3.9) | Vigente |
+| 2 | `cuentas.activa` (soft delete) mediante `ALTER TABLE` no destructivo. | Vigente |
+| 3 | `transacciones.latitud`/`longitud`/`direccionLugar` e índice geo parcial (`MIGRATION_2_3`). | Vigente |
+| 4 | Tablas `lugar_compra` e `item_compra` (lista de compras geolocalizada) e índice `idx_item_compra_lugar`; no toca tablas existentes (`MIGRATION_3_4`). | Vigente |
 
 - **Datos semilla (seed):** las 7 categorías base se insertan en el primer arranque, dentro de la misma transacción que crea el esquema, con `INSERT OR IGNORE` sobre el índice único `(nombre, tipo_transaccion)` para que reejecutar el arranque sea idempotente. Se usa `OR IGNORE` y no `ON CONFLICT DO NOTHING` porque la sintaxis de _upsert_ requiere SQLite 3.24 y el proyecto declara compatibilidad 3.8+ (`minSdk` 28). Las cuentas y los contactos los crea el usuario: no hay datos de prueba en producción. Para desarrollo y test se usa la base en memoria de Room, sembrada desde el mismo script de §A.1.
 
@@ -710,6 +776,8 @@ UPDATE DEUDAS_PARTICIPANTES
 | `COMPRAS_PLANIFICADAS` | `NNN-historial-agenda` (pendiente, Fase 2) | ambas | Agenda de compras futuras; al completarse materializa `TRANSACCIONES`. |
 | `COMPRAS_GRUPALES` | `NNN-gastos-compartidos` (pendiente, Fase 3) | ambas | Distingue pagador real de participantes (§4.1). |
 | `ITEMS_COMPRA` | `NNN-gastos-compartidos` (pendiente, Fase 3) | ambas | Base del reparto equitativo; `monto_subtotal` verificado por `CHECK`. |
+| `LUGAR_COMPRA` | `010-lista-compras-geolocalizada` (en progreso, Fase 2) | ambas | Lugar geolocalizado creado con long press; pin propio en el mapa. |
+| `ITEM_COMPRA` | `010-lista-compras-geolocalizada` (en progreso, Fase 2) | ambas | Ítems de la lista personal; FK `ON DELETE CASCADE` al lugar. |
 | `DEUDAS_PARTICIPANTES` | `NNN-gastos-compartidos` (pendiente, Fase 3) | ambas | Ciclo `pendiente`/`parcial`/`liquidado` y balance de deudas. |
 | Esquema completo | — | — | Definido y validado en este documento; registro de memoria `doc/003-modelo-datos.md`. |
 
@@ -725,6 +793,7 @@ Asignación de Deudas" depende de `COMPRAS_GRUPALES`, `ITEMS_COMPRA` y `DEUDAS_P
 |---|---|---|---|
 | 2026-09-28 | Definición inicial del esquema v1: 8 tablas, FK con `CASCADE`/`SET NULL`/`RESTRICT`, `CHECK` de integridad, dinero en pesos CLP `INTEGER` y coordenadas en `REAL`. | Cumplir el pilar de persistencia local offline y fijar el contrato de datos antes de escribir la Fase 1. | `doc/003-modelo-datos.md` |
 | 2026-10-05 | Adaptación de unidad monetaria: de centavos a pesos CLP (Decisión #2 en `spec/features/007-cuentas/plan.md`). Los pesos chilenos no tienen centavos en circulación desde 1984. | Alinear el modelo de datos con el contexto local de Chile y evitar conversiones innecesarias. | `spec/features/007-cuentas/plan.md` |
+| 2026-10-19 | Feature 010: tablas `lugar_compra` e `item_compra` (relación 1:N) para la lista de compras geolocalizada. `gastoPromedio` se almacena como `INTEGER` (pesos CLP), no `REAL`. | Habilitar la creación de lugares de compra con long press y su lista de ítems, manteniendo la regla de dinero entero. | `spec/features/010-lista-compras-geolocalizada/plan.md` |
 
 ---
 
@@ -861,6 +930,31 @@ CREATE TABLE DEUDAS_PARTICIPANTES (
     FOREIGN KEY (contacto_id)      REFERENCES CONTACTOS (id)
         ON UPDATE CASCADE ON DELETE RESTRICT
 );
+
+-- ─────────────────── LUGAR_COMPRA / ITEM_COMPRA (Feature 010) ────────────────
+-- Implementación Room: la tabla física usa minúsculas y columnas camelCase,
+-- coherente con las entidades Room existentes (`cuentas`, `transacciones`).
+CREATE TABLE lugar_compra (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    latitud        REAL    NOT NULL,
+    longitud       REAL    NOT NULL,
+    tipoLugar      TEXT    NOT NULL,
+    gastoPromedio  INTEGER NOT NULL,
+    fechaCreacion  INTEGER NOT NULL
+);
+
+CREATE TABLE item_compra (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    lugarCompraId INTEGER NOT NULL,
+    nombre        TEXT    NOT NULL,
+    cantidad      INTEGER NOT NULL,
+    estaComprado  INTEGER NOT NULL,
+    FOREIGN KEY (lugarCompraId) REFERENCES lugar_compra (id)
+        ON UPDATE NO ACTION ON DELETE CASCADE
+);
+
+CREATE INDEX idx_item_compra_lugar
+    ON item_compra (lugarCompraId);
 
 -- ────────────────────────────── ÍNDICES (§3.9) ───────────────────────────────
 CREATE INDEX idx_transacciones_geo

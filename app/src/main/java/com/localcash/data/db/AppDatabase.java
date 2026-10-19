@@ -10,8 +10,12 @@ import androidx.room.migration.Migration;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
 import com.localcash.data.dao.CuentaDao;
+import com.localcash.data.dao.ItemCompraDao;
+import com.localcash.data.dao.LugarCompraDao;
 import com.localcash.data.dao.TransaccionDao;
 import com.localcash.data.entities.Cuenta;
+import com.localcash.data.entities.ItemCompra;
+import com.localcash.data.entities.LugarCompra;
 import com.localcash.data.entities.Transaccion;
 
 import java.util.concurrent.ExecutorService;
@@ -34,8 +38,8 @@ import java.util.concurrent.Executors;
  * </p>
  */
 @Database(
-        entities = {Cuenta.class, Transaccion.class},
-        version = 3,
+        entities = {Cuenta.class, Transaccion.class, LugarCompra.class, ItemCompra.class},
+        version = 4,
         exportSchema = true
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -114,7 +118,8 @@ public abstract class AppDatabase extends RoomDatabase {
                                     DATABASE_NAME
                             )
                             // fallbackToDestructiveMigration() PROHIBIDO (.agent.md §6.11)
-                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3,
+                                    Migracion_3_4.MIGRATION_3_4)
                             .addCallback(new SeedDataInitializer())
                             .build();
                 }
@@ -137,4 +142,10 @@ public abstract class AppDatabase extends RoomDatabase {
 
     /** Expone el DAO de transacciones. */
     public abstract TransaccionDao transaccionDao();
+
+    /** Expone el DAO de lugares de compra. */
+    public abstract LugarCompraDao lugarCompraDao();
+
+    /** Expone el DAO de ítems de compra. */
+    public abstract ItemCompraDao itemCompraDao();
 }
