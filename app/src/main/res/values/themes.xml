@@ -40,7 +40,12 @@
         <item name="android:navigationBarColor">?attr/colorSurface</item>
     </style>
 
-    <style name="Theme.LocalCash" parent="Base.Theme.LocalCash" />
+    <style name="Theme.LocalCash" parent="Base.Theme.LocalCash">
+        <!-- Fondo de ventana en el tema que declara el manifiesto. Se resuelve
+             contra android:colorBackground del variant activo (claro/oscuro),
+             evitando el flash negro al recrear por cambio de tema. -->
+        <item name="android:windowBackground">?android:attr/colorBackground</item>
+    </style>
 
     <!-- Typography -->
     <style name="TextAppearance.HeadlineLarge" parent="TextAppearance.Material3.HeadlineLarge">

@@ -61,6 +61,9 @@ public class LoginActivity extends BaseActivity {
     // Handler para garantizar ejecución en hilo principal
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
+    /** Evita procesar dos veces el éxito (p. ej. callbacks biométricos repetidos). */
+    private boolean loginCompletado = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // ThemeManager.applyTheme(this) se llama automáticamente en BaseActivity.onCreate()
@@ -298,20 +301,21 @@ public class LoginActivity extends BaseActivity {
     /**
      * Maneja login exitoso (tanto PIN como biometría):
      * - Resetea contador de intentos fallidos
-     * - Muestra Toast de bienvenida
+     * - Muestra un único Toast de bienvenida
      * - Navega a CuentasActivity
      * - Finaliza LoginActivity (no retorno con botón atrás)
      */
     private void handleSuccessfulLogin() {
+        // Un solo procesamiento: el callback biométrico puede repetirse.
+        if (loginCompletado) {
+            return;
+        }
+        loginCompletado = true;
+
         // Resetear contador de intentos fallidos
         resetFailedAttempts();
 
-        // Mostrar mensaje de éxito en UI
-        binding.tvMessage.setText(getString(R.string.aLogin_success_welcome));
-        binding.tvMessage.setTextColor(getColor(android.R.color.holo_green_dark));
-        binding.tvMessage.setVisibility(View.VISIBLE);
-
-        // Toast de bienvenida
+        // Único aviso de bienvenida (sin duplicarlo también en tvMessage).
         Toast.makeText(this, getString(R.string.aLogin_success_welcome), Toast.LENGTH_SHORT).show();
 
         // Navegar a CuentasActivity

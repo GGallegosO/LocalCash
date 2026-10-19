@@ -1,6 +1,7 @@
 package com.localcash.ui.mapa;
 
 import android.content.Context;
+import android.util.TypedValue;
 
 import org.osmdroid.tileprovider.MapTileProviderArray;
 import org.osmdroid.tileprovider.modules.MapTileAssetsProvider;
@@ -8,6 +9,7 @@ import org.osmdroid.tileprovider.modules.MapTileModuleProviderBase;
 import org.osmdroid.tileprovider.tilesource.XYTileSource;
 import org.osmdroid.tileprovider.util.SimpleRegisterReceiver;
 import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.TilesOverlay;
 
 /**
  * Origen de teselas propio, <b>100% offline</b>: sirve los mapas
@@ -77,5 +79,20 @@ public class TeselasLocales extends XYTileSource {
         mapView.setTileSource(tileSource);
         mapView.setMinZoomLevel((double) ZOOM_MINIMO);
         mapView.setMaxZoomLevel((double) ZOOM_MAXIMO);
+
+        // Controles de zoom nativos de osmdroid: son los únicos en la pestaña
+        // "Mapa" (se retiraron los botones flotantes duplicados).
+        mapView.setBuiltInZoomControls(true);
+
+        // Fondo del mapa acorde al tema activo: evita el destello negro tanto
+        // mientras faltan teselas como al recrear la Activity por cambio de tema.
+        TypedValue fondo = new TypedValue();
+        context.getTheme().resolveAttribute(android.R.attr.colorBackground, fondo, true);
+        mapView.setBackgroundColor(fondo.data);
+        TilesOverlay teselas = mapView.getOverlayManager().getTilesOverlay();
+        if (teselas != null) {
+            teselas.setLoadingBackgroundColor(fondo.data);
+            teselas.setLoadingLineColor(fondo.data);
+        }
     }
 }

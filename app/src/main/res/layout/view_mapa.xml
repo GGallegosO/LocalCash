@@ -3,8 +3,8 @@
   Vista 2 (Mapa): modo lectura de los movimientos geolocalizados
   (Feature 009, T10-T12).
 
-  Contiene el MapView de osmdroid, los controles de zoom y la atribución
-  obligatoria de OpenStreetMap. La Activity
+  Contiene el MapView de osmdroid (con sus controles de zoom nativos) y la
+  atribución obligatoria de OpenStreetMap. La Activity
   (CuentasActivity) es quien conecta el MapView al TileSource local
   (TeselasLocales, offline) y dibuja un pin por movimiento geolocalizado a
   través de MapaLecturaController.
@@ -30,46 +30,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-
-    <!-- Controles de zoom flotantes sobre el mapa (esquina superior derecha) -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/cardZoomLectura"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:layout_marginEnd="12dp"
-        app:cardBackgroundColor="?attr/colorSurface"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="4dp"
-        app:layout_constraintEnd_toEndOf="@id/mapaLectura"
-        app:layout_constraintTop_toTopOf="@id/mapaLectura">
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnZoomIn"
-                style="@style/Widget.Material3.Button.IconButton.Filled"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:contentDescription="@string/mapa_zoom_in"
-                app:icon="@drawable/ic_zoom_in"
-                app:iconTint="?attr/colorOnPrimary" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnZoomOut"
-                style="@style/Widget.Material3.Button.IconButton.Filled"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:contentDescription="@string/mapa_zoom_out"
-                app:icon="@drawable/ic_zoom_out"
-                app:iconTint="?attr/colorOnPrimary" />
-
-        </LinearLayout>
-
-    </com.google.android.material.card.MaterialCardView>
 
     <!-- Atribución obligatoria de OpenStreetMap (esquina inferior izquierda) -->
     <TextView
