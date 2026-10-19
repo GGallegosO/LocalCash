@@ -1,19 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Vista 2 (Transacción): formulario para registrar un movimiento (T13/T16).
-     Reglas de UI: cero colores/textos hardcodeados (solo ?attr/... y @string/...),
-     atributos Material 3 y selector de cuentas con dropdown ExposedDropdownMenu. -->
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- BottomSheet para registrar un movimiento (Feature 008).
+     Reutiliza los strings, la validación de UI y la lógica de dominio del
+     formulario de transacción. Mismas reglas de estilo: cero colores/textos
+     hardcodeados (solo ?attr/... y @string/...) y atributos Material 3. -->
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:fillViewport="true">
+    android:layout_height="wrap_content">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:paddingStart="24dp"
+        android:paddingTop="24dp"
+        android:paddingEnd="24dp"
+        android:paddingBottom="32dp">
+
+        <!-- Título del BottomSheet -->
+        <TextView
+            android:id="@+id/tvTituloTransaccion"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:text="@string/aCuentas_transaccion_titulo"
+            android:textAppearance="?attr/textAppearanceTitleLarge"
+            android:textColor="?attr/colorOnSurface" />
 
         <!-- Toggle segmentado Ingreso / Egreso -->
         <com.google.android.material.button.MaterialButtonToggleGroup
@@ -112,4 +125,5 @@
             android:text="@string/aCuentas_transaccion_guardar" />
 
     </LinearLayout>
-</ScrollView>
+
+</androidx.core.widget.NestedScrollView>

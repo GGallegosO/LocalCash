@@ -15,6 +15,7 @@ import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
@@ -22,10 +23,9 @@ import com.google.android.material.textfield.TextInputLayout;
 import com.localcash.R;
 import com.localcash.data.entities.Cuenta;
 import com.localcash.databinding.ActivityCuentasBinding;
-import com.localcash.databinding.ItemTransaccionBinding;
+import com.localcash.databinding.BottomSheetTransaccionBinding;
 import com.localcash.databinding.ViewCuentasBinding;
 import com.localcash.databinding.ViewHistorialBinding;
-import com.localcash.databinding.ViewTransaccionBinding;
 import com.localcash.domain.error.ErrorCode;
 import com.localcash.domain.model.TipoCuenta;
 import com.localcash.domain.model.TipoTransaccion;
@@ -61,8 +61,8 @@ public class CuentasActivity extends BaseActivity
     /** Binding de la Vista 1 (Historial/Movimientos), inflado dentro del ViewFlipper. */
     private ViewHistorialBinding vistaHistorial;
 
-    /** Binding de la Vista 2 (Transacción), inflado dentro del ViewFlipper. */
-    private ViewTransaccionBinding vistaTransaccion;
+    /** Binding del BottomSheet de transacción, mientras está abierto ({@code null} si cerrado). */
+    private BottomSheetTransaccionBinding sheetTransaccionBinding;
 
     /** Adapter para el RecyclerView del historial. */
     private HistorialAdapter historialAdapter;
@@ -127,17 +127,20 @@ public class CuentasActivity extends BaseActivity
         // Vista 1: Historial/Movimientos
         vistaHistorial = ViewHistorialBinding.inflate(
                 getLayoutInflater(), binding.viewFlipper, true);
-        // Vista 2: Transacción (formulario)
-        vistaTransaccion = ViewTransaccionBinding.inflate(
-                getLayoutInflater(), binding.viewFlipper, true);
-        // Vista 3: Mapa
+        // Vista 2: Mapa
         getLayoutInflater().inflate(R.layout.view_mapa, binding.viewFlipper);
-        // Vista 4: Contactos
+        // Vista 3: Contactos
         getLayoutInflater().inflate(R.layout.view_contactos, binding.viewFlipper);
 
         // Restaurar el índice del ViewFlipper desde el estado guardado (preserva la vista actual al cambiar tema)
         if (savedInstanceState != null) {
             int savedViewIndex = savedInstanceState.getInt("viewFlipperIndex", 0);
+            // Sanea el índice al rango actual (0..3): un estado guardado con el
+            // índice de la extinta vista "Nuevo Movimiento" (2) no debe romper
+            // la restauración.
+            if (savedViewIndex < 0 || savedViewIndex > 3) {
+                savedViewIndex = 0;
+            }
             // Aplicar después de inflar las vistas pero antes de establecer los listeners
             binding.viewFlipper.setDisplayedChild(savedViewIndex);
             // También actualizar el elemento seleccionado del BottomNavigationView para mantener la sincronización
@@ -169,8 +172,8 @@ public class CuentasActivity extends BaseActivity
         // Conectar la Vista 2 (Historial/Movimientos) con RecyclerView y datos mock
         configurarVistaHistorial();
 
-        // Conectar la Vista 3 (Transacción) con Room y dominio (ViewModel de transacciones)
-        configurarVistaTransaccion();
+        // Preparar el ViewModel de transacciones (alimenta el BottomSheet del FAB)
+        configurarTransaccionViewModel();
     }
 
     @Override
@@ -209,7 +212,7 @@ public class CuentasActivity extends BaseActivity
 
     /**
      * Configura la Vista 2 (Historial/Movimientos) con RecyclerView, adapter y datos mock.
-     * El FAB navega a la vista del formulario (Vista 3).
+     * El FAB abre el BottomSheet de registro de movimientos.
      */
     private void configurarVistaHistorial() {
         historialAdapter = new HistorialAdapter();
@@ -225,12 +228,8 @@ public class CuentasActivity extends BaseActivity
         vistaHistorial.recyclerHistorial.setVisibility(hayTransacciones ? View.VISIBLE : View.GONE);
         vistaHistorial.tvEmptyHistorial.setVisibility(hayTransacciones ? View.GONE : View.VISIBLE);
 
-        // FAB: navegar a la vista del formulario de transacción (Vista 3)
-        vistaHistorial.fabNuevaTransaccion.setOnClickListener(v -> {
-            binding.viewFlipper.setDisplayedChild(2); // Vista 3 = índice 2 (Transacción)
-            binding.bottomNav.setSelectedItemId(R.id.nav_movimientos); // Mantener seleccionado "Movimientos"
-            actualizarTituloToolbar(2);
-        });
+        // FAB: abrir el BottomSheet para registrar un movimiento nuevo.
+        vistaHistorial.fabNuevaTransaccion.setOnClickListener(v -> mostrarBottomSheetTransaccion());
     }
 
     /**
@@ -344,54 +343,94 @@ public class CuentasActivity extends BaseActivity
     }
 
     /**
-     * Conecta el formulario de la Vista 3 (Transacción) con
-     * {@link TransaccionViewModel}: puebla el selector de cuentas activas y
-     * enlaza el botón "Guardar Movimiento".
+     * Prepara el {@link TransaccionViewModel} que alimenta el BottomSheet de
+     * registro de movimientos: observa las cuentas activas y mantiene la lista
+     * {@link #cuentasSpinner} sincronizada. Si el BottomSheet está abierto,
+     * refresca su selector de cuentas.
      */
-    private void configurarVistaTransaccion() {
+    private void configurarTransaccionViewModel() {
         transaccionViewModel = new ViewModelProvider(this).get(TransaccionViewModel.class);
 
         transaccionViewModel.getCuentasActivas().observe(this, cuentas -> {
             cuentasSpinner.clear();
-            List<String> nombres = new ArrayList<>();
             if (cuentas != null) {
                 cuentasSpinner.addAll(cuentas);
-                for (Cuenta cuenta : cuentas) {
-                    nombres.add(cuenta.getNombre());
-                }
             }
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(
-                    this, android.R.layout.simple_list_item_1, nombres);
-            vistaTransaccion.spinnerCuentas.setAdapter(adapter);
-            // La lista cambió: la selección anterior ya no es válida.
-            cuentaSeleccionadaId = -1L;
-            vistaTransaccion.spinnerCuentas.setText("", false);
-        });
-
-        vistaTransaccion.spinnerCuentas.setOnItemClickListener((parent, view, position, id) -> {
-            if (position >= 0 && position < cuentasSpinner.size()) {
-                cuentaSeleccionadaId = cuentasSpinner.get(position).getId();
-                vistaTransaccion.inputLayoutCuenta.setError(null);
+            if (sheetTransaccionBinding != null) {
+                poblarSpinnerCuentas(sheetTransaccionBinding);
             }
         });
-
-        vistaTransaccion.btnGuardarMovimiento.setOnClickListener(v -> registrarMovimiento());
     }
 
     /**
-     * Valida los campos del formulario (monto &gt; 0, concepto no vacío y cuenta
-     * seleccionada). Si la validación de UI pasa, delega el registro en el
-     * ViewModel y reacciona al {@link ErrorCode} resultante. Si hay errores de
-     * UI, <b>no</b> se llama al ViewModel.
+     * Abre el BottomSheet para registrar un movimiento nuevo.
+     * <p>
+     * Infla {@code bottom_sheet_transaccion.xml}, puebla el selector de cuentas
+     * activas y enlaza el botón "Guardar Movimiento". Al cerrarse, libera la
+     * referencia al binding.
+     * </p>
      */
-    private void registrarMovimiento() {
+    private void mostrarBottomSheetTransaccion() {
+        BottomSheetTransaccionBinding sheetBinding =
+                BottomSheetTransaccionBinding.inflate(getLayoutInflater());
+        BottomSheetDialog sheetDialog = new BottomSheetDialog(this);
+        sheetDialog.setContentView(sheetBinding.getRoot());
+
+        sheetTransaccionBinding = sheetBinding;
+        poblarSpinnerCuentas(sheetBinding);
+
+        sheetBinding.spinnerCuentas.setOnItemClickListener((parent, view, position, id) -> {
+            if (position >= 0 && position < cuentasSpinner.size()) {
+                cuentaSeleccionadaId = cuentasSpinner.get(position).getId();
+                sheetBinding.inputLayoutCuenta.setError(null);
+            }
+        });
+
+        sheetBinding.btnGuardarMovimiento.setOnClickListener(v ->
+                registrarMovimiento(sheetBinding, sheetDialog));
+
+        sheetDialog.setOnDismissListener(dialog -> sheetTransaccionBinding = null);
+        sheetDialog.show();
+    }
+
+    /**
+     * Vuelca las cuentas activas actuales ({@link #cuentasSpinner}) en el
+     * selector de cuentas del BottomSheet. Invalida la selección anterior porque
+     * la lista pudo haber cambiado.
+     *
+     * @param sheetBinding Binding del BottomSheet abierto
+     */
+    private void poblarSpinnerCuentas(@NonNull BottomSheetTransaccionBinding sheetBinding) {
+        List<String> nombres = new ArrayList<>();
+        for (Cuenta cuenta : cuentasSpinner) {
+            nombres.add(cuenta.getNombre());
+        }
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                this, android.R.layout.simple_list_item_1, nombres);
+        sheetBinding.spinnerCuentas.setAdapter(adapter);
+        // La lista cambió: la selección anterior ya no es válida.
+        cuentaSeleccionadaId = -1L;
+        sheetBinding.spinnerCuentas.setText("", false);
+    }
+
+    /**
+     * Valida los campos del formulario del BottomSheet (monto &gt; 0, concepto no
+     * vacío y cuenta seleccionada). Si la validación de UI pasa, delega el
+     * registro en el ViewModel y reacciona al {@link ErrorCode} resultante. Si
+     * hay errores de UI, <b>no</b> se llama al ViewModel.
+     *
+     * @param sheetBinding Binding del BottomSheet que contiene el formulario
+     * @param sheetDialog  Diálogo del BottomSheet (se cierra al registrar con éxito)
+     */
+    private void registrarMovimiento(@NonNull BottomSheetTransaccionBinding sheetBinding,
+                                     @NonNull BottomSheetDialog sheetDialog) {
         // Limpiar errores previos
-        vistaTransaccion.inputLayoutMonto.setError(null);
-        vistaTransaccion.inputLayoutConcepto.setError(null);
-        vistaTransaccion.inputLayoutCuenta.setError(null);
+        sheetBinding.inputLayoutMonto.setError(null);
+        sheetBinding.inputLayoutConcepto.setError(null);
+        sheetBinding.inputLayoutCuenta.setError(null);
 
         // Monto: no vacío y > 0
-        CharSequence montoTexto = vistaTransaccion.inputMonto.getText();
+        CharSequence montoTexto = sheetBinding.inputMonto.getText();
         String montoStr = montoTexto != null ? montoTexto.toString().trim() : "";
         long monto = 0L;
         if (!montoStr.isEmpty()) {
@@ -403,28 +442,28 @@ public class CuentasActivity extends BaseActivity
             }
         }
         if (monto <= 0) {
-            vistaTransaccion.inputLayoutMonto.setError(
+            sheetBinding.inputLayoutMonto.setError(
                     getString(R.string.aCuentas_error_monto_vacio));
             return;
         }
 
         // Concepto: no vacío
-        CharSequence conceptoTexto = vistaTransaccion.inputConcepto.getText();
+        CharSequence conceptoTexto = sheetBinding.inputConcepto.getText();
         String concepto = conceptoTexto != null ? conceptoTexto.toString().trim() : "";
         if (concepto.isEmpty()) {
-            vistaTransaccion.inputLayoutConcepto.setError(
+            sheetBinding.inputLayoutConcepto.setError(
                     getString(R.string.aCuentas_error_concepto_vacio));
             return;
         }
 
         // Cuenta: seleccionada en el spinner
         if (cuentaSeleccionadaId <= 0) {
-            vistaTransaccion.inputLayoutCuenta.setError(
+            sheetBinding.inputLayoutCuenta.setError(
                     getString(R.string.aCuentas_error_cuenta_no_seleccionada));
             return;
         }
 
-        String tipo = (vistaTransaccion.toggleTipoTransaccion.getCheckedButtonId() == R.id.btnEgreso)
+        String tipo = (sheetBinding.toggleTipoTransaccion.getCheckedButtonId() == R.id.btnEgreso)
                 ? TipoTransaccion.EGRESO.name()
                 : TipoTransaccion.INGRESO.name();
 
@@ -436,24 +475,30 @@ public class CuentasActivity extends BaseActivity
             @Override
             public void onChanged(ErrorCode errorCode) {
                 resultado.removeObserver(this);
-                manejarResultadoTransaccion(errorCode);
+                manejarResultadoTransaccion(errorCode, sheetBinding, sheetDialog);
             }
         });
     }
 
     /**
      * Traduce el resultado del registro a feedback de usuario:
-     * {@code null} = éxito (Toast + limpieza del formulario); un
-     * {@link ErrorCode} = fallo de dominio (Toast con el mensaje correspondiente,
-     * desde {@code strings.xml}).
+     * {@code null} = éxito (Toast + limpieza del formulario + cierre del
+     * BottomSheet); un {@link ErrorCode} = fallo de dominio (Toast con el mensaje
+     * correspondiente desde {@code strings.xml}, sin cerrar el BottomSheet para
+     * permitir corregir).
      *
-     * @param errorCode código devuelto por el ViewModel ({@code null} si tuvo éxito)
+     * @param errorCode    código devuelto por el ViewModel ({@code null} si tuvo éxito)
+     * @param sheetBinding Binding del BottomSheet abierto
+     * @param sheetDialog  Diálogo del BottomSheet
      */
-    private void manejarResultadoTransaccion(ErrorCode errorCode) {
+    private void manejarResultadoTransaccion(ErrorCode errorCode,
+                                             @NonNull BottomSheetTransaccionBinding sheetBinding,
+                                             @NonNull BottomSheetDialog sheetDialog) {
         if (errorCode == null) {
             Toast.makeText(this, R.string.aCuentas_toast_movimiento_registrado,
                     Toast.LENGTH_SHORT).show();
-            limpiarFormularioTransaccion();
+            limpiarFormularioTransaccion(sheetBinding);
+            sheetDialog.dismiss();
             return;
         }
 
@@ -476,16 +521,18 @@ public class CuentasActivity extends BaseActivity
     }
 
     /**
-     * Limpia el formulario de la Vista 2 tras un registro exitoso: monto,
+     * Limpia el formulario del BottomSheet tras un registro exitoso: monto,
      * concepto, errores de validación y selección del spinner.
+     *
+     * @param sheetBinding Binding del BottomSheet a limpiar
      */
-    private void limpiarFormularioTransaccion() {
-        vistaTransaccion.inputMonto.setText(null);
-        vistaTransaccion.inputConcepto.setText(null);
-        vistaTransaccion.inputLayoutMonto.setError(null);
-        vistaTransaccion.inputLayoutConcepto.setError(null);
-        vistaTransaccion.inputLayoutCuenta.setError(null);
-        vistaTransaccion.spinnerCuentas.setText("", false);
+    private void limpiarFormularioTransaccion(@NonNull BottomSheetTransaccionBinding sheetBinding) {
+        sheetBinding.inputMonto.setText(null);
+        sheetBinding.inputConcepto.setText(null);
+        sheetBinding.inputLayoutMonto.setError(null);
+        sheetBinding.inputLayoutConcepto.setError(null);
+        sheetBinding.inputLayoutCuenta.setError(null);
+        sheetBinding.spinnerCuentas.setText("", false);
         cuentaSeleccionadaId = -1L;
     }
 
@@ -703,8 +750,7 @@ public class CuentasActivity extends BaseActivity
      * Actualiza el título del Toolbar/ActionBar según la vista activa del ViewFlipper.
      *
      * @param viewIndex índice de la vista mostrada
-     *                  0=Cuentas, 1=Movimientos/Historial, 2=Transacción/Formulario,
-     *                  3=Mapa, 4=Contactos
+     *                  0=Cuentas, 1=Movimientos/Historial, 2=Mapa, 3=Contactos
      */
     private void actualizarTituloToolbar(int viewIndex) {
         ActionBar ab = getSupportActionBar();
@@ -715,12 +761,9 @@ public class CuentasActivity extends BaseActivity
                     tituloRes = R.string.aCuentas_toolbar_movimientos;
                     break;
                 case 2:
-                    tituloRes = R.string.aCuentas_toolbar_nuevo;
-                    break;
-                case 3:
                     tituloRes = R.string.aCuentas_toolbar_mapa;
                     break;
-                case 4:
+                case 3:
                     tituloRes = R.string.aCuentas_toolbar_contactos;
                     break;
                 case 0:
