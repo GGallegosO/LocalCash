@@ -150,6 +150,7 @@
     <string name="aCuentas_transaccion_concepto_hint">Concepto</string>
     <string name="aCuentas_transaccion_geolocalizacion">Geolocalizar transacción</string>
     <string name="aCuentas_transaccion_guardar">Guardar Movimiento</string>
+    <string name="aCuentas_transaccion_ubicacion_fijada">Ubicación fijada: %1$.5f, %2$.5f</string>
 
     <!-- Conceptos sugeridos para el campo Concepto (el usuario puede escribir otro) -->
     <string-array name="aCuentas_conceptos_predefinidos">

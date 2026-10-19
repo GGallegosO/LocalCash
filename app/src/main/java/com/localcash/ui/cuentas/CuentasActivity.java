@@ -1,11 +1,14 @@
 package com.localcash.ui.cuentas;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
@@ -33,6 +36,7 @@ import com.localcash.domain.model.TipoCuenta;
 import com.localcash.domain.model.TipoTransaccion;
 import com.localcash.domain.model.Transaccion;
 import com.localcash.ui.BaseActivity;
+import com.localcash.ui.mapa.MapaPickerActivity;
 import com.localcash.ui.theme.ThemeManager;
 import com.localcash.ui.util.CurrencyFormatter;
 
@@ -83,6 +87,17 @@ public class CuentasActivity extends BaseActivity
 
     /** Id de la cuenta seleccionada en el spinner ({@code -1} si no hay selección). */
     private long cuentaSeleccionadaId = -1L;
+
+    /**
+     * Coordenada elegida en el mapa ({@code null} = sin ubicación). Se conserva
+     * en memoria durante el registro; su persistencia se aborda en T9. Rige la
+     * regla "ambas o ninguna": si una es {@code null}, la otra también.
+     */
+    private Double latitudSeleccionada;
+    private Double longitudSeleccionada;
+
+    /** Lanzador al selector de ubicación ({@link MapaPickerActivity}). */
+    private ActivityResultLauncher<Intent> launcherUbicacion;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -179,6 +194,9 @@ public class CuentasActivity extends BaseActivity
 
         // Preparar el ViewModel de transacciones (alimenta el BottomSheet del FAB)
         configurarTransaccionViewModel();
+
+        // Lanzador al selector de ubicación (debe registrarse antes de STARTED)
+        registrarLauncherUbicacion();
     }
 
     @Override
@@ -294,6 +312,18 @@ public class CuentasActivity extends BaseActivity
         sheetTransaccionBinding = sheetBinding;
         poblarSpinnerCuentas(sheetBinding);
         configurarConceptosPredefinidos(sheetBinding);
+
+        // Ubicación: el panel arranca sin coordenada y el interruptor abre el mapa.
+        latitudSeleccionada = null;
+        longitudSeleccionada = null;
+        sheetBinding.tvUbicacionFijada.setVisibility(View.GONE);
+        sheetBinding.switchGeolocalizacion.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                launcherUbicacion.launch(new Intent(this, MapaPickerActivity.class));
+            } else {
+                limpiarUbicacion(sheetBinding);
+            }
+        });
 
         sheetBinding.spinnerCuentas.setOnItemClickListener((parent, view, position, id) -> {
             if (position >= 0 && position < cuentasSpinner.size()) {
@@ -467,6 +497,62 @@ public class CuentasActivity extends BaseActivity
         sheetBinding.inputLayoutCuenta.setError(null);
         sheetBinding.spinnerCuentas.setText("", false);
         cuentaSeleccionadaId = -1L;
+        // Al desactivar el interruptor, su listener limpia la ubicación elegida.
+        sheetBinding.switchGeolocalizacion.setChecked(false);
+    }
+
+    /**
+     * Registra el lanzador al selector de ubicación ({@link MapaPickerActivity}).
+     * Debe registrarse antes de que la Activity llegue a {@code STARTED}.
+     * <p>
+     * Si el selector devuelve una coordenada, se guarda y se muestra la
+     * confirmación en el panel. Si el usuario cancela, se revierte el interruptor
+     * (su listener limpia el estado) sin reabrir el mapa.
+     * </p>
+     */
+    private void registrarLauncherUbicacion() {
+        launcherUbicacion = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    Intent datos = result.getData();
+                    if (result.getResultCode() == RESULT_OK && datos != null
+                            && datos.hasExtra(MapaPickerActivity.EXTRA_LATITUD)
+                            && datos.hasExtra(MapaPickerActivity.EXTRA_LONGITUD)) {
+                        establecerUbicacion(
+                                datos.getDoubleExtra(MapaPickerActivity.EXTRA_LATITUD, 0d),
+                                datos.getDoubleExtra(MapaPickerActivity.EXTRA_LONGITUD, 0d));
+                    } else if (sheetTransaccionBinding != null) {
+                        sheetTransaccionBinding.switchGeolocalizacion.setChecked(false);
+                    }
+                });
+    }
+
+    /**
+     * Guarda la coordenada elegida en el mapa y la muestra como confirmación.
+     *
+     * @param latitud  latitud WGS84 elegida
+     * @param longitud longitud WGS84 elegida
+     */
+    private void establecerUbicacion(double latitud, double longitud) {
+        latitudSeleccionada = latitud;
+        longitudSeleccionada = longitud;
+        if (sheetTransaccionBinding != null) {
+            sheetTransaccionBinding.tvUbicacionFijada.setText(
+                    getString(R.string.aCuentas_transaccion_ubicacion_fijada, latitud, longitud));
+            sheetTransaccionBinding.tvUbicacionFijada.setVisibility(View.VISIBLE);
+        }
+    }
+
+    /**
+     * Descarta la ubicación elegida y oculta su confirmación.
+     *
+     * @param sheetBinding Binding del BottomSheet abierto
+     */
+    private void limpiarUbicacion(@NonNull BottomSheetTransaccionBinding sheetBinding) {
+        latitudSeleccionada = null;
+        longitudSeleccionada = null;
+        sheetBinding.tvUbicacionFijada.setText(null);
+        sheetBinding.tvUbicacionFijada.setVisibility(View.GONE);
     }
 
     /**

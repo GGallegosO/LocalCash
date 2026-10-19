@@ -57,9 +57,9 @@
       coloca un pin al tocar el mapa; "Confirmar" devuelve `setResult(RESULT_OK)` con extras
       `latitud`/`longitud`/`direccion`, "Cancelar" cierra sin resultado. Ciclo de vida del `MapView`
       gestionado y Activity registrada en el manifiesto. ✅
-- [ ] **T8. Integrar el selector con el panel.**
+- [x] **T8. Integrar el selector con el panel.**
       `CuentasActivity`: al activar "Geolocalizar" lanza `MapaPickerActivity` con un `ActivityResultLauncher`,
-      recibe las coordenadas en el callback, muestra la confirmación y conserva el estado del panel.
+      recibe las coordenadas en el callback, muestra la confirmación y conserva el estado del panel. ✅
 - [ ] **T9. Persistir las coordenadas al registrar el movimiento.**
       `TransaccionViewModel` propaga `Ubicacion`; ambas coordenadas o ninguna (CA-3/CA-4/CA-7).
 
