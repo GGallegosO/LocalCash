@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
@@ -28,8 +29,11 @@ import com.google.android.material.textfield.TextInputLayout;
 import com.localcash.R;
 import com.localcash.data.db.AppDatabase;
 import com.localcash.data.entities.Cuenta;
+import com.localcash.data.entities.LugarCompra;
+import com.localcash.data.relations.LugarCompraConItems;
 import com.localcash.databinding.ActivityCuentasBinding;
 import com.localcash.databinding.BottomSheetTransaccionBinding;
+import com.localcash.databinding.DialogCrearLugarCompraBinding;
 import com.localcash.databinding.ViewCuentasBinding;
 import com.localcash.databinding.ViewHistorialBinding;
 import com.localcash.databinding.ViewMapaBinding;
@@ -348,8 +352,9 @@ public class CuentasActivity extends BaseActivity
             @Override
             @SuppressWarnings("unchecked")
             public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
+                AppDatabase baseDatos = AppDatabase.getInstance(getApplicationContext());
                 return (T) new MapaViewModel(
-                        AppDatabase.getInstance(getApplicationContext()).transaccionDao());
+                        baseDatos.transaccionDao(), baseDatos.lugarCompraDao());
             }
         }).get(MapaViewModel.class);
 
@@ -358,6 +363,95 @@ public class CuentasActivity extends BaseActivity
         mapaViewModel.getTransaccionesConUbicacion().observe(this, transacciones -> {
             List<Transaccion> lista = transacciones != null ? transacciones : new ArrayList<>();
             mapaController.mostrarMovimientos(lista);
+        });
+
+        // Un pin verde por lugar de compra (Feature 010). Room reejecuta la
+        // consulta al insertar, así que el pin recién creado aparece solo.
+        mapaViewModel.getLugaresCompra().observe(this, lugares -> {
+            List<LugarCompraConItems> lista =
+                    lugares != null ? lugares : new ArrayList<>();
+            mapaController.mostrarLugaresCompra(lista);
+        });
+
+        // Pulsación larga sobre el mapa: abre el diálogo de creación con las
+        // coordenadas del punto presionado (Feature 010, Fase 2).
+        mapaController.setOnLongPressListener(this::mostrarDialogCrearLugarCompra);
+    }
+
+    /**
+     * Muestra el diálogo para crear un lugar de compra en las coordenadas de
+     * una pulsación larga sobre el mapa (Feature 010, Fase 2).
+     * <p>
+     * El diálogo se infla con ViewBinding. La validación es local (tipo no
+     * vacío y gasto promedio entero no negativo); la persistencia se delega en
+     * {@link MapaViewModel#insertarLugar(LugarCompra)} para no tocar Room desde
+     * la vista. Al guardar, Room notifica al {@code LiveData} de lugares y el
+     * pin aparece en el mapa sin recargar manualmente.
+     * </p>
+     *
+     * @param latitud  latitud del punto presionado
+     * @param longitud longitud del punto presionado
+     */
+    private void mostrarDialogCrearLugarCompra(double latitud, double longitud) {
+        DialogCrearLugarCompraBinding dialogBinding =
+                DialogCrearLugarCompraBinding.inflate(getLayoutInflater());
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.dialog_crear_lugar_titulo)
+                .setView(dialogBinding.getRoot())
+                .setPositiveButton(R.string.dialog_crear_lugar_guardar, null)
+                .setNegativeButton(R.string.dialog_crear_lugar_cancelar, null)
+                .create();
+        dialog.show();
+
+        // El teclado numérico no debe tapar los campos en pantallas pequeñas.
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setSoftInputMode(
+                    WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
+
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String tipo = dialogBinding.inputTipo.getText() != null
+                    ? dialogBinding.inputTipo.getText().toString().trim() : "";
+            if (tipo.isEmpty()) {
+                dialogBinding.inputLayoutTipo.setError(
+                        getString(R.string.dialog_crear_lugar_error_tipo));
+                return;
+            }
+            dialogBinding.inputLayoutTipo.setError(null);
+
+            long gastoPromedio;
+            try {
+                String textoGasto = dialogBinding.inputGasto.getText() != null
+                        ? dialogBinding.inputGasto.getText().toString().trim() : "";
+                gastoPromedio = Long.parseLong(textoGasto);
+            } catch (NumberFormatException e) {
+                dialogBinding.inputLayoutGasto.setError(
+                        getString(R.string.dialog_crear_lugar_error_gasto));
+                return;
+            }
+            if (gastoPromedio < 0) {
+                dialogBinding.inputLayoutGasto.setError(
+                        getString(R.string.dialog_crear_lugar_error_gasto));
+                return;
+            }
+            dialogBinding.inputLayoutGasto.setError(null);
+
+            LugarCompra lugar = new LugarCompra(
+                    latitud, longitud, tipo, gastoPromedio, System.currentTimeMillis());
+
+            v.setEnabled(false);
+            mapaViewModel.insertarLugar(lugar).observe(this, guardado -> {
+                if (Boolean.TRUE.equals(guardado)) {
+                    Toast.makeText(this, R.string.dialog_crear_lugar_toast_creado,
+                            Toast.LENGTH_SHORT).show();
+                    dialog.dismiss();
+                } else if (Boolean.FALSE.equals(guardado)) {
+                    v.setEnabled(true);
+                    Toast.makeText(this, R.string.dialog_crear_lugar_toast_error,
+                            Toast.LENGTH_SHORT).show();
+                }
+            });
         });
     }
 

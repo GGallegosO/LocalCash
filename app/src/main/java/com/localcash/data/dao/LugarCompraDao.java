@@ -1,5 +1,6 @@
 package com.localcash.data.dao;
 
+import androidx.lifecycle.LiveData;
 import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.Query;
@@ -78,6 +79,22 @@ public interface LugarCompraDao {
     @Transaction
     @Query("SELECT * FROM lugar_compra ORDER BY fechaCreacion DESC")
     List<LugarCompraConItems> getAllLugaresConItems();
+
+    /**
+     * Variante observable de {@link #getAllLugaresConItems()} para la UI.
+     * <p>
+     * Room reejecuta la consulta cada vez que cambia {@code lugar_compra} o
+     * {@code item_compra}, de modo que el mapa recibe el pin recién creado sin
+     * que la vista consulte la base de datos. La consulta se ejecuta en el
+     * executor de Room, nunca en el hilo principal.
+     * </p>
+     *
+     * @return LiveData con los lugares de compra y sus ítems, del más reciente
+     *         al más antiguo
+     */
+    @Transaction
+    @Query("SELECT * FROM lugar_compra ORDER BY fechaCreacion DESC")
+    LiveData<List<LugarCompraConItems>> getAllLugaresConItemsLive();
 
     /**
      * Marca un ítem como comprado o pendiente (actualiza la fila completa).

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Diálogo para crear un lugar de compra desde el mapa (Feature 010, Fase 2).
+
+  Se infla con ViewBinding (DialogCrearLugarCompraBinding) y se muestra dentro
+  de un MaterialAlertDialogBuilder, que aporta el título y los botones
+  Guardar/Cancelar. Reglas de estilo: cero textos y colores hardcodeados.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <!-- Tipo de lugar: texto libre (Supermercado, Farmacia, etc.). -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/inputLayoutTipo"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/dialog_crear_lugar_tipo">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/inputTipo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:imeOptions="actionNext"
+            android:inputType="textCapWords" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Gasto promedio estimado en pesos CLP (entero, sin centavos). -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/inputLayoutGasto"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:hint="@string/dialog_crear_lugar_gasto">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/inputGasto"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:imeOptions="actionDone"
+            android:inputType="number"
+            android:maxLength="10" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+</LinearLayout>

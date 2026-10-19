@@ -182,4 +182,15 @@
     <string name="mapa_btn_confirmar">Confirmar ubicación</string>
     <string name="mapa_btn_cancelar">Cancelar</string>
     <string name="mapa_atribucion_osm">© OpenStreetMap contributors</string>
+
+    <!-- Diálogo para crear un lugar de compra con pulsación larga (Feature 010, Fase 2) -->
+    <string name="dialog_crear_lugar_titulo">Nuevo lugar de compra</string>
+    <string name="dialog_crear_lugar_tipo">Tipo de lugar</string>
+    <string name="dialog_crear_lugar_gasto">Gasto promedio (CLP)</string>
+    <string name="dialog_crear_lugar_guardar">Guardar</string>
+    <string name="dialog_crear_lugar_cancelar">Cancelar</string>
+    <string name="dialog_crear_lugar_toast_creado">Lugar de compra creado</string>
+    <string name="dialog_crear_lugar_toast_error">No se pudo crear el lugar de compra</string>
+    <string name="dialog_crear_lugar_error_tipo">Ingresa el tipo de lugar</string>
+    <string name="dialog_crear_lugar_error_gasto">Ingresa un gasto promedio válido</string>
 </resources>
