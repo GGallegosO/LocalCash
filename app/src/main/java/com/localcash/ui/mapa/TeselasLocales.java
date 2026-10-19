@@ -87,7 +87,8 @@ public class TeselasLocales extends XYTileSource {
         // Fondo del mapa acorde al tema activo: evita el destello negro tanto
         // mientras faltan teselas como al recrear la Activity por cambio de tema.
         TypedValue fondo = new TypedValue();
-        context.getTheme().resolveAttribute(android.R.attr.colorBackground, fondo, true);
+        context.getTheme().resolveAttribute(
+                com.google.android.material.R.attr.colorSurface, fondo, true);
         mapView.setBackgroundColor(fondo.data);
         TilesOverlay teselas = mapView.getOverlayManager().getTilesOverlay();
         if (teselas != null) {

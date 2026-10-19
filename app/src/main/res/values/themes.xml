@@ -25,9 +25,9 @@
         <!-- Background -->
         <item name="android:colorBackground">@color/md_theme_light_background</item>
         <item name="colorOnBackground">@color/md_theme_light_onBackground</item>
-        <!-- Fondo de ventana = fondo de la app: evita el flash negro durante
+        <!-- Fondo de ventana = superficie de la app: evita el flash negro durante
              recreate() al cambiar de tema o al arrancar la Activity. -->
-        <item name="android:windowBackground">@color/md_theme_light_background</item>
+        <item name="android:windowBackground">?attr/colorSurface</item>
         <!-- Typography -->
         <item name="textAppearanceHeadlineLarge">@style/TextAppearance.HeadlineLarge</item>
         <item name="textAppearanceLabelLarge">@style/TextAppearance.LabelLarge</item>
@@ -41,10 +41,10 @@
     </style>
 
     <style name="Theme.LocalCash" parent="Base.Theme.LocalCash">
-        <!-- Fondo de ventana en el tema que declara el manifiesto. Se resuelve
-             contra android:colorBackground del variant activo (claro/oscuro),
-             evitando el flash negro al recrear por cambio de tema. -->
-        <item name="android:windowBackground">?android:attr/colorBackground</item>
+        <!-- Fondo de ventana en el tema que declara el manifiesto: se resuelve
+             contra colorSurface del variant activo (claro/oscuro), evitando el
+             flash negro al recrear por cambio de tema. -->
+        <item name="android:windowBackground">?attr/colorSurface</item>
     </style>
 
     <!-- Typography -->
