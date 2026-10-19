@@ -29,7 +29,15 @@ import androidx.room.PrimaryKey;
                 childColumns = "cuentaId",
                 onDelete = ForeignKey.CASCADE
         ),
-        indices = {@Index("cuentaId")}
+        indices = {
+                @Index("cuentaId"),
+                // Índice de geolocalización (bbox). data-model.md lo declara PARCIAL
+                // (WHERE latitud IS NOT NULL AND longitud IS NOT NULL); Room no puede
+                // expresar índices parciales en @Index, así que se declara sobre las
+                // dos columnas y la migración crea la forma parcial. La validación de
+                // Room ignora la cláusula WHERE, por lo que ambas formas son válidas.
+                @Index(name = "idx_transacciones_geo", value = {"latitud", "longitud"})
+        }
 )
 public class Transaccion {
 

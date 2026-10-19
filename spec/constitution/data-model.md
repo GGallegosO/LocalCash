@@ -461,6 +461,13 @@ CREATE INDEX idx_categorias_tipo
     ON CATEGORIAS (tipo_transaccion);
 ```
 
+> **Nota de implementación (Room).** Room no permite declarar índices **parciales** en
+> `@Entity(indices = …)`, por lo que la entidad `Transaccion` declara `idx_transacciones_geo` sobre
+> `(latitud, longitud)` **sin** predicado. Una instalación nueva materializa esa forma (no parcial);
+> la migración 2 → 3 crea la forma **parcial** canónica de arriba. La validación de esquema de Room
+> ignora la cláusula `WHERE` (compara nombre, unicidad y columnas), así que ambas formas son válidas y
+> sirven igual al plan de consultas de la bbox.
+
 **Notas de rendimiento.**
 
 - **Verificar, no suponer:** cada consulta de la tabla anterior se comprueba con

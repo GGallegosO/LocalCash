@@ -35,12 +35,16 @@
       `latitud` (`Double`), `longitud` (`Double`) y `direccionLugar` (`String`) nullable en
       `data/entities/Transaccion.java`, según `data-model.md`. (La versión de la BD y el índice se
       abordan en T5.) ✅
-- [ ] **T4. Crear el value object `Ubicacion` y la validación de dominio.**
-      `domain/model/Ubicacion.java` + validación de rango (lat -90..90, lon -180..180) y de la regla
-      "ambas o ninguna" en `TransaccionService`. *Criterio de salida:* invocable y testeable sin Android.
-- [ ] **T5. Migración de base de datos 2 → 3 (no destructiva).**
-      `ALTER TABLE transacciones ADD COLUMN` para las tres columnas, subir `version` de Room a 3 y crear
-      el índice parcial `idx_transacciones_geo`. Prohibido `DROP TABLE`/migración destructiva.
+- [x] **T4. Crear el value object `Ubicacion` y la validación de dominio.**
+      `domain/model/Ubicacion.java` (inmutable) encapsula la regla "ambas o ninguna" y el rango
+      (lat -90..90, lon -180..180); `crear(...)`/`vacia()` devuelven `null` cuando no hay ubicación.
+      La validación vive en el value object (fuente única); `TransaccionService` la consumirá al
+      propagar las coordenadas (T9). Tests JVM en `UbicacionTest`. ✅
+- [x] **T5. Migración de base de datos 2 → 3 (no destructiva).**
+      `ALTER TABLE transacciones ADD COLUMN` para las tres columnas, `version` de Room a 3 y crear
+      `idx_transacciones_geo`. El `@Entity` declara el índice (Room no admite índices parciales) y la
+      migración crea la forma parcial canónica. `app/schemas/.../3.json` exportado. Prohibido
+      `DROP TABLE`/migración destructiva. ✅
 
 ## Fase 2 — Captura de pin e integración con el panel
 
