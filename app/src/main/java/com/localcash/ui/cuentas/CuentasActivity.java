@@ -1,6 +1,7 @@
 package com.localcash.ui.cuentas;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -31,14 +32,18 @@ import com.localcash.databinding.ActivityCuentasBinding;
 import com.localcash.databinding.BottomSheetTransaccionBinding;
 import com.localcash.databinding.ViewCuentasBinding;
 import com.localcash.databinding.ViewHistorialBinding;
+import com.localcash.databinding.ViewMapaBinding;
 import com.localcash.domain.error.ErrorCode;
 import com.localcash.domain.model.TipoCuenta;
 import com.localcash.domain.model.TipoTransaccion;
 import com.localcash.domain.model.Transaccion;
 import com.localcash.ui.BaseActivity;
+import com.localcash.ui.mapa.MapaLecturaController;
 import com.localcash.ui.mapa.MapaPickerActivity;
 import com.localcash.ui.theme.ThemeManager;
 import com.localcash.ui.util.CurrencyFormatter;
+
+import org.osmdroid.config.Configuration;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -59,6 +64,9 @@ public class CuentasActivity extends BaseActivity
     /** Etiqueta de logs de la Activity. */
     private static final String TAG = "CuentasActivity";
 
+    /** Archivo de preferencias donde osmdroid guarda su configuración. */
+    private static final String PREFS_OSMDROID = "osmdroid";
+
     private ActivityCuentasBinding binding;
 
     /** Binding de la Vista 1 (se infla dentro del ViewFlipper, fuera de activity_cuentas.xml). */
@@ -66,6 +74,12 @@ public class CuentasActivity extends BaseActivity
 
     /** Binding de la Vista 1 (Historial/Movimientos), inflado dentro del ViewFlipper. */
     private ViewHistorialBinding vistaHistorial;
+
+    /** Binding de la Vista 2 (Mapa), inflado dentro del ViewFlipper. */
+    private ViewMapaBinding vistaMapa;
+
+    /** Controlador del mapa de lectura (Vista 2); {@code null} hasta configurarla. */
+    private MapaLecturaController mapaController;
 
     /** Binding del BottomSheet de transacción, mientras está abierto ({@code null} si cerrado). */
     private BottomSheetTransaccionBinding sheetTransaccionBinding;
@@ -102,6 +116,13 @@ public class CuentasActivity extends BaseActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // osmdroid: cargar configuración (rutas de caché, user-agent) ANTES de
+        // inflar cualquier MapView (la Vista 2 lo hace más abajo, dentro del
+        // ViewFlipper). Sin red: solo define dónde cachear y el user-agent.
+        SharedPreferences prefs = getSharedPreferences(PREFS_OSMDROID, MODE_PRIVATE);
+        Configuration.getInstance().load(getApplicationContext(), prefs);
+        Configuration.getInstance().setUserAgentValue(getPackageName());
 
         binding = ActivityCuentasBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -148,7 +169,7 @@ public class CuentasActivity extends BaseActivity
         vistaHistorial = ViewHistorialBinding.inflate(
                 getLayoutInflater(), binding.viewFlipper, true);
         // Vista 2: Mapa
-        getLayoutInflater().inflate(R.layout.view_mapa, binding.viewFlipper);
+        vistaMapa = ViewMapaBinding.inflate(getLayoutInflater(), binding.viewFlipper, true);
         // Vista 3: Contactos
         getLayoutInflater().inflate(R.layout.view_contactos, binding.viewFlipper);
 
@@ -192,6 +213,9 @@ public class CuentasActivity extends BaseActivity
         // Conectar la Vista 2 (Historial/Movimientos) con Room (ViewModel + Adapter)
         configurarVistaHistorial();
 
+        // Configurar el mapa de lectura (Vista 2 del ViewFlipper): teselas locales y zoom
+        configurarVistaMapa();
+
         // Preparar el ViewModel de transacciones (alimenta el BottomSheet del FAB)
         configurarTransaccionViewModel();
 
@@ -204,6 +228,32 @@ public class CuentasActivity extends BaseActivity
         super.onSaveInstanceState(outState);
         // Guardar el índice actual del ViewFlipper para preservar la vista seleccionada
         outState.putInt("viewFlipperIndex", binding.viewFlipper.getDisplayedChild());
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // El MapView de la Vista 2 debe seguir el ciclo de vida de la Activity.
+        if (vistaMapa != null) {
+            vistaMapa.mapaLectura.onResume();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        if (vistaMapa != null) {
+            vistaMapa.mapaLectura.onPause();
+        }
+        super.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        // Libera el tile provider y sus hilos (evita fugas del MapView).
+        if (vistaMapa != null) {
+            vistaMapa.mapaLectura.onDetach();
+        }
+        super.onDestroy();
     }
 
     /**
@@ -273,6 +323,21 @@ public class CuentasActivity extends BaseActivity
 
         // FAB: abrir el BottomSheet para registrar un movimiento nuevo.
         vistaHistorial.fabNuevaTransaccion.setOnClickListener(v -> mostrarBottomSheetTransaccion());
+    }
+
+    /**
+     * Configura la Vista 2 (Mapa) en modo lectura: monta el
+     * {@link MapaLecturaController} sobre su {@code MapView} (teselas locales
+     * offline y encuadre inicial) y enlaza los botones de zoom.
+     * <p>
+     * El ciclo de vida del {@code MapView} lo delega la Activity
+     * ({@code onResume}/{@code onPause}/{@code onDetach}).
+     * </p>
+     */
+    private void configurarVistaMapa() {
+        mapaController = new MapaLecturaController(vistaMapa.mapaLectura);
+        vistaMapa.btnZoomIn.setOnClickListener(v -> mapaController.cambiarZoom(1));
+        vistaMapa.btnZoomOut.setOnClickListener(v -> mapaController.cambiarZoom(-1));
     }
 
     /**

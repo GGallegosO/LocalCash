@@ -99,7 +99,6 @@
     <string name="aCuentas_nueva_cuenta">Nueva cuenta</string>
     <string name="aCuentas_guardar">Guardar</string>
     <string name="aCuentas_sin_datos">No hay datos aún</string>
-    <string name="aCuentas_titulo_mapa">Mapa</string>
     <string name="aCuentas_titulo_contactos">Contactos</string>
 
     <!-- Tipos de cuenta (para placeholders futuros o adapters) -->
@@ -185,4 +184,7 @@
     <string name="mapa_zoom_in">Acercar</string>
     <string name="mapa_zoom_out">Alejar</string>
     <string name="mapa_atribucion_osm">© OpenStreetMap contributors</string>
+
+    <!-- Strings de la pestaña "Mapa" en modo lectura (Feature 009, T10-T12) -->
+    <string name="mapa_sin_movimientos">Sin movimientos geolocalizados</string>
 </resources>

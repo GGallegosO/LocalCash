@@ -1,8 +1,113 @@
 <?xml version="1.0" encoding="utf-8"?>
-<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+  Vista 2 (Mapa): modo lectura de los movimientos geolocalizados
+  (Feature 009, T10-T12).
+
+  Contiene el MapView de osmdroid, los controles de zoom, la atribución
+  obligatoria de OpenStreetMap y el mensaje de estado vacío. La Activity
+  (CuentasActivity) es quien conecta el MapView al TileSource local
+  (TeselasLocales, offline) y dibuja un pin por movimiento geolocalizado a
+  través de MapaLecturaController.
+
+  Reglas de estilo del proyecto: cero colores y cero textos hardcodeados
+  (solo ?attr/... y @string/...).
+-->
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:gravity="center"
-    android:text="@string/aCuentas_titulo_mapa"
-    android:textColor="?attr/colorOnSurface"
-    android:textSize="18sp" />
+    android:layout_height="match_parent">
+
+    <!--
+      MapView de osmdroid. Su TileSource se fija por código (TeselasLocales):
+      teselas preempaquetadas en assets/, sin red. Hasta que T0 empaquete las
+      teselas se verá un lienzo navegable vacío (no un error).
+    -->
+    <org.osmdroid.views.MapView
+        android:id="@+id/mapaLectura"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Controles de zoom flotantes sobre el mapa (esquina superior derecha) -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardZoomLectura"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="12dp"
+        app:cardBackgroundColor="?attr/colorSurface"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp"
+        app:layout_constraintEnd_toEndOf="@id/mapaLectura"
+        app:layout_constraintTop_toTopOf="@id/mapaLectura">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnZoomIn"
+                style="@style/Widget.Material3.Button.IconButton.Filled"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/mapa_zoom_in"
+                app:icon="@drawable/ic_zoom_in"
+                app:iconTint="?attr/colorOnPrimary" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnZoomOut"
+                style="@style/Widget.Material3.Button.IconButton.Filled"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/mapa_zoom_out"
+                app:icon="@drawable/ic_zoom_out"
+                app:iconTint="?attr/colorOnPrimary" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Atribución obligatoria de OpenStreetMap (esquina inferior izquierda) -->
+    <TextView
+        android:id="@+id/tvAtribucionOsm"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginBottom="8dp"
+        android:background="?attr/colorSurface"
+        android:paddingStart="6dp"
+        android:paddingTop="2dp"
+        android:paddingEnd="6dp"
+        android:paddingBottom="2dp"
+        android:text="@string/mapa_atribucion_osm"
+        android:textColor="?attr/colorOnSurface"
+        android:textSize="12sp"
+        app:layout_constraintBottom_toBottomOf="@id/mapaLectura"
+        app:layout_constraintStart_toStartOf="@id/mapaLectura" />
+
+    <!--
+      Estado vacío: se muestra cuando no hay ningún movimiento geolocalizado.
+      CuentasActivity alterna su visibilidad según la lista que emite el
+      MapaViewModel. Va después del MapView para dibujarse por encima.
+    -->
+    <TextView
+        android:id="@+id/tvSinMovimientos"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="24dp"
+        android:background="?attr/colorSurface"
+        android:padding="16dp"
+        android:text="@string/mapa_sin_movimientos"
+        android:textAppearance="?attr/textAppearanceBodyLarge"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/mapaLectura"
+        app:layout_constraintEnd_toEndOf="@id/mapaLectura"
+        app:layout_constraintStart_toStartOf="@id/mapaLectura"
+        app:layout_constraintTop_toTopOf="@id/mapaLectura" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
