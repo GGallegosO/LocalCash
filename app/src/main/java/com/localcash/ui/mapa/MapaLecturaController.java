@@ -1,5 +1,7 @@
 package com.localcash.ui.mapa;
 
+import android.view.MotionEvent;
+
 import androidx.annotation.NonNull;
 
 import com.localcash.R;
@@ -75,6 +77,9 @@ public class MapaLecturaController {
     /** Callback que la Activity registra para atender una pulsación larga. */
     private OnLongPressListener longPressListener;
 
+    /** Callback de interacción con los pines de compra (Feature 010, Fase 3). */
+    private OnLugarCompraInteractionListener lugarCompraListener;
+
     /**
      * Notifica una pulsación larga sobre el mapa con sus coordenadas.
      */
@@ -85,6 +90,26 @@ public class MapaLecturaController {
          * @param longitud longitud WGS84 del punto presionado
          */
         void onLongPress(double latitud, double longitud);
+    }
+
+    /**
+     * Interacciones sobre un pin de lugar de compra (Feature 010, Fase 3).
+     */
+    public interface OnLugarCompraInteractionListener {
+
+        /**
+         * El usuario tocó "Ver detalle" en el InfoWindow.
+         *
+         * @param lugarCompraId id del lugar
+         */
+        void onVerDetalle(long lugarCompraId);
+
+        /**
+         * El usuario mantuvo presionado el pin.
+         *
+         * @param lugarCompraId id del lugar
+         */
+        void onLongPress(long lugarCompraId);
     }
 
     /**
@@ -141,6 +166,16 @@ public class MapaLecturaController {
     }
 
     /**
+     * Registra las interacciones de los pines de compra (Feature 010, Fase 3).
+     *
+     * @param listener callback de clic en "Ver detalle" y long press
+     */
+    public void setOnLugarCompraInteractionListener(
+            OnLugarCompraInteractionListener listener) {
+        this.lugarCompraListener = listener;
+    }
+
+    /**
      * Redibuja los pines del mapa: retira los anteriores y coloca uno por
      * movimiento geolocalizado.
      * <p>
@@ -158,11 +193,12 @@ public class MapaLecturaController {
     }
 
     /**
-     * Redibuja los pines de los lugares de compra (Feature 010, Fase 2).
+     * Redibuja los pines de los lugares de compra (Feature 010, Fases 2 y 3).
      * <p>
-     * Cada lugar usa el color {@link R.color#mapa_pin_compra} y muestra su tipo
-     * como título y su gasto promedio como resumen. Los ítems y el diálogo de
-     * detalle se abordan en fases posteriores.
+     * Cada lugar usa el color {@link R.color#mapa_pin_compra}. Al tocarlo se
+     * abre un {@link LugarCompraInfoWindow} con tipo, gasto estimado, cantidad
+     * de ítems y botón "Ver detalle"; el long press sobre el pin abre la
+     * Activity de detalle.
      * </p>
      *
      * @param lugares lugares de compra con sus ítems (puede ser vacía)
@@ -204,7 +240,7 @@ public class MapaLecturaController {
             if (ubicacion == null) {
                 continue;
             }
-            Marker marcador = new Marker(mapa);
+            Marker marcador = new MarcadorMovimiento(mapa);
             marcador.setPosition(new GeoPoint(ubicacion.getLatitud(), ubicacion.getLongitud()));
             marcador.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
             marcador.setIcon(PinMapa.iconoMovimiento(mapa.getContext()));
@@ -217,21 +253,60 @@ public class MapaLecturaController {
         }
     }
 
-    /** Dibuja un pin por lugar de compra. */
+    /** Dibuja un pin por lugar de compra con su InfoWindow y long press. */
     private void dibujarLugaresCompra() {
         for (LugarCompraConItems relacion : lugaresCompraActuales) {
             LugarCompra lugar = relacion.getLugarCompra();
             if (lugar == null) {
                 continue;
             }
-            Marker marcador = new Marker(mapa);
+            MarcadorLugarCompra marcador = new MarcadorLugarCompra(
+                    mapa, lugar.getId(), id -> {
+                        if (lugarCompraListener != null) {
+                            lugarCompraListener.onLongPress(id);
+                        }
+                    });
             marcador.setPosition(new GeoPoint(lugar.getLatitud(), lugar.getLongitud()));
             marcador.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
             marcador.setIcon(PinMapa.iconoCompra(mapa.getContext()));
             marcador.setTitle(lugar.getTipoLugar());
-            marcador.setSnippet(CurrencyFormatter.format(lugar.getGastoPromedio()));
+            Long gastoPromedio = lugar.getGastoPromedio();
+            marcador.setSnippet(gastoPromedio != null
+                    ? CurrencyFormatter.format(gastoPromedio)
+                    : mapa.getContext().getString(R.string.mapa_compra_info_sin_gasto));
+            marcador.setRelatedObject(relacion);
+            marcador.setInfoWindow(new LugarCompraInfoWindow(mapa, relacion, id -> {
+                if (lugarCompraListener != null) {
+                    lugarCompraListener.onVerDetalle(id);
+                }
+            }));
+            marcador.setOnMarkerClickListener((m, mapView) -> {
+                // Una sola burbuja abierta a la vez (osmdroid no lo hace solo).
+                InfoWindow.closeAllInfoWindowsOn(mapView);
+                m.showInfoWindow();
+                return true;
+            });
             mapa.getOverlays().add(marcador);
             marcadores.add(marcador);
+        }
+    }
+
+    /**
+     * Marcador de movimiento que consume el long press sobre su icono.
+     * <p>
+     * Evita que mantener presionado un pin de movimiento abra el diálogo de
+     * creación del mapa vacío (Feature 010, Fase 3).
+     * </p>
+     */
+    private static final class MarcadorMovimiento extends Marker {
+
+        MarcadorMovimiento(@NonNull MapView mapView) {
+            super(mapView);
+        }
+
+        @Override
+        public boolean onLongPress(MotionEvent event, MapView mapView) {
+            return hitTest(event, mapView) || super.onLongPress(event, mapView);
         }
     }
 

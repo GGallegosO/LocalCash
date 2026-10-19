@@ -48,6 +48,7 @@ import com.localcash.domain.model.TipoTransaccion;
 import com.localcash.domain.model.Transaccion;
 import com.localcash.ui.BaseActivity;
 import com.localcash.ui.compras.ItemCompraCreacionAdapter;
+import com.localcash.ui.compras.LugarCompraDetailActivity;
 import com.localcash.ui.mapa.MapaLecturaController;
 import com.localcash.ui.mapa.MapaPickerActivity;
 import com.localcash.ui.mapa.MapaViewModel;
@@ -382,6 +383,30 @@ public class CuentasActivity extends BaseActivity
         // Pulsación larga sobre el mapa vacío: abre el diálogo de creación con
         // las coordenadas del punto presionado (Feature 010, Fase 2).
         mapaController.setOnLongPressListener(this::mostrarDialogCrearLugarCompra);
+
+        // Interacción con pines de compra: "Ver detalle" y long press abren el
+        // detalle (placeholder hasta la Fase 4).
+        mapaController.setOnLugarCompraInteractionListener(
+                new MapaLecturaController.OnLugarCompraInteractionListener() {
+                    @Override
+                    public void onVerDetalle(long lugarCompraId) {
+                        abrirDetalleLugar(lugarCompraId);
+                    }
+
+                    @Override
+                    public void onLongPress(long lugarCompraId) {
+                        abrirDetalleLugar(lugarCompraId);
+                    }
+                });
+    }
+
+    /**
+     * Abre la Activity de detalle de un lugar de compra.
+     *
+     * @param lugarCompraId id del lugar
+     */
+    private void abrirDetalleLugar(long lugarCompraId) {
+        startActivity(LugarCompraDetailActivity.crearIntent(this, lugarCompraId));
     }
 
     /**

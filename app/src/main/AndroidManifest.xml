@@ -47,6 +47,13 @@
             android:exported="false"
             android:parentActivityName="com.localcash.ui.cuentas.CuentasActivity" />
 
+        <!-- LugarCompraDetailActivity: placeholder del detalle de una lista de compras (Feature 010, Fase 3) -->
+        <activity
+            android:name="com.localcash.ui.compras.LugarCompraDetailActivity"
+            android:exported="false"
+            android:parentActivityName="com.localcash.ui.cuentas.CuentasActivity"
+            android:windowSoftInputMode="adjustResize" />
+
     </application>
 
 </manifest>
