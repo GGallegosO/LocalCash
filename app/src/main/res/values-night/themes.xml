@@ -27,7 +27,7 @@
         <item name="colorOnBackground">@color/md_theme_dark_onBackground</item>
         <!-- Fondo de ventana = fondo de la app: evita el flash negro durante
              recreate() al cambiar de tema o al arrancar la Activity. -->
-        <item name="android:windowBackground">@color/md_theme_dark_background</item>
+        <item name="android:windowBackground">?attr/colorSurface</item>
         <!-- Typography -->
         <item name="textAppearanceHeadlineLarge">@style/TextAppearance.HeadlineLarge</item>
         <item name="textAppearanceLabelLarge">@style/TextAppearance.LabelLarge</item>
@@ -38,6 +38,12 @@
         <item name="android:windowLightNavigationBar">false</item>
         <item name="android:statusBarColor">?attr/colorSurface</item>
         <item name="android:navigationBarColor">?attr/colorSurface</item>
+    </style>
+
+    <!-- Tema del manifiesto: se redefine también en noche para dejar explícito
+         el fondo de ventana del variant oscuro. -->
+    <style name="Theme.LocalCash" parent="Base.Theme.LocalCash">
+        <item name="android:windowBackground">?attr/colorSurface</item>
     </style>
 
     <!-- Typography -->

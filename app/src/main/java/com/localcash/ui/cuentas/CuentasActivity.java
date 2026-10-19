@@ -340,8 +340,6 @@ public class CuentasActivity extends BaseActivity
      */
     private void configurarVistaMapa() {
         mapaController = new MapaLecturaController(vistaMapa.mapaLectura);
-        vistaMapa.btnZoomIn.setOnClickListener(v -> mapaController.cambiarZoom(1));
-        vistaMapa.btnZoomOut.setOnClickListener(v -> mapaController.cambiarZoom(-1));
 
         // El ViewModel recibe el DAO por constructor: necesita una
         // ViewModelProvider.Factory, igual que HistorialViewModel.

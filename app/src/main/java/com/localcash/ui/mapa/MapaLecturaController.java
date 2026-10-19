@@ -83,16 +83,6 @@ public class MapaLecturaController {
     }
 
     /**
-     * Acerca o aleja un nivel de zoom respetando el rango del {@code MapView}.
-     *
-     * @param delta {@code +1} para acercar, {@code -1} para alejar
-     */
-    public void cambiarZoom(int delta) {
-        double zoomActual = mapa.getZoomLevelDouble();
-        mapa.getController().setZoom(zoomActual + delta);
-    }
-
-    /**
      * Redibuja los pines del mapa: retira los anteriores y coloca uno por
      * movimiento geolocalizado.
      * <p>
