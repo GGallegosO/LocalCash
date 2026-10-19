@@ -87,6 +87,8 @@ mapeo de la navegación inferior.
 - `doc/008-actualizacion-diagrama.md` → `doc/009-actualizacion-diagrama.md`, para respetar la
   numeración compartida `spec/features/NNN` ↔ `doc/NNN` (ese registro se había creado como `008`
   cuando `007` era la feature activa).
+- *(2026-10-19)* Ese registro se renombró de nuevo a **`doc/011-actualizacion-diagrama.md`** al abrir
+  la Feature 009, para no colisionar con el número `009`.
 
 ---
 
@@ -168,9 +170,8 @@ La Feature 008 queda **cerrada**. Todo lo relativo a la geolocalización se cont
 **Tecnología:** osmdroid 6.1.x ya está registrada en `tech-stack.md` §2; se re-confirmó el 2026-10-19
 frente a MapLibre Native (registro en §7 de ese documento).
 
-**Nota de numeración:** existe `doc/009-actualizacion-diagrama.md`; al cerrar la Feature 009 habrá que
-renombrarlo para respetar la numeración compartida (propuesta en
-`spec/features/009-geolocalizacion-map/plan.md` §7).
+**Nota de numeración:** resuelta el 2026-10-19; `doc/009-actualizacion-diagrama.md` se renombró a
+`doc/011-actualizacion-diagrama.md`, dejando `009` para la geolocalización y `010` para la lista de compras.
 
 **Resueltas en la 008:** T1–T18 (navegación, historial cableado a Room, estado vacío real, refresco
 dinámico, saldo dinámico, panel de registro, conceptos predefinidos y selector de cuentas observable).

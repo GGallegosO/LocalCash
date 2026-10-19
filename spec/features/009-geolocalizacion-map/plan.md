@@ -161,12 +161,12 @@ para las pruebas. Ninguna credencial real en documentos.
 
 ---
 
-## 7. Nota de numeración (a resolver antes del cierre)
+## 7. Nota de numeración (resuelta)
 
-Existe `doc/009-actualizacion-diagrama.md` (un registro de mantenimiento completado). La convención del
-proyecto comparte la numeración de tres dígitos entre `spec/features/NNN-*` y `doc/NNN-*`, por lo que el
-registro de memoria de esta feature (`doc/009-geolocalizacion-map.md`) **colisionaría** con aquel.
+La convención del proyecto comparte la numeración de tres dígitos entre `spec/features/NNN-*` y
+`doc/NNN-*`. Existía `doc/009-actualizacion-diagrama.md` (registro de mantenimiento completado), que
+colisionaba con el registro de memoria de esta feature.
 
-**Propuesta:** al cerrar esta feature, renombrar `doc/009-actualizacion-diagrama.md` →
-`doc/011-actualizacion-diagrama.md` (dejando `009` para esta feature y `010` reservado para la lista de
-compras), y actualizar sus dos referencias internas. Decisión pendiente de confirmación del responsable.
+**Resuelto (2026-10-19):** se renombró a `doc/011-actualizacion-diagrama.md` (dejando `009` para esta
+feature y `010` reservado para la lista de compras) y se actualizaron sus referencias internas. El
+registro de memoria de esta feature es, por tanto, `doc/009-geolocalizacion-map.md`.
