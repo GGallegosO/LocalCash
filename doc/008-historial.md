@@ -35,6 +35,12 @@ mapeo de la navegación inferior.
   encabezado alineados a la pestaña activa.
 - Historial cableado a Room mediante `HistorialViewModel`: la lista y el estado vacío se actualizan en
   vivo y un movimiento recién guardado aparece sin recargar (T8/T10/T11).
+- El campo **Concepto** del panel de registro ofrece **sugerencias predefinidas**
+  (Transporte, Supermercado, Alimentación, Casa, Entretenimiento, Salud, Servicios, Educación, Otros)
+  sin dejar de ser editable: el usuario puede elegir una sugerencia o escribir un concepto propio.
+- El **FAB** ya no tapa las últimas filas: el `RecyclerView` del historial tiene
+  `paddingBottom="160dp"` con `clipToPadding="false"`, de modo que el último movimiento queda visible
+  al hacer scroll hasta el fondo.
 
 **Deuda técnica explícita (ver `tasks.md`):**
 - La **geolocalización** está diseñada y especificada, pero **no implementada**: no hay columnas de
@@ -58,9 +64,15 @@ mapeo de la navegación inferior.
 - `app/src/main/java/com/localcash/ui/cuentas/CuentasActivity.java` — navegación, botón flotante,
   panel de registro, índices del contenedor de vistas y títulos; y (T8e) observación del `LiveData` del
   `HistorialViewModel` mediante una `ViewModelProvider.Factory` que inyecta el `TransaccionDao`,
-  reemplazando los datos mock por los datos reales de Room.
-- `app/src/main/res/values/strings.xml` — cadenas del título del panel; retiro de cadenas huérfanas.
+  reemplazando los datos mock por los datos reales de Room; y `configurarConceptosPredefinidos(...)`,
+  que carga las sugerencias del campo Concepto.
+- `app/src/main/res/values/strings.xml` — cadenas del título del panel; retiro de cadenas huérfanas; y
+  el array `aCuentas_conceptos_predefinidos` con las sugerencias del campo Concepto.
 - `app/src/main/res/menu/bottom_nav_menu.xml` — pestaña "Nuevo" → "Movimientos".
+- `app/src/main/res/layout/bottom_sheet_transaccion.xml` — el campo Concepto pasa de texto libre a
+  `MaterialAutoCompleteTextView` (estilo `ExposedDropdownMenu`) con sugerencias predefinidas, editable.
+- `app/src/main/res/layout/view_historial.xml` — `paddingBottom="160dp"` + `clipToPadding="false"` en
+  el `RecyclerView` para que el FAB no tape la última fila al final del scroll.
 
 **Eliminados:**
 - `app/src/main/res/layout/view_transaccion.xml` (la vista propia de registro, sustituida por el panel).
@@ -92,6 +104,11 @@ mapeo de la navegación inferior.
    *Justificación:* el `HistorialAdapter` consume dominio; la conversión se concentra en un único punto
    (`mapearADominio`). El DAO se inyecta por constructor con una `ViewModelProvider.Factory` (DI simple
    y testeable, sin Hilt/Dagger).
+7. **El campo Concepto usa sugerencias predefinidas editables, no un desplegable cerrado.**
+   *Justificación:* las categorías frecuentes (Transporte, Supermercado, Alimentación, etc.) agilizan el
+   registro sin quitar la libertad de escribir un concepto nuevo, manteniendo el comportamiento del
+   texto libre anterior. Se implementa con `MaterialAutoCompleteTextView` (estilo `ExposedDropdownMenu`),
+   que además resuelve la altura correcta del campo frente al `OutlinedBox` plano.
 
 ---
 
@@ -109,6 +126,9 @@ mapeo de la navegación inferior.
 
 - Re-verificado tras T8e y T9 (2026-10-19): `./gradlew assembleDebug` y `./gradlew lint`
   → BUILD SUCCESSFUL (0 errores, 41 advertencias preexistentes, 0 nuevas).
+- Verificado en emulador (2026-10-19) el fix del FAB y las sugerencias de Concepto: al hacer scroll
+  hasta el fondo la última transacción queda visible, y el desplegable de Concepto muestra las nueve
+  sugerencias y permite seleccionarlas.
 
 ---
 

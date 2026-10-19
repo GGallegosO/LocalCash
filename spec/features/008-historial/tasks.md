@@ -37,6 +37,8 @@
 
 - [x] **T5. Layout de la vista de historial.**
       `view_historial.xml`: lista desplazable, estado vacío y botón flotante.
+      *(2026-10-19) `paddingBottom="160dp"` + `clipToPadding="false"` en el `RecyclerView` para que el
+      FAB no tape la última transacción al final del scroll.*
 - [x] **T6. Adapter y fila del historial.**
       `HistorialAdapter.java` + `item_transaccion.xml` (icono, concepto, fecha, monto con signo/color).
 - [x] **T7. Poblar la lista para validar la UI (datos de prueba — TEMPORAL).**
@@ -64,6 +66,8 @@
 - [x] **T13. Layout del formulario de registro.**
       `bottom_sheet_transaccion.xml`: Ingreso/Egreso (toggle), Monto, Cuenta (dropdown), Concepto,
       Geolocalizar (switch) y Guardar. Reutiliza los IDs de la vista eliminada.
+      *(2026-10-19) El campo Concepto usa sugerencias predefinidas editables
+      (`aCuentas_conceptos_predefinidos`) vía `MaterialAutoCompleteTextView`.*
 - [x] **T14. El botón flotante abre el panel inferior.**
       `mostrarBottomSheetTransaccion()` con un `BottomSheetDialog` real.
 - [x] **T15. Registrar el movimiento con validación de dominio.**
