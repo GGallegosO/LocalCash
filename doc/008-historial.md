@@ -13,7 +13,7 @@
 | **Fecha** | 2026-10-18 |
 | **Tarea ejecutada** | Feature 008 — Historial de movimientos: lista, botón flotante y panel de registro |
 | **Responsable** | GG |
-| **Estado** | **Parcialmente completado (Fase 2 avanzada)**. Historial cableado a Room; faltan la geolocalización, la limpieza de datos mock (T9) y el saldo dinámico (T12). No cumple todavía la Definition of Done completa. |
+| **Estado** | **Parcialmente completado (Fase 2 avanzada)**. Historial cableado a Room y sin datos de prueba; faltan la geolocalización y el saldo dinámico (T12). No cumple todavía la Definition of Done completa. |
 | **Rama** | `feat/008-historial` |
 
 ---
@@ -37,8 +37,6 @@ mapeo de la navegación inferior.
   vivo y un movimiento recién guardado aparece sin recargar (T8/T10/T11).
 
 **Deuda técnica explícita (ver `tasks.md`):**
-- Los **datos de prueba** (`generarTransaccionesMock()`) siguen en el código aunque **ya no se usan**:
-  el historial se alimenta de Room. Queda pendiente borrarlos definitivamente (T9).
 - La **geolocalización** está diseñada y especificada, pero **no implementada**: no hay columnas de
   coordenadas en la entidad, ni permisos en el manifiesto, ni captura real, ni migración de base de datos.
 - El **saldo total** no se refresca dinámicamente en la vista de historial tras registrar (T12).
@@ -109,7 +107,7 @@ mapeo de la navegación inferior.
 > feature: faltan la geolocalización (CA-7), la limpieza de datos mock (T9) y la verificación de
 > migración.
 
-- Re-verificado en el cableado a Room (T8e, 2026-10-19): `./gradlew assembleDebug` y `./gradlew lint`
+- Re-verificado tras T8e y T9 (2026-10-19): `./gradlew assembleDebug` y `./gradlew lint`
   → BUILD SUCCESSFUL (0 errores, 41 advertencias preexistentes, 0 nuevas).
 
 ---
@@ -131,14 +129,13 @@ mapeo de la navegación inferior.
 
 ## Próximos pasos pendientes
 
-1. **T9 — Limpieza de datos mock:** eliminar `generarTransaccionesMock()` (ya sin uso) y sus imports.
-   Es el pendiente inmediato.
-2. **T12 — Actualización dinámica del saldo total** tras registrar un movimiento.
-3. **Implementar la geolocalización** (Fase 4): columnas, migración 2→3, permisos, captura y
+1. **T12 — Actualización dinámica del saldo total** tras registrar un movimiento.
+2. **Implementar la geolocalización** (Fase 4): columnas, migración 2→3, permisos, captura y
    persistencia (T19-T26).
-4. **Verificar la migración** y cubrir los criterios de aceptación con tests (T27, T28).
-5. **Ejecutar la Definition of Done completa** (incluido `connectedCheck`) y cerrar el registro (T29, T30).
+3. **Verificar la migración** y cubrir los criterios de aceptación con tests (T27, T28).
+4. **Ejecutar la Definition of Done completa** (incluido `connectedCheck`) y cerrar el registro (T29, T30).
 
-**Ya resueltas:** T8 (cableado a Room), T10 (estado vacío real) y T11 (refresco dinámico por LiveData).
+**Ya resueltas:** T8 (cableado a Room), T9 (retiro de datos de prueba), T10 (estado vacío real) y
+T11 (refresco dinámico por LiveData).
 
 Estos pasos están detallados y estado-lizados en `spec/features/008-historial/tasks.md`.
