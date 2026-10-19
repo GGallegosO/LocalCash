@@ -1,0 +1,172 @@
+# plan.md — Plan Técnico de Implementación
+
+> **Identificación:** 009-geolocalizacion-map | **Fecha:** 19/10/2026 | **Autor:** GG
+> **Estado:** Borrador (pendiente de aprobación)
+>
+> **Propósito de este documento:** Definir CÓMO se implementará la feature descrita en `spec.md`:
+> componentes, decisiones técnicas, riesgos y dependencias. Es el puente entre el requisito y las
+> tareas ejecutables (`tasks.md`).
+>
+> **Regla:** Ninguna decisión de este archivo puede contradecir `.agent.md` ni `tech-stack.md`.
+> Si la contradicción es inevitable, primero se actualiza la constitución con su registro en `doc/`.
+
+---
+
+## 1. Componentes Involucrados
+
+> Lista TODO archivo/módulo que será creado o modificado. Si durante la implementación aparece un
+> archivo fuera de esta lista, hay dos opciones: actualizar el plan (y justificar) o detenerse.
+
+| Archivo / Módulo | Rol en la feature | Acción | Complejidad estimada |
+|---|---|---|---|
+| `gradle/libs.versions.toml` + `app/build.gradle` | Declarar la dependencia del motor de mapas (osmdroid 6.1.x, §2 de `tech-stack.md`) | MODIFICAR | BAJA |
+| `app/src/main/AndroidManifest.xml` | Permisos de ubicación y registro de la Activity de mapas | MODIFICAR | BAJA |
+| `data/entities/Transaccion.java` | Añadir `latitud`, `longitud`, `direccionLugar` (nullable) | MODIFICAR | MEDIA |
+| `domain/model/Transaccion.java` | Propagar las coordenadas en el modelo de dominio | MODIFICAR | MEDIA |
+| `domain/model/Ubicacion.java` | Value object de coordenadas (lat, lon, dirección) | CREAR | BAJA |
+| `domain/service/TransaccionService.java` | Validar el rango y la regla "ambas o ninguna" antes de persistir | MODIFICAR | MEDIA |
+| `data/db/AppDatabase.java` | Migración `user_version` 2 → 3 (`ALTER TABLE`, no destructiva) e índice `idx_transacciones_geo` | MODIFICAR | ALTA |
+| `data/dao/TransaccionDao.java` | Consultas geográficas (movimientos con coordenada y por caja envolvente) | MODIFICAR | MEDIA |
+| `ui/mapa/SeleccionarUbicacionActivity.java` | Activity de mapa que deja fijar un pin y devuelve coordenadas | CREAR | ALTA |
+| `ui/mapa/MapaViewModel.java` | Expone los movimientos geolocalizados al mapa (modo lectura) | CREAR | MEDIA |
+| `ui/cuentas/CuentasActivity.java` | Abre la Activity de selección desde el interruptor y puebla la pestaña "Mapa" | MODIFICAR | MEDIA |
+| `ui/cuentas/TransaccionViewModel.java` | Persistir las coordenadas al registrar el movimiento | MODIFICAR | MEDIA |
+| `res/layout/activity_seleccionar_ubicacion.xml` | Vista de mapa + confirmación/cancelación | CREAR | MEDIA |
+| `res/layout/view_mapa.xml` | Sustituir el texto de relleno por el contenedor del mapa de lectura | MODIFICAR | MEDIA |
+| `res/values/strings.xml` | Cadenas de la vista de mapa y mensajes | MODIFICAR | BAJA |
+| `test/.../TransaccionDaoGeoTest.java` | Persistencia geográfica y regla "ambas o ninguna" | CREAR | MEDIA |
+| `androidTest/.../MigracionV2V3Test.java` | Migración 2→3 sin pérdida de datos | CREAR | MEDIA |
+| `test/.../UbicacionValidatorTest.java` | Rango de coordenadas y "ambas o ninguna" (dominio puro) | CREAR | BAJA |
+
+**Contrato de datos / interfaz expuesta:**
+- **Entrada (desde el panel):** al activar "Geolocalizar", `CuentasActivity` lanza
+  `SeleccionarUbicacionActivity`; el resultado es `{latitud, longitud}` o "sin selección".
+- **Salida de la Activity:** `RESULT_OK` con extras `latitud`/`longitud` (ambos o ninguno), o `RESULT_CANCELED`.
+- **Persistencia:** `Transaccion` con `latitud`/`longitud` (ambos `NULL` o ambos con valor) y
+  `direccionLugar` opcional.
+- **Errores posibles:** coordenada fuera de rango → no se persiste; media coordenada → rechazada
+  (nunca se guarda a medias).
+
+---
+
+## 2. Decisiones de Arquitectura
+
+1. **Motor de mapas: osmdroid 6.1.x (OpenStreetMap).**
+   - Opciones consideradas: osmdroid, MapLibre Native, Google Maps Android SDK, Mapbox SDK.
+   - Decisión: **osmdroid** (`tech-stack.md` §2, re-confirmado el 2026-10-19).
+   - Justificación: 100% offline con teselas en caché, sin Play Services ni credenciales; API Java
+     directa (`MapView`/`Marker`) suficiente para pines y un pin selector.
+   - Consecuencia aceptada: las teselas dependen de un proveedor estándar (servidor OSM) cuando hay red;
+     el funcionamiento sin red depende de la caché local de teselas.
+
+2. **La selección de pin vive en una Activity separada, no dentro del panel.**
+   - Opciones consideradas: (a) Activity de mapa que devuelve coordenadas; (b) `MapView` embebido en el
+     `BottomSheet`.
+   - Decisión: **(a) Activity separada** que retorna por `setResult`.
+   - Justificación: el `MapView` de osmdroid tiene ciclo de vida propio y no encaja bien dentro de un
+     `BottomSheetDialog`; una Activity aísla el ciclo de vida y simplifica el retorno del resultado vía
+     `ActivityResultLauncher`.
+   - Consecuencia aceptada: el usuario sale del panel momentáneamente; al volver, el panel permanece
+     abierto con el estado previo.
+
+3. **La pestaña "Mapa" es de solo lectura.**
+   - Decisión: muestra un `MapView` con un pin por movimiento geolocalizado; sin alta/baja de pines.
+   - Justificación: acota el alcance; la gestión de pines de la lista de compras es la Feature 010.
+   - Consecuencia aceptada: para "geolocalizar" hay que pasar por el panel de registro.
+
+4. **Contrato de color de pines por origen.**
+   - Decisión: los pines de **movimientos** usan un color; los de **lista de compras** usarán otro
+     (reservado para 010). El color se centraliza en un recurso/constante único.
+   - Justificación: requirement explícito del usuario; 010 lo reutilizará sin redefinirlo.
+
+5. **"Ambas o ninguna" y rango de coordenadas se hacen cumplir en dominio + DAO, no con `CHECK` de Room.**
+   - Opciones consideradas: (a) `CHECK` en la tabla (como en el DDL canónico); (b) validación en
+     dominio/repositorio.
+   - Decisión: **(b)**, con tests propios. Room **no expone** `CHECK` en `@Entity`, y ya hay precedente
+     (la máquina de estados de deudas se hace cumplir en el repositorio, `AGENTS.md`).
+   - Justificación: mantiene la fuente de verdad única del DDL en `data-model.md` y evita una validación
+     silenciosamente ausente por usar Room.
+   - Consecuencia aceptada: si en el futuro se escribe por fuera del repositorio, la regla no la protege
+     el motor; se cubre con test de DAO y de dominio.
+
+6. **Migración no destructiva 2 → 3.**
+   - Decisión: `ALTER TABLE transacciones ADD COLUMN` para `latitud`, `longitud` y `direccion_lugar`
+     (nullable), subir `version` de Room a 3 y crear el índice parcial `idx_transacciones_geo`.
+   - Justificación: `.agent.md` §6.11 prohíbe `fallbackToDestructiveMigration()` y `DROP TABLE`; nunca
+     se pierde información financiera.
+   - Consecuencia aceptada: se debe escribir y testear `MigracionV2V3Test`.
+
+7. **Sin dependencias nuevas más allá de osmdroid.**
+   - Decisión: no se añade `play-services-location`; la posición actual (para centrar el mapa) se obtiene
+     con el framework de Android (`LocationManager`), ya sin dependencias.
+   - Justificación: pilar 100% offline y regla de registrar toda dependencia en `tech-stack.md`.
+
+8. **Se define el punto de extensión geográfico, no su consumo futuro.**
+   - Decisión: la consulta por caja envolvente (`WHERE latitud BETWEEN ? AND ? AND longitud BETWEEN ? AND ?`,
+     sobre `idx_transacciones_geo`) se implementa aquí; su uso por la lista de compras queda para 010.
+
+---
+
+## 3. Riesgos Identificados
+
+| # | Riesgo | Probabilidad | Impacto | Mitigación | Dueño |
+|---|--------|--------------|---------|------------|-------|
+| 1 | Migración 2→3 mal escrita → pérdida de datos | Media | Alto | `ALTER TABLE` nullable + `MigracionV2V3Test` con datos sembrados | GG |
+| 2 | Ciclo de vida del `MapView` de osmdroid (onResume/onPause/onDestroy) mal gestionado → fugas o crash | Media | Alto | Encapsular el ciclo en la Activity; `onDetach`/`detach()` según la guía de osmdroid | GG |
+| 3 | Teselas no disponibles sin red → mapa vacío percibido como error | Media | Medio | Abrir en vista por defecto, precargar/cachear teselas; documentar el comportamiento offline | GG |
+| 4 | Permiso de ubicación denegado bloquea el flujo | Baja | Alto | Best-effort: abrir el mapa sin centrar; nunca impedir el registro (CA-6/E-1) | GG |
+| 5 | `CHECK` de `data-model.md` no reproducible en Room → divergencia silenciosa | Media | Medio | Enforcar en dominio/repositorio + tests; documentar la divergencia decidida | GG |
+| 6 | Licencia/política de uso del servidor de teselas por defecto | Baja | Medio | Definir proveedor de teselas y su atribución en la Activity; funciona 100% con caché | GG |
+
+**Criterio de abortar/replantear:** si la integración de osmdroid no permite operar de forma razonable
+sin red (caché inutilizable) o si exige credenciales/Play Services, se detiene la implementación y se
+revisa la decisión de `tech-stack.md` §2 antes de continuar.
+
+---
+
+## 4. Dependencias Externas
+
+| Dependencia | Tipo | Estado del acuerdo | Plan B si falla |
+|---|---|---|---|
+| osmdroid 6.1.x | Librería | Registrada en `tech-stack.md` §2 | MapLibre Native (registrada como candidata descartada) |
+| Teselas de OpenStreetMap | Dato/servicio | Disponible sin credenciales | Caché local / proveedor alternativo de tiles raster |
+| `android.location.LocationManager` | Framework Android | Disponible (sin dependencia) | Sin centrado inicial del mapa |
+
+**Requisitos previos del entorno:** permisos de ubicación en runtime; emulador con "ubicación simulada"
+para las pruebas. Ninguna credencial real en documentos.
+
+---
+
+## 5. Estrategia de Verificación
+
+| Criterio | Cómo se verifica |
+|---|---|
+| CA-1, CA-2 | Prueba manual en emulador: activar el interruptor y fijar un pin |
+| CA-3, CA-4, CA-7 | Tests de dominio (`Ubicacion`) + `TransaccionDaoGeoTest` |
+| CA-5 | Prueba manual en la pestaña "Mapa" con movimientos sembrados |
+| CA-6 | Prueba manual denegando el permiso de ubicación |
+| CA-8 | Revisión del contrato de color + prueba manual |
+| Migración | `MigracionV2V3Test` (instrumentado) |
+| Offline | Prueba en modo avión con caché de teselas poblada |
+
+**Orden antes de cerrar (Definition of Done de `tasks.md`):** `./gradlew lint` → `testDebugUnitTest`
+→ `connectedCheck` → `assembleDebug` (`.agent.md` §3).
+
+---
+
+## 6. Dependencias entre features
+
+- **Depende de:** 007 (`007-cuentas`) y 008 (`008-historial`).
+- **Habilita a:** 010 (`010-lista-compras`) — reutiliza el contrato de pines y la consulta geográfica.
+
+---
+
+## 7. Nota de numeración (a resolver antes del cierre)
+
+Existe `doc/009-actualizacion-diagrama.md` (un registro de mantenimiento completado). La convención del
+proyecto comparte la numeración de tres dígitos entre `spec/features/NNN-*` y `doc/NNN-*`, por lo que el
+registro de memoria de esta feature (`doc/009-geolocalizacion-map.md`) **colisionaría** con aquel.
+
+**Propuesta:** al cerrar esta feature, renombrar `doc/009-actualizacion-diagrama.md` →
+`doc/011-actualizacion-diagrama.md` (dejando `009` para esta feature y `010` reservado para la lista de
+compras), y actualizar sus dos referencias internas. Decisión pendiente de confirmación del responsable.

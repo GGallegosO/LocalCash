@@ -1,8 +1,8 @@
-# doc/008-historial.md — Registro de Memoria: Historial de Movimientos (Fases 2-3 completas)
+# doc/008-historial.md — Registro de Memoria: Historial de Movimientos (Completada)
 
 > **Propósito de este archivo:** Dejar constancia de qué se decidió y qué se hizo en la Feature 008
-> (`spec/features/008-historial/`) y, sobre todo, **del estado real a la fecha**: una entrega
-> **parcialmente completada** con deuda técnica explícita. No describe el estado final, que aún no existe.
+> (`spec/features/008-historial/`) y de su estado real: **completada**. La geolocalización y el mapa se
+> trasladaron a la Feature 009; aquí se registra ese traspaso de alcance.
 
 ---
 
@@ -13,7 +13,7 @@
 | **Fecha** | 2026-10-18 |
 | **Tarea ejecutada** | Feature 008 — Historial de movimientos: lista, botón flotante y panel de registro |
 | **Responsable** | GG |
-| **Estado** | **Parcialmente completado (Fases 2 y 3 completas)**. Historial cableado a Room, sin datos de prueba y con saldo dinámico; falta la geolocalización/mapa (Fase 4). No cumple todavía la Definition of Done completa. |
+| **Estado** | **Completada.** Historial cableado a Room, sin datos de prueba, con saldo dinámico y Definition of Done ejecutada (incluido `connectedCheck`). La geolocalización/mapa se trasladó a la Feature 009. |
 | **Rama** | `feat/008-historial` |
 
 ---
@@ -47,9 +47,11 @@ mapeo de la navegación inferior.
   `paddingBottom="160dp"` con `clipToPadding="false"`, de modo que el último movimiento queda visible
   al hacer scroll hasta el fondo.
 
-**Deuda técnica explícita (ver `tasks.md`):**
-- La **geolocalización** está diseñada y especificada, pero **no implementada**: no hay columnas de
-  coordenadas en la entidad, ni permisos en el manifiesto, ni captura real, ni migración de base de datos.
+**Alcance trasladado (no deuda técnica):**
+- La **geolocalización y el mapa** salen de la Feature 008 por decisión de alcance (2026-10-19). Lo único
+  que la 008 deja preparado es el **interruptor "Geolocalizar"** en el panel (solo UI). La captura de
+  coordenadas, la migración 2→3, los permisos y la visualización en el mapa pasan a la Feature
+  `009-geolocalizacion-map` (sus antiguas T19–T26).
 
 ---
 
@@ -116,22 +118,22 @@ mapeo de la navegación inferior.
 
 ---
 
-## Validación
+## Validación (Definition of Done ejecutada)
 
 - `./gradlew lint`: BUILD SUCCESSFUL (0 errores; 41 advertencias preexistentes, ninguna introducida
   por los archivos cambiados).
 - `./gradlew testDebugUnitTest`: 13 tests, 0 fallos.
+- `./gradlew connectedCheck`: **BUILD SUCCESSFUL** (emulador `emulator-5554`).
 - `./gradlew assembleDebug`: BUILD SUCCESSFUL (`app/build/outputs/apk/debug/app-debug.apk`).
-- `./gradlew connectedCheck`: **no ejecutado** (requiere dispositivo/emulador activo).
 
-> Estas validaciones cubren el estado **parcialmente completado**. No habilitan el cierre de la
-> feature: falta la geolocalización/mapa (CA-7, Fase 4) y la verificación de migración (Fase 5).
+> La Definition of Done de la Feature 008 queda **completa**: los cuatro comandos pasan en el orden de
+> `.agent.md` §3. Los criterios CA-1…CA-6, CA-8 y CA-9 están verificados; CA-7 (geolocalización) pasó a
+> la Feature 009.
 
 - Re-verificado tras T8e y T9 (2026-10-19): `./gradlew assembleDebug` y `./gradlew lint`
   → BUILD SUCCESSFUL (0 errores, 41 advertencias preexistentes, 0 nuevas).
-- Verificado en emulador (2026-10-19) el fix del FAB y las sugerencias de Concepto: al hacer scroll
-  hasta el fondo la última transacción queda visible, y el desplegable de Concepto muestra las nueve
-  sugerencias y permite seleccionarlas.
+- Verificado en emulador (2026-10-19): `connectedCheck` en verde; el fix del FAB y las sugerencias de
+  Concepto funcionan (última transacción visible al final del scroll; nueve sugerencias seleccionables).
 
 ---
 
@@ -150,16 +152,25 @@ mapeo de la navegación inferior.
 
 ---
 
-## Próximos pasos pendientes
+## Traspaso a la Feature 009
 
-1. **Implementar la geolocalización y el mapa** (Fase 4): columnas, migración 2→3, permisos y el flujo
-   del interruptor "Geolocalizar" → Activity de mapa para fijar un pin (T19-T26). Requiere decidir la
-   tecnología de mapa offline y registrarla en `tech-stack.md`.
-2. **Verificar la migración** y cubrir los criterios de aceptación con tests (T27, T28).
-3. **Ejecutar la Definition of Done completa** (incluido `connectedCheck`) y cerrar el registro (T29, T30).
+La Feature 008 queda **cerrada**. Todo lo relativo a la geolocalización se continúa en
+`spec/features/009-geolocalizacion-map/`:
 
-**Ya resueltas:** T8 (cableado a Room), T9 (retiro de datos de prueba), T10 (estado vacío real),
-T11 (refresco dinámico por LiveData), T12 (saldo dinámico), T17 (refresco tras registrar) y
-T18 (selector de cuentas observable).
+1. **Fundaciones:** dependencia de osmdroid 6.1.x, permisos de ubicación, columnas de coordenadas y
+   migración 2→3 no destructiva.
+2. **Captura:** el interruptor "Geolocalizar" abre una Activity de mapa para fijar un pin; al confirmar,
+   las coordenadas vuelven al panel y se persisten (ambas o ninguna).
+3. **Lectura:** la pestaña "Mapa" muestra un pin por movimiento geolocalizado.
+4. **Contrato de color:** pines de movimientos y de lista de compras con colores distintos (el segundo,
+   para la Feature 010).
 
-Estos pasos están detallados y estado-lizados en `spec/features/008-historial/tasks.md`.
+**Tecnología:** osmdroid 6.1.x ya está registrada en `tech-stack.md` §2; se re-confirmó el 2026-10-19
+frente a MapLibre Native (registro en §7 de ese documento).
+
+**Nota de numeración:** existe `doc/009-actualizacion-diagrama.md`; al cerrar la Feature 009 habrá que
+renombrarlo para respetar la numeración compartida (propuesta en
+`spec/features/009-geolocalizacion-map/plan.md` §7).
+
+**Resueltas en la 008:** T1–T18 (navegación, historial cableado a Room, estado vacío real, refresco
+dinámico, saldo dinámico, panel de registro, conceptos predefinidos y selector de cuentas observable).

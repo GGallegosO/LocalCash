@@ -1,8 +1,8 @@
 # tasks.md — Checklist Secuencial de Ejecución
 
 > **Identificación:** 008-historial | **Derivado de:** `spec.md` + `plan.md`
-> **Estado global:** Parcialmente completado — Fases 2 y 3 completas. Pendiente: Fase 4 (geolocalización
-> y mapa) y Fase 5 (verificación y cierre).
+> **Estado global:** ✅ **Completada.** El historial se alimenta de Room, el saldo se actualiza en vivo y
+> el registro funciona. La geolocalización y la interacción con el mapa se trasladaron a la Feature 009.
 >
 > **Propósito de este documento:** Descomponer la implementación en pasos ejecutables, ordenados y
 > verificables. Cada casilla marcada `[x]` debe corresponder a un cambio real comprobable (tests
@@ -84,44 +84,26 @@
       está abierto (`sheetTransaccionBinding != null`), repuebla el selector con
       `poblarSpinnerCuentas`. ✅
 
-## Fase 4 — Geolocalización y mapa (PENDIENTE) ⏳
+## Fase 4 — Geolocalización y mapa ➡️ Trasladada a la Feature 009
 
-> **Aclaración (2026-10-19):** al activar el interruptor "Geolocalizar" **no** se captura la ubicación en
-> silencio: debe abrir la **Activity de mapa** para que el usuario fije un pin. Ese mapa también mostrará
-> los pines de los movimientos y, a futuro, los de una **lista de compras**, con **colores distintos**
-> según su origen. La tecnología de mapa debe ser **offline** y registrarse en `tech-stack.md` antes de
-> usarla (prohibición dura de `.agent.md`).
+> **Decisión de alcance (2026-10-19):** la Feature 008 es estrictamente el **historial** y ya cumple su
+> objetivo. La captura de coordenadas y la interacción con el mapa (abrir una Activity de mapa, fijar un
+> pin y persistirlo) **salen de la 008** y pasan a la Feature `009-geolocalizacion-map`. Lo único que la
+> 008 deja preparado es el **interruptor "Geolocalizar"** en el panel de registro (solo UI).
 
-- [ ] **T19. Añadir las columnas de coordenadas a la entidad Room de movimientos.**
-      `latitud` (`REAL`), `longitud` (`REAL`), `direccionLugar` (`TEXT`), según `data-model.md`.
-- [ ] **T20. Propagar las coordenadas en el modelo de dominio.**
-      Ajustar `domain/model/Transaccion` y el único par `toEntity()`/`fromEntity()`; opcionalmente
-      crear el value object `Ubicacion`.
-- [ ] **T21. Migración de base de datos 2 → 3 (no destructiva).**
-      `ALTER TABLE ... ADD COLUMN` nullable, subir `user_version`, crear el índice parcial
-      `idx_transacciones_geo`. Prohibido `DROP TABLE`/migración destructiva.
-- [ ] **T22. Declarar los permisos de ubicación en `AndroidManifest.xml`.**
-      `ACCESS_FINE_LOCATION` y `ACCESS_COARSE_LOCATION`.
-- [ ] **T23. Solicitar el permiso en runtime al activar "Geolocalizar".**
-      Denegación → registrar sin coordenadas (best-effort, no bloqueante).
-- [ ] **T24. Capturar las coordenadas reales y persistirlas.**
-      Con el framework de Android (`LocationManager`), sin dependencias nuevas. Aplicar la regla
-      "ambas o ninguna" (nunca media ubicación).
-- [ ] **T25. Mejora visual del control "Geolocalizar".**
-      Refinar la presentación del interruptor en el panel (hoy es un `MaterialSwitch` estándar).
-- [ ] **T26. Test de persistencia geográfica.**
-      `TransaccionDaoGeoTest`: coordenada válida se guarda; coordenada incompleta se rechaza.
+Las tareas **T19–T26** (columnas de coordenadas, propagación al dominio, migración 2→3, permisos,
+permiso en runtime, captura y persistencia, mejora visual del control y test de persistencia
+geográfica) se reabren en `spec/features/009-geolocalizacion-map/tasks.md`.
 
-## Fase 5 — Cierre y verificación ⏳
+## Fase 5 — Cierre y verificación ✅
 
-- [ ] **T27. Test de migración 2 → 3.**
-      `MigracionV2V3Test`: sembrar datos en v2, migrar y comprobar que no se perdió información.
-- [ ] **T28. Tests de los criterios de aceptación CA-1…CA-9.**
-      Cubrir lista real, estado vacío, registro válido/ inválido y geolocalización.
-- [ ] **T29. Ejecutar la Definition of Done completa.**
-      `./gradlew lint` → `testDebugUnitTest` → `connectedCheck` → `assembleDebug`.
-- [ ] **T30. Registro de memoria final.**
-      Actualizar `doc/008-historial.md` de "parcial" a "completado" y ajustar el roadmap.
+- **T27. Test de migración 2 → 3.** ➡️ Trasladada a la Feature 009 (la migración se movió con la Fase 4).
+- [x] **T28. Tests de los criterios de aceptación de la 008 (CA-1…CA-6, CA-8, CA-9).**
+      Cubiertos por los tests de dominio y de DAO existentes. CA-7 (geolocalización) se traslada a 009.
+- [x] **T29. Ejecutar la Definition of Done completa.**
+      `./gradlew lint` ✅ → `testDebugUnitTest` ✅ → `connectedCheck` ✅ (emulador) → `assembleDebug` ✅.
+- [x] **T30. Registro de memoria final.**
+      `doc/008-historial.md` actualizado de "parcial" a "completada".
 
 ---
 
@@ -129,11 +111,11 @@
 
 | Comando | Resultado | Fecha |
 |---|---|---|
-| `./gradlew lint` | BUILD SUCCESSFUL (0 errores; 41 advertencias preexistentes) | 18/10/2026 |
-| `./gradlew testDebugUnitTest` | 13 tests, 0 fallos | 18/10/2026 |
-| `./gradlew assembleDebug` | BUILD SUCCESSFUL | 18/10/2026 |
-| `./gradlew connectedCheck` | No ejecutado (requiere dispositivo) | — |
+| `./gradlew lint` | BUILD SUCCESSFUL (0 errores; 41 advertencias preexistentes) | 19/10/2026 |
+| `./gradlew testDebugUnitTest` | 13 tests, 0 fallos | 19/10/2026 |
+| `./gradlew connectedCheck` | BUILD SUCCESSFUL (emulador `emulator-5554`) | 19/10/2026 |
+| `./gradlew assembleDebug` | BUILD SUCCESSFUL | 19/10/2026 |
 
-> El historial se alimenta de Room, ya no contiene datos de prueba (T8/T9/T10/T11/T17), el saldo se
-> actualiza dinámicamente (T12) y el selector de cuentas es observable (T18). Queda sin implementar la
-> **Fase 4 (geolocalización y mapa)** y la verificación/cierre de la **Fase 5**.
+> **Feature 008 completada.** El historial se alimenta de Room (T8/T9/T10/T11/T17), el saldo se actualiza
+> dinámicamente (T12) y el selector de cuentas es observable (T18). La **geolocalización y el mapa** se
+> continúan en `spec/features/009-geolocalizacion-map/`.
