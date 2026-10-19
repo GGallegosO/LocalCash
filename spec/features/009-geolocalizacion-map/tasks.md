@@ -87,8 +87,11 @@
 
 ## Fase 4 — Tests
 
-- [ ] **T13. Test de dominio de `Ubicacion`.**
-      `UbicacionValidatorTest`: rango válido/ inválido y regla "ambas o ninguna".
+- [x] **T13. Test de dominio de `Ubicacion`.**
+      `UbicacionTest` (11 casos): rango válido/inválido (incluye límites exactos y `NaN`), regla
+      "ambas o ninguna", factory `crear()` y `vacia()`, más coherencia `equals`/`hashCode`. ✅
+      *(Nombre definitivo `UbicacionTest`; el checklist citaba `UbicacionValidatorTest`, hoy inexistente. Se
+      reconcilia la referencia, no se renombra la clase.)*
 - [ ] **T14. Test de persistencia geográfica.**
       `TransaccionDaoGeoTest`: coordenada válida se guarda; coordenada incompleta se rechaza.
 - [ ] **T15. Test de migración 2 → 3.**
