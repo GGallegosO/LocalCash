@@ -41,6 +41,12 @@
             android:parentActivityName="com.localcash.ui.login.LoginActivity"
             android:windowSoftInputMode="adjustResize" />
 
+        <!-- MapaPickerActivity: selector de ubicación sobre mapa offline (Feature 009) -->
+        <activity
+            android:name="com.localcash.ui.mapa.MapaPickerActivity"
+            android:exported="false"
+            android:parentActivityName="com.localcash.ui.cuentas.CuentasActivity" />
+
     </application>
 
 </manifest>

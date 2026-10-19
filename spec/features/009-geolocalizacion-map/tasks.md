@@ -52,11 +52,11 @@
       `res/layout/activity_mapa.xml`: `MapView` de osmdroid + controles de zoom (+/−) + atribución
       "© OpenStreetMap contributors" (desde recursos). `ui/mapa/TeselasLocales.java`: `TileSource` propio
       que lee las teselas de `assets/tiles` con `MapTileAssetsProvider` (sin descargador de red). ✅
-- [ ] **T7. Crear `MapaPickerActivity` (selector de ubicación).**
+- [x] **T7. Crear `MapaPickerActivity` (selector de ubicación).**
       `ui/mapa/MapaPickerActivity.java`: abre centrada en Santiago de Chile (lat -33.4489, lon -70.6693),
       coloca un pin al tocar el mapa; "Confirmar" devuelve `setResult(RESULT_OK)` con extras
       `latitud`/`longitud`/`direccion`, "Cancelar" cierra sin resultado. Ciclo de vida del `MapView`
-      gestionado y Activity registrada en el manifiesto.
+      gestionado y Activity registrada en el manifiesto. ✅
 - [ ] **T8. Integrar el selector con el panel.**
       `CuentasActivity`: al activar "Geolocalizar" lanza `MapaPickerActivity` con un `ActivityResultLauncher`,
       recibe las coordenadas en el callback, muestra la confirmación y conserva el estado del panel.
