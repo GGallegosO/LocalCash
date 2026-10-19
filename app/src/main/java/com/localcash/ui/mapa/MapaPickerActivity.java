@@ -1,9 +1,15 @@
 package com.localcash.ui.mapa;
 
+import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
@@ -23,9 +29,10 @@ import org.osmdroid.views.overlay.Marker;
 /**
  * Selector de ubicación sobre un mapa <b>offline</b> (Feature 009, T7).
  * <p>
- * Abre el mapa centrado en Santiago de Chile y permite fijar un pin tocando
- * (o manteniendo pulsado) el lienzo. "Confirmar" devuelve la coordenada elegida
- * a quien la haya lanzado mediante {@link #setResult(int, Intent)}; "Cancelar"
+ * Abre el mapa centrado en la ubicación actual del dispositivo (best-effort, con
+ * fallback a Santiago de Chile si no hay permiso o ningún fix previo) y permite
+ * fijar un pin tocando (o manteniendo pulsado) el lienzo. "Confirmar" devuelve la coordenada
+ * elegida a quien la haya lanzado mediante {@link #setResult(int, Intent)}; "Cancelar"
  * cierra sin resultado.
  * </p>
  * <p>
@@ -43,6 +50,9 @@ import org.osmdroid.views.overlay.Marker;
  * </ul>
  */
 public class MapaPickerActivity extends BaseActivity {
+
+    /** Etiqueta de logs de la pantalla. */
+    private static final String TAG = "MapaPickerActivity";
 
     /** Extra con la latitud elegida (grados WGS84). */
     public static final String EXTRA_LATITUD = "latitud";
@@ -104,8 +114,9 @@ public class MapaPickerActivity extends BaseActivity {
     }
 
     /**
-     * Prepara el mapa: teselas locales, controles táctiles, centrado inicial en
-     * Santiago y el receptor de toques que fija el pin.
+     * Prepara el mapa: teselas locales, controles táctiles, centrado inicial
+     * (ubicación actual best-effort, con fallback a Santiago) y el receptor de
+     * toques que fija el pin.
      */
     private void configurarMapa() {
         TeselasLocales.configurar(this, binding.mapaSeleccion);
@@ -113,7 +124,7 @@ public class MapaPickerActivity extends BaseActivity {
 
         IMapController controller = binding.mapaSeleccion.getController();
         controller.setZoom(ZOOM_INICIAL);
-        controller.setCenter(new GeoPoint(LATITUD_SANTIAGO, LONGITUD_SANTIAGO));
+        centrarInicialmente();
 
         binding.mapaSeleccion.getOverlays().add(new MapEventsOverlay(new MapEventsReceiver() {
             @Override
@@ -128,6 +139,74 @@ public class MapaPickerActivity extends BaseActivity {
                 return true;
             }
         }));
+    }
+
+    /**
+     * Centra el mapa en el punto inicial: intenta la última ubicación conocida
+     * del dispositivo y, si no está disponible, cae a Santiago de Chile.
+     * <p>
+     * Best-effort y no bloqueante: no solicita permisos ni registra listeners, y
+     * nunca impide que el mapa se abra (el pilar offline no depende del GPS).
+     * </p>
+     */
+    private void centrarInicialmente() {
+        GeoPoint inicial = ultimaUbicacionConocida();
+        if (inicial == null) {
+            inicial = new GeoPoint(LATITUD_SANTIAGO, LONGITUD_SANTIAGO);
+        }
+        binding.mapaSeleccion.getController().setCenter(inicial);
+    }
+
+    /**
+     * Devuelve la última ubicación conocida del dispositivo, o {@code null} si no
+     * hay permiso de ubicación o ningún proveedor tiene un fix previo.
+     * <p>
+     * Lectura puntual y síncrona de {@link LocationManager#getLastKnownLocation}:
+     * no registra listeners ni espera un fix nuevo, así que no hay timeout que
+     * gestionar y la apertura del mapa nunca se bloquea.
+     * </p>
+     *
+     * @return la coordenada más reciente entre los proveedores activos, o {@code null}
+     */
+    @Nullable
+    private GeoPoint ultimaUbicacionConocida() {
+        if (!tienePermisoUbicacion()) {
+            return null;
+        }
+        LocationManager gestor =
+                (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        if (gestor == null) {
+            return null;
+        }
+        Location mejor = null;
+        for (String proveedor : gestor.getProviders(true)) {
+            try {
+                Location candidata = gestor.getLastKnownLocation(proveedor);
+                if (candidata != null
+                        && (mejor == null || candidata.getTime() > mejor.getTime())) {
+                    mejor = candidata;
+                }
+            } catch (SecurityException | IllegalArgumentException e) {
+                // Proveedor inaccesible o inexistente: se ignora y se sigue con el resto.
+                Log.w(TAG, "Sin ubicación previa del proveedor " + proveedor, e);
+            }
+        }
+        if (mejor == null) {
+            return null;
+        }
+        return new GeoPoint(mejor.getLatitude(), mejor.getLongitude());
+    }
+
+    /**
+     * Indica si la app tiene concedido algún permiso de ubicación en runtime.
+     *
+     * @return {@code true} si hay permiso fino o aproximado; {@code false} si no
+     */
+    private boolean tienePermisoUbicacion() {
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED
+                || ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
     }
 
     /**

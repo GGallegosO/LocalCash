@@ -57,6 +57,11 @@
       coloca un pin al tocar el mapa; "Confirmar" devuelve `setResult(RESULT_OK)` con extras
       `latitud`/`longitud`/`direccion`, "Cancelar" cierra sin resultado. Ciclo de vida del `MapView`
       gestionado y Activity registrada en el manifiesto. ✅
+- [x] **T7b. Centrar el mapa en la posición actual (best-effort), con fallback a Santiago.**
+      `MapaPickerActivity`: al abrir, lee la última ubicación conocida con `LocationManager`
+      (comprueba permiso en runtime sin solicitar diálogo, sin listeners y sin bloquear) y centra ahí;
+      si no hay permiso o ningún fix previo, cae a Santiago (-33.4489, -70.6693). El mapa funciona con
+      o sin ubicación (CA-6/E-1/E-2). ✅
 - [x] **T8. Integrar el selector con el panel.**
       `CuentasActivity`: al activar "Geolocalizar" lanza `MapaPickerActivity` con un `ActivityResultLauncher`,
       recibe las coordenadas en el callback, muestra la confirmación y conserva el estado del panel. ✅
@@ -64,10 +69,6 @@
       `domain/model/Transaccion` propaga `Ubicacion` (`toEntity`/`fromEntity`); `TransaccionViewModel`
       la construye/valida con `Ubicacion.crear` (incompleta o fuera de rango → `UBICACION_INVALIDA`) y la
       persiste; sin ubicación → columnas `NULL`. Ambas coordenadas o ninguna (CA-3/CA-4/CA-7). ✅
-
-> **Pendiente de ubicar:** centrar el mapa en la **posición actual** (best-effort) con `LocationManager`
-> y gestionar el permiso en runtime (CA-6/E-1/E-2). La reformulación de la Fase 2 abre el mapa centrado
-> en Santiago; falta decidir en qué tarea entra el centrado por GPS.
 
 ## Fase 3 — Pestaña "Mapa" (modo lectura)
 
