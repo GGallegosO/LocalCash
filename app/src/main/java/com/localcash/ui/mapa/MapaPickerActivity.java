@@ -97,9 +97,6 @@ public class MapaPickerActivity extends BaseActivity {
 
         configurarMapa();
 
-        binding.btnZoomIn.setOnClickListener(v -> cambiarZoom(1));
-        binding.btnZoomOut.setOnClickListener(v -> cambiarZoom(-1));
-
         binding.btnCancelarMapa.setOnClickListener(v -> {
             setResult(RESULT_CANCELED);
             finish();
@@ -222,16 +219,6 @@ public class MapaPickerActivity extends BaseActivity {
         ubicacionSeleccionada = punto;
         binding.btnConfirmarMapa.setEnabled(true);
         binding.mapaSeleccion.invalidate();
-    }
-
-    /**
-     * Acerca o aleja un nivel de zoom respetando el rango del {@code MapView}.
-     *
-     * @param delta {@code +1} para acercar, {@code -1} para alejar
-     */
-    private void cambiarZoom(int delta) {
-        double zoomActual = binding.mapaSeleccion.getZoomLevelDouble();
-        binding.mapaSeleccion.getController().setZoom(zoomActual + delta);
     }
 
     /**
