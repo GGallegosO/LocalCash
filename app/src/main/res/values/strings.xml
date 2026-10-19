@@ -151,6 +151,19 @@
     <string name="aCuentas_transaccion_geolocalizacion">Geolocalizar transacción</string>
     <string name="aCuentas_transaccion_guardar">Guardar Movimiento</string>
 
+    <!-- Conceptos sugeridos para el campo Concepto (el usuario puede escribir otro) -->
+    <string-array name="aCuentas_conceptos_predefinidos">
+        <item>Transporte</item>
+        <item>Supermercado</item>
+        <item>Alimentación</item>
+        <item>Casa</item>
+        <item>Entretenimiento</item>
+        <item>Salud</item>
+        <item>Servicios</item>
+        <item>Educación</item>
+        <item>Otros</item>
+    </string-array>
+
     <!-- Validaciones de campos de la Vista 2 - Transacción (T16) -->
     <string name="aCuentas_error_monto_vacio">Ingresa un monto mayor a 0</string>
     <string name="aCuentas_error_concepto_vacio">El concepto es obligatorio</string>

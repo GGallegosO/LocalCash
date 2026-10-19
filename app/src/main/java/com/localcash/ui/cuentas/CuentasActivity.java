@@ -293,6 +293,7 @@ public class CuentasActivity extends BaseActivity
 
         sheetTransaccionBinding = sheetBinding;
         poblarSpinnerCuentas(sheetBinding);
+        configurarConceptosPredefinidos(sheetBinding);
 
         sheetBinding.spinnerCuentas.setOnItemClickListener((parent, view, position, id) -> {
             if (position >= 0 && position < cuentasSpinner.size()) {
@@ -326,6 +327,23 @@ public class CuentasActivity extends BaseActivity
         // La lista cambió: la selección anterior ya no es válida.
         cuentaSeleccionadaId = -1L;
         sheetBinding.spinnerCuentas.setText("", false);
+    }
+
+    /**
+     * Rellena el campo de concepto del BottomSheet con las sugerencias
+     * predefinidas de {@code R.array.aCuentas_conceptos_predefinidos}. El campo
+     * sigue siendo editable: el usuario puede elegir una sugerencia o escribir
+     * un concepto propio. Se muestra la lista completa al enfocar el campo
+     * ({@code threshold(0)}), sin exigir texto previo.
+     *
+     * @param sheetBinding Binding del BottomSheet abierto
+     */
+    private void configurarConceptosPredefinidos(@NonNull BottomSheetTransaccionBinding sheetBinding) {
+        String[] conceptos = getResources().getStringArray(R.array.aCuentas_conceptos_predefinidos);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                this, android.R.layout.simple_dropdown_item_1line, conceptos);
+        sheetBinding.inputConcepto.setAdapter(adapter);
+        sheetBinding.inputConcepto.setThreshold(0);
     }
 
     /**
