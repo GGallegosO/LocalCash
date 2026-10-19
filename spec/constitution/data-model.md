@@ -522,7 +522,7 @@ CREATE INDEX idx_categorias_tipo
 | `latitud` | `REAL` | `NOT NULL` | No | Latitud WGS84 (grados). |
 | `longitud` | `REAL` | `NOT NULL` | No | Longitud WGS84 (grados). |
 | `tipoLugar` | `TEXT` | `NOT NULL` | No | Supermercado, Farmacia, Ferretería u otro definido por el usuario. |
-| `gastoPromedio` | `INTEGER` | `NOT NULL` · pesos CLP | No | Gasto promedio estimado en pesos CLP. Es dinero: nunca `REAL`/`double` (`.agent.md` §6.10). |
+| `gastoPromedio` | `INTEGER` | pesos CLP | Sí | Gasto promedio estimado en pesos CLP; `NULL` = sin gasto estimado. Es dinero: nunca `REAL`/`double` (`.agent.md` §6.10). |
 | `fechaCreacion` | `INTEGER` | `NOT NULL` | No | Momento de creación en epoch millis (UTC). |
 
 - **Índices:** ninguno adicional; la PK sirve las búsquedas por id.
@@ -535,8 +535,9 @@ CREATE INDEX idx_categorias_tipo
 ### 3.11 ITEM_COMPRA (Feature 010 — lista de compras geolocalizada)
 
 - **Propósito:** Ítem de una lista de compras asociada a un `LUGAR_COMPRA`.
-- **Ciclo de vida:** creado/eliminado desde la actividad de detalle; se marca como comprado o
-  pendiente. Desaparece en cascada al eliminar su lugar.
+- **Ciclo de vida:** creado desde el diálogo de creación del lugar o desde la actividad de detalle;
+  se elimina desde el detalle y se marca como comprado o pendiente. Desaparece en cascada al
+  eliminar su lugar.
 
 | Campo | Tipo SQLite | Clave / Restricción | Nullable | Descripción y regla de negocio |
 |---|---|---|---|---|
@@ -757,6 +758,7 @@ UPDATE DEUDAS_PARTICIPANTES
 | 2 | `cuentas.activa` (soft delete) mediante `ALTER TABLE` no destructivo. | Vigente |
 | 3 | `transacciones.latitud`/`longitud`/`direccionLugar` e índice geo parcial (`MIGRATION_2_3`). | Vigente |
 | 4 | Tablas `lugar_compra` e `item_compra` (lista de compras geolocalizada) e índice `idx_item_compra_lugar`; no toca tablas existentes (`MIGRATION_3_4`). | Vigente |
+| 5 | `lugar_compra.gastoPromedio` pasa a nullable (gasto estimado opcional). Recreación no destructiva de `lugar_compra` e `item_compra` con copia previa de datos (`MIGRATION_4_5`). | Vigente |
 
 - **Datos semilla (seed):** las 7 categorías base se insertan en el primer arranque, dentro de la misma transacción que crea el esquema, con `INSERT OR IGNORE` sobre el índice único `(nombre, tipo_transaccion)` para que reejecutar el arranque sea idempotente. Se usa `OR IGNORE` y no `ON CONFLICT DO NOTHING` porque la sintaxis de _upsert_ requiere SQLite 3.24 y el proyecto declara compatibilidad 3.8+ (`minSdk` 28). Las cuentas y los contactos los crea el usuario: no hay datos de prueba en producción. Para desarrollo y test se usa la base en memoria de Room, sembrada desde el mismo script de §A.1.
 
@@ -794,6 +796,7 @@ Asignación de Deudas" depende de `COMPRAS_GRUPALES`, `ITEMS_COMPRA` y `DEUDAS_P
 | 2026-09-28 | Definición inicial del esquema v1: 8 tablas, FK con `CASCADE`/`SET NULL`/`RESTRICT`, `CHECK` de integridad, dinero en pesos CLP `INTEGER` y coordenadas en `REAL`. | Cumplir el pilar de persistencia local offline y fijar el contrato de datos antes de escribir la Fase 1. | `doc/003-modelo-datos.md` |
 | 2026-10-05 | Adaptación de unidad monetaria: de centavos a pesos CLP (Decisión #2 en `spec/features/007-cuentas/plan.md`). Los pesos chilenos no tienen centavos en circulación desde 1984. | Alinear el modelo de datos con el contexto local de Chile y evitar conversiones innecesarias. | `spec/features/007-cuentas/plan.md` |
 | 2026-10-19 | Feature 010: tablas `lugar_compra` e `item_compra` (relación 1:N) para la lista de compras geolocalizada. `gastoPromedio` se almacena como `INTEGER` (pesos CLP), no `REAL`. | Habilitar la creación de lugares de compra con long press y su lista de ítems, manteniendo la regla de dinero entero. | `spec/features/010-lista-compras-geolocalizada/plan.md` |
+| 2026-10-19 | Feature 010 Fase 2.5: `lugar_compra.gastoPromedio` pasa de `INTEGER NOT NULL` a `INTEGER` nullable (`MIGRATION_4_5`), con copia no destructiva de lugares e ítems. | El gasto estimado es opcional; `NULL` representa "sin gasto estimado". | `spec/features/010-lista-compras-geolocalizada/plan.md` |
 
 ---
 
@@ -939,7 +942,7 @@ CREATE TABLE lugar_compra (
     latitud        REAL    NOT NULL,
     longitud       REAL    NOT NULL,
     tipoLugar      TEXT    NOT NULL,
-    gastoPromedio  INTEGER NOT NULL,
+    gastoPromedio  INTEGER,              -- NULL = sin gasto estimado (versión 5)
     fechaCreacion  INTEGER NOT NULL
 );
 

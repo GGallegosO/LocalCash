@@ -39,7 +39,7 @@ import java.util.concurrent.Executors;
  */
 @Database(
         entities = {Cuenta.class, Transaccion.class, LugarCompra.class, ItemCompra.class},
-        version = 4,
+        version = 5,
         exportSchema = true
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -119,7 +119,8 @@ public abstract class AppDatabase extends RoomDatabase {
                             )
                             // fallbackToDestructiveMigration() PROHIBIDO (.agent.md §6.11)
                             .addMigrations(MIGRATION_1_2, MIGRATION_2_3,
-                                    Migracion_3_4.MIGRATION_3_4)
+                                    Migracion_3_4.MIGRATION_3_4,
+                                    Migracion_4_5.MIGRATION_4_5)
                             .addCallback(new SeedDataInitializer())
                             .build();
                 }

@@ -13,10 +13,12 @@ import androidx.room.PrimaryKey;
  * larga y agrupa una lista de {@link ItemCompra} (relación uno-a-muchos).
  * </p>
  * <p>
- * El {@code gastoPromedio} es dinero: se almacena como {@code long} en
+ * El {@code gastoPromedio} es dinero: se almacena como {@link Long} en
  * <b>pesos CLP directos</b> (unidad mínima 1 peso, sin centavos), nunca como
- * {@code double} ({@code .agent.md} §6.10). La validación de negocio
- * (tipo obligatorio, gasto &ge; 0) vive en la capa de dominio, no aquí.
+ * {@code double} ({@code .agent.md} §6.10). Es <b>opcional</b>: {@code null}
+ * representa "sin gasto estimado" y se persiste como {@code NULL}. La
+ * validación de negocio (tipo obligatorio, gasto &ge; 0 cuando exista) vive en
+ * la capa de dominio, no aquí.
  * </p>
  */
 @Entity(tableName = "lugar_compra")
@@ -40,9 +42,12 @@ public class LugarCompra {
     @ColumnInfo(name = "tipoLugar")
     private String tipoLugar;
 
-    /** Gasto promedio estimado, en pesos CLP (unidad mínima: 1 peso). */
+    /**
+     * Gasto promedio estimado, en pesos CLP (unidad mínima: 1 peso), o
+     * {@code null} si el usuario no lo ingresó.
+     */
     @ColumnInfo(name = "gastoPromedio")
-    private long gastoPromedio;
+    private Long gastoPromedio;
 
     /** Momento de creación en epoch millis (timestamp UTC). */
     @ColumnInfo(name = "fechaCreacion")
@@ -55,7 +60,7 @@ public class LugarCompra {
     /** Constructor completo para crear un lugar de compra. */
     @Ignore
     public LugarCompra(double latitud, double longitud, String tipoLugar,
-                       long gastoPromedio, long fechaCreacion) {
+                       Long gastoPromedio, long fechaCreacion) {
         this.latitud = latitud;
         this.longitud = longitud;
         this.tipoLugar = tipoLugar;
@@ -95,11 +100,11 @@ public class LugarCompra {
         this.tipoLugar = tipoLugar;
     }
 
-    public long getGastoPromedio() {
+    public Long getGastoPromedio() {
         return gastoPromedio;
     }
 
-    public void setGastoPromedio(long gastoPromedio) {
+    public void setGastoPromedio(Long gastoPromedio) {
         this.gastoPromedio = gastoPromedio;
     }
 
