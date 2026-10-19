@@ -92,8 +92,10 @@
       "ambas o ninguna", factory `crear()` y `vacia()`, más coherencia `equals`/`hashCode`. ✅
       *(Nombre definitivo `UbicacionTest`; el checklist citaba `UbicacionValidatorTest`, hoy inexistente. Se
       reconcilia la referencia, no se renombra la clase.)*
-- [ ] **T14. Test de persistencia geográfica.**
-      `TransaccionDaoGeoTest`: coordenada válida se guarda; coordenada incompleta se rechaza.
+- [x] **T14. Test de persistencia geográfica.**
+      `TransaccionDaoGeoTest` (Room in-memory): ida y vuelta `toEntity`/`fromEntity` con coordenadas
+      válidas; sin ubicación → columnas `NULL` y fuera de `getConUbicacion()`; coordenada incompleta →
+      excluida de la consulta y rechazada al mapear a dominio. ✅
 - [ ] **T15. Test de migración 2 → 3.**
       `MigracionV2V3Test`: sembrar datos en v2, migrar y comprobar que no se perdió información ni se
       corrompió el índice.
