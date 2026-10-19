@@ -31,9 +31,10 @@
 - [x] **T2. Declarar los permisos de ubicación en `AndroidManifest.xml`.**
       `ACCESS_FINE_LOCATION` y `ACCESS_COARSE_LOCATION` (denegación → best-effort). Manifiesto fusionado
       sin duplicados. ✅
-- [ ] **T3. Añadir las columnas de coordenadas a la entidad Room.**
+- [x] **T3. Añadir las columnas de coordenadas a la entidad Room.**
       `latitud` (`Double`), `longitud` (`Double`) y `direccionLugar` (`String`) nullable en
-      `data/entities/Transaccion.java`, según `data-model.md`.
+      `data/entities/Transaccion.java`, según `data-model.md`. (La versión de la BD y el índice se
+      abordan en T5.) ✅
 - [ ] **T4. Crear el value object `Ubicacion` y la validación de dominio.**
       `domain/model/Ubicacion.java` + validación de rango (lat -90..90, lon -180..180) y de la regla
       "ambas o ninguna" en `TransaccionService`. *Criterio de salida:* invocable y testeable sin Android.
