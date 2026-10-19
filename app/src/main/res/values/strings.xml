@@ -86,7 +86,6 @@
     <!-- Títulos de Toolbar por vista del ViewFlipper -->
     <string name="aCuentas_toolbar_cuentas">Mis Cuentas</string>
     <string name="aCuentas_toolbar_movimientos">Movimientos</string>
-    <string name="aCuentas_toolbar_nuevo">Nuevo Movimiento</string>
     <string name="aCuentas_toolbar_mapa">Mapa</string>
     <string name="aCuentas_toolbar_contactos">Contactos</string>
 
@@ -142,7 +141,8 @@
     <string name="aCuentas_empty_historial">No hay movimientos registrados</string>
     <string name="aCuentas_fab_nueva_transaccion_desc">Agregar nuevo movimiento</string>
 
-    <!-- Strings de la Vista 2 - Transacción (T16) -->
+    <!-- Strings del formulario de transacción (T16 / BottomSheet Feature 008) -->
+    <string name="aCuentas_transaccion_titulo">Nuevo movimiento</string>
     <string name="aCuentas_transaccion_ingreso">Ingreso</string>
     <string name="aCuentas_transaccion_egreso">Egreso</string>
     <string name="aCuentas_transaccion_monto_hint">Monto</string>

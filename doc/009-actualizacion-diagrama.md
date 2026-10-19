@@ -1,4 +1,4 @@
-# doc/008-actualizacion-diagrama.md — Sincronización visual del ERD tras cambio semántico CLP
+# doc/009-actualizacion-diagrama.md — Sincronización visual del ERD tras cambio semántico CLP
 
 ## Ficha de la tarea
 
@@ -30,10 +30,11 @@ estructurales. El único cambio previo era semántico: unidad monetaria de centa
   `AGENTS.md` "Reglas del esquema de datos" (ya dice pesos CLP + excepción documentada en
   `doc/007-cuentas.md` y `spec/features/007-cuentas/plan.md`). No se tocó la regla
   "el Mermaid es la fuente de verdad".
-- **Creado:** este archivo `doc/008-actualizacion-diagrama.md`.
+- **Creado:** este archivo `doc/009-actualizacion-diagrama.md`.
 
-Nota de numeración: se usa `008` porque `007` está reservado a la Feature 007
-(`spec/features/007-cuentas/`, en desarrollo).
+Nota de numeración: este registro se creó originalmente como `008` porque `007` era la feature
+activa por entonces. Al abrirse la Feature 008 (`spec/features/008-historial/`) se **reasignó a
+`009`** para respetar la numeración compartida `spec/features/NNN` ↔ `doc/NNN` (`.agent.md`).
 
 ## Decisiones tomadas
 
