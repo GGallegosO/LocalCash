@@ -35,7 +35,7 @@ import java.util.concurrent.Executors;
  */
 @Database(
         entities = {Cuenta.class, Transaccion.class},
-        version = 2,
+        version = 3,
         exportSchema = true
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -53,6 +53,37 @@ public abstract class AppDatabase extends RoomDatabase {
         public void migrate(@NonNull SupportSQLiteDatabase database) {
             database.execSQL(
                     "ALTER TABLE cuentas ADD COLUMN activa INTEGER NOT NULL DEFAULT 1");
+        }
+    };
+
+    /**
+     * Migración real del esquema 2 → 3: agrega las columnas de geolocalización
+     * ({@code latitud}, {@code longitud}, {@code direccionLugar}) a la tabla
+     * {@code transacciones} y su índice de caja envolvente (bbox).
+     * <p>
+     * Se usa {@code ALTER TABLE} (no destructiva): los movimientos existentes
+     * conservan sus datos y quedan con las columnas geográficas en {@code NULL}
+     * (sin ubicación). El índice se crea con la forma <b>parcial</b> del DDL
+     * canónico ({@code data-model.md} Apéndice A); Room no puede declararlo
+     * parcial en la entidad, pero su validación ignora la cláusula {@code WHERE}.
+     * </p>
+     * <p>
+     * La regla "ambas o ninguna" y el rango de coordenadas no se pueden expresar
+     * como {@code CHECK} al añadir columnas con {@code ALTER TABLE}; los hace
+     * cumplir el dominio ({@code Ubicacion}) y, en su momento, el DAO.
+     * {@code fallbackToDestructiveMigration()} está prohibido ({@code .agent.md} §6.11).
+     * </p>
+     */
+    public static final Migration MIGRATION_2_3 = new Migration(2, 3) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE transacciones ADD COLUMN latitud REAL");
+            database.execSQL("ALTER TABLE transacciones ADD COLUMN longitud REAL");
+            database.execSQL("ALTER TABLE transacciones ADD COLUMN direccionLugar TEXT");
+            database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS idx_transacciones_geo "
+                            + "ON transacciones (latitud, longitud) "
+                            + "WHERE latitud IS NOT NULL AND longitud IS NOT NULL");
         }
     };
 
@@ -83,7 +114,7 @@ public abstract class AppDatabase extends RoomDatabase {
                                     DATABASE_NAME
                             )
                             // fallbackToDestructiveMigration() PROHIBIDO (.agent.md §6.11)
-                            .addMigrations(MIGRATION_1_2)
+                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                             .addCallback(new SeedDataInitializer())
                             .build();
                 }

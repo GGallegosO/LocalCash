@@ -1,11 +1,15 @@
 package com.localcash.ui.cuentas;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
@@ -28,13 +32,19 @@ import com.localcash.databinding.ActivityCuentasBinding;
 import com.localcash.databinding.BottomSheetTransaccionBinding;
 import com.localcash.databinding.ViewCuentasBinding;
 import com.localcash.databinding.ViewHistorialBinding;
+import com.localcash.databinding.ViewMapaBinding;
 import com.localcash.domain.error.ErrorCode;
 import com.localcash.domain.model.TipoCuenta;
 import com.localcash.domain.model.TipoTransaccion;
 import com.localcash.domain.model.Transaccion;
 import com.localcash.ui.BaseActivity;
+import com.localcash.ui.mapa.MapaLecturaController;
+import com.localcash.ui.mapa.MapaPickerActivity;
+import com.localcash.ui.mapa.MapaViewModel;
 import com.localcash.ui.theme.ThemeManager;
 import com.localcash.ui.util.CurrencyFormatter;
+
+import org.osmdroid.config.Configuration;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,6 +65,9 @@ public class CuentasActivity extends BaseActivity
     /** Etiqueta de logs de la Activity. */
     private static final String TAG = "CuentasActivity";
 
+    /** Archivo de preferencias donde osmdroid guarda su configuración. */
+    private static final String PREFS_OSMDROID = "osmdroid";
+
     private ActivityCuentasBinding binding;
 
     /** Binding de la Vista 1 (se infla dentro del ViewFlipper, fuera de activity_cuentas.xml). */
@@ -62,6 +75,12 @@ public class CuentasActivity extends BaseActivity
 
     /** Binding de la Vista 1 (Historial/Movimientos), inflado dentro del ViewFlipper. */
     private ViewHistorialBinding vistaHistorial;
+
+    /** Binding de la Vista 2 (Mapa), inflado dentro del ViewFlipper. */
+    private ViewMapaBinding vistaMapa;
+
+    /** Controlador del mapa de lectura (Vista 2); {@code null} hasta configurarla. */
+    private MapaLecturaController mapaController;
 
     /** Binding del BottomSheet de transacción, mientras está abierto ({@code null} si cerrado). */
     private BottomSheetTransaccionBinding sheetTransaccionBinding;
@@ -78,15 +97,36 @@ public class CuentasActivity extends BaseActivity
     /** ViewModel del historial (Movimientos): observa Room y expone el dominio. */
     private HistorialViewModel historialViewModel;
 
+    /** ViewModel del mapa (Vista 2): observa los movimientos geolocalizados. */
+    private MapaViewModel mapaViewModel;
+
     /** Cuentas activas asociadas, en el mismo orden que el adapter del spinner. */
     private final List<Cuenta> cuentasSpinner = new ArrayList<>();
 
     /** Id de la cuenta seleccionada en el spinner ({@code -1} si no hay selección). */
     private long cuentaSeleccionadaId = -1L;
 
+    /**
+     * Coordenada elegida en el mapa ({@code null} = sin ubicación). Se conserva
+     * en memoria durante el registro; su persistencia se aborda en T9. Rige la
+     * regla "ambas o ninguna": si una es {@code null}, la otra también.
+     */
+    private Double latitudSeleccionada;
+    private Double longitudSeleccionada;
+
+    /** Lanzador al selector de ubicación ({@link MapaPickerActivity}). */
+    private ActivityResultLauncher<Intent> launcherUbicacion;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // osmdroid: cargar configuración (rutas de caché, user-agent) ANTES de
+        // inflar cualquier MapView (la Vista 2 lo hace más abajo, dentro del
+        // ViewFlipper). Sin red: solo define dónde cachear y el user-agent.
+        SharedPreferences prefs = getSharedPreferences(PREFS_OSMDROID, MODE_PRIVATE);
+        Configuration.getInstance().load(getApplicationContext(), prefs);
+        Configuration.getInstance().setUserAgentValue(getPackageName());
 
         binding = ActivityCuentasBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -133,7 +173,7 @@ public class CuentasActivity extends BaseActivity
         vistaHistorial = ViewHistorialBinding.inflate(
                 getLayoutInflater(), binding.viewFlipper, true);
         // Vista 2: Mapa
-        getLayoutInflater().inflate(R.layout.view_mapa, binding.viewFlipper);
+        vistaMapa = ViewMapaBinding.inflate(getLayoutInflater(), binding.viewFlipper, true);
         // Vista 3: Contactos
         getLayoutInflater().inflate(R.layout.view_contactos, binding.viewFlipper);
 
@@ -177,8 +217,14 @@ public class CuentasActivity extends BaseActivity
         // Conectar la Vista 2 (Historial/Movimientos) con Room (ViewModel + Adapter)
         configurarVistaHistorial();
 
+        // Configurar el mapa de lectura (Vista 2 del ViewFlipper): teselas locales y zoom
+        configurarVistaMapa();
+
         // Preparar el ViewModel de transacciones (alimenta el BottomSheet del FAB)
         configurarTransaccionViewModel();
+
+        // Lanzador al selector de ubicación (debe registrarse antes de STARTED)
+        registrarLauncherUbicacion();
     }
 
     @Override
@@ -186,6 +232,32 @@ public class CuentasActivity extends BaseActivity
         super.onSaveInstanceState(outState);
         // Guardar el índice actual del ViewFlipper para preservar la vista seleccionada
         outState.putInt("viewFlipperIndex", binding.viewFlipper.getDisplayedChild());
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // El MapView de la Vista 2 debe seguir el ciclo de vida de la Activity.
+        if (vistaMapa != null) {
+            vistaMapa.mapaLectura.onResume();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        if (vistaMapa != null) {
+            vistaMapa.mapaLectura.onPause();
+        }
+        super.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        // Libera el tile provider y sus hilos (evita fugas del MapView).
+        if (vistaMapa != null) {
+            vistaMapa.mapaLectura.onDetach();
+        }
+        super.onDestroy();
     }
 
     /**
@@ -258,6 +330,40 @@ public class CuentasActivity extends BaseActivity
     }
 
     /**
+     * Configura la Vista 2 (Mapa) en modo lectura: monta el
+     * {@link MapaLecturaController} sobre su {@code MapView} (teselas locales
+     * offline y encuadre inicial) y enlaza los botones de zoom.
+     * <p>
+     * El ciclo de vida del {@code MapView} lo delega la Activity
+     * ({@code onResume}/{@code onPause}/{@code onDetach}).
+     * </p>
+     */
+    private void configurarVistaMapa() {
+        mapaController = new MapaLecturaController(vistaMapa.mapaLectura);
+        vistaMapa.btnZoomIn.setOnClickListener(v -> mapaController.cambiarZoom(1));
+        vistaMapa.btnZoomOut.setOnClickListener(v -> mapaController.cambiarZoom(-1));
+
+        // El ViewModel recibe el DAO por constructor: necesita una
+        // ViewModelProvider.Factory, igual que HistorialViewModel.
+        mapaViewModel = new ViewModelProvider(this, new ViewModelProvider.Factory() {
+            @NonNull
+            @Override
+            @SuppressWarnings("unchecked")
+            public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
+                return (T) new MapaViewModel(
+                        AppDatabase.getInstance(getApplicationContext()).transaccionDao());
+            }
+        }).get(MapaViewModel.class);
+
+        // Un pin por movimiento geolocalizado. Sin movimientos no se superpone
+        // ningún mensaje: el mapa queda limpio para que el usuario lo explore.
+        mapaViewModel.getTransaccionesConUbicacion().observe(this, transacciones -> {
+            List<Transaccion> lista = transacciones != null ? transacciones : new ArrayList<>();
+            mapaController.mostrarMovimientos(lista);
+        });
+    }
+
+    /**
      * Prepara el {@link TransaccionViewModel} que alimenta el BottomSheet de
      * registro de movimientos: observa las cuentas activas y mantiene la lista
      * {@link #cuentasSpinner} sincronizada. Si el BottomSheet está abierto,
@@ -294,6 +400,18 @@ public class CuentasActivity extends BaseActivity
         sheetTransaccionBinding = sheetBinding;
         poblarSpinnerCuentas(sheetBinding);
         configurarConceptosPredefinidos(sheetBinding);
+
+        // Ubicación: el panel arranca sin coordenada y el interruptor abre el mapa.
+        latitudSeleccionada = null;
+        longitudSeleccionada = null;
+        sheetBinding.tvUbicacionFijada.setVisibility(View.GONE);
+        sheetBinding.switchGeolocalizacion.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                launcherUbicacion.launch(new Intent(this, MapaPickerActivity.class));
+            } else {
+                limpiarUbicacion(sheetBinding);
+            }
+        });
 
         sheetBinding.spinnerCuentas.setOnItemClickListener((parent, view, position, id) -> {
             if (position >= 0 && position < cuentasSpinner.size()) {
@@ -402,7 +520,8 @@ public class CuentasActivity extends BaseActivity
 
         final long montoFinal = monto;
         LiveData<ErrorCode> resultado = transaccionViewModel.registrarTransaccion(
-                cuentaSeleccionadaId, tipo, montoFinal, concepto);
+                cuentaSeleccionadaId, tipo, montoFinal, concepto,
+                latitudSeleccionada, longitudSeleccionada, null);
 
         resultado.observe(this, new Observer<ErrorCode>() {
             @Override
@@ -446,6 +565,9 @@ public class CuentasActivity extends BaseActivity
             case MONTO_INVALIDO:
                 mensaje = R.string.aCuentas_toast_error_monto_invalido;
                 break;
+            case UBICACION_INVALIDA:
+                mensaje = R.string.aCuentas_toast_error_ubicacion_invalida;
+                break;
             default:
                 mensaje = R.string.aCuentas_toast_movimiento_error;
                 break;
@@ -467,6 +589,62 @@ public class CuentasActivity extends BaseActivity
         sheetBinding.inputLayoutCuenta.setError(null);
         sheetBinding.spinnerCuentas.setText("", false);
         cuentaSeleccionadaId = -1L;
+        // Al desactivar el interruptor, su listener limpia la ubicación elegida.
+        sheetBinding.switchGeolocalizacion.setChecked(false);
+    }
+
+    /**
+     * Registra el lanzador al selector de ubicación ({@link MapaPickerActivity}).
+     * Debe registrarse antes de que la Activity llegue a {@code STARTED}.
+     * <p>
+     * Si el selector devuelve una coordenada, se guarda y se muestra la
+     * confirmación en el panel. Si el usuario cancela, se revierte el interruptor
+     * (su listener limpia el estado) sin reabrir el mapa.
+     * </p>
+     */
+    private void registrarLauncherUbicacion() {
+        launcherUbicacion = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    Intent datos = result.getData();
+                    if (result.getResultCode() == RESULT_OK && datos != null
+                            && datos.hasExtra(MapaPickerActivity.EXTRA_LATITUD)
+                            && datos.hasExtra(MapaPickerActivity.EXTRA_LONGITUD)) {
+                        establecerUbicacion(
+                                datos.getDoubleExtra(MapaPickerActivity.EXTRA_LATITUD, 0d),
+                                datos.getDoubleExtra(MapaPickerActivity.EXTRA_LONGITUD, 0d));
+                    } else if (sheetTransaccionBinding != null) {
+                        sheetTransaccionBinding.switchGeolocalizacion.setChecked(false);
+                    }
+                });
+    }
+
+    /**
+     * Guarda la coordenada elegida en el mapa y la muestra como confirmación.
+     *
+     * @param latitud  latitud WGS84 elegida
+     * @param longitud longitud WGS84 elegida
+     */
+    private void establecerUbicacion(double latitud, double longitud) {
+        latitudSeleccionada = latitud;
+        longitudSeleccionada = longitud;
+        if (sheetTransaccionBinding != null) {
+            sheetTransaccionBinding.tvUbicacionFijada.setText(
+                    getString(R.string.aCuentas_transaccion_ubicacion_fijada, latitud, longitud));
+            sheetTransaccionBinding.tvUbicacionFijada.setVisibility(View.VISIBLE);
+        }
+    }
+
+    /**
+     * Descarta la ubicación elegida y oculta su confirmación.
+     *
+     * @param sheetBinding Binding del BottomSheet abierto
+     */
+    private void limpiarUbicacion(@NonNull BottomSheetTransaccionBinding sheetBinding) {
+        latitudSeleccionada = null;
+        longitudSeleccionada = null;
+        sheetBinding.tvUbicacionFijada.setText(null);
+        sheetBinding.tvUbicacionFijada.setVisibility(View.GONE);
     }
 
     /**

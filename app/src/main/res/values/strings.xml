@@ -99,7 +99,6 @@
     <string name="aCuentas_nueva_cuenta">Nueva cuenta</string>
     <string name="aCuentas_guardar">Guardar</string>
     <string name="aCuentas_sin_datos">No hay datos aún</string>
-    <string name="aCuentas_titulo_mapa">Mapa</string>
     <string name="aCuentas_titulo_contactos">Contactos</string>
 
     <!-- Tipos de cuenta (para placeholders futuros o adapters) -->
@@ -150,6 +149,7 @@
     <string name="aCuentas_transaccion_concepto_hint">Concepto</string>
     <string name="aCuentas_transaccion_geolocalizacion">Geolocalizar transacción</string>
     <string name="aCuentas_transaccion_guardar">Guardar Movimiento</string>
+    <string name="aCuentas_transaccion_ubicacion_fijada">Ubicación fijada: %1$.5f, %2$.5f</string>
 
     <!-- Conceptos sugeridos para el campo Concepto (el usuario puede escribir otro) -->
     <string-array name="aCuentas_conceptos_predefinidos">
@@ -175,4 +175,13 @@
     <string name="aCuentas_toast_error_saldo_insuficiente">Saldo insuficiente para realizar el egreso</string>
     <string name="aCuentas_toast_error_cuenta_no_encontrada">La cuenta seleccionada no existe</string>
     <string name="aCuentas_toast_error_monto_invalido">Ingresa un monto mayor a 0</string>
+    <string name="aCuentas_toast_error_ubicacion_invalida">La ubicación seleccionada no es válida</string>
+
+    <!-- Strings del selector de ubicación en el mapa (Feature 009, prefijo mapa_) -->
+    <string name="mapa_titulo">Fijar ubicación</string>
+    <string name="mapa_btn_confirmar">Confirmar ubicación</string>
+    <string name="mapa_btn_cancelar">Cancelar</string>
+    <string name="mapa_zoom_in">Acercar</string>
+    <string name="mapa_zoom_out">Alejar</string>
+    <string name="mapa_atribucion_osm">© OpenStreetMap contributors</string>
 </resources>

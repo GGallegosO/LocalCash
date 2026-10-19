@@ -116,6 +116,18 @@
             android:layout_marginTop="16dp"
             android:text="@string/aCuentas_transaccion_geolocalizacion" />
 
+        <!-- Confirmación de la ubicación fijada en el mapa (Feature 009, T8).
+             Oculta hasta que el usuario elige un punto. -->
+        <TextView
+            android:id="@+id/tvUbicacionFijada"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:visibility="gone"
+            tools:text="Ubicación fijada: -33.44890, -70.66930"
+            tools:visibility="visible" />
+
         <!-- Guardar movimiento -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnGuardarMovimiento"

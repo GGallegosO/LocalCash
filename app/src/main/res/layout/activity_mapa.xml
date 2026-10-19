@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Layout del selector de ubicación (Feature 009, T6).
+
+  Contiene el MapView de osmdroid, los controles de zoom, la atribución
+  obligatoria de OpenStreetMap y las acciones confirmar/cancelar. La Activity
+  (MapaPickerActivity) es quien conecta el MapView al TileSource local y
+  enlaza los botones.
+
+  Reglas de estilo del proyecto: cero colores y cero textos hardcodeados
+  (solo ?attr/... y @string/...).
+-->
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.localcash.ui.mapa.MapaPickerActivity">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbarMapa"
+        android:layout_width="0dp"
+        android:layout_height="?attr/actionBarSize"
+        android:background="?attr/colorSurface"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:title="@string/mapa_titulo"
+        app:titleTextColor="?attr/colorOnSurface" />
+
+    <!--
+      MapView de osmdroid. Su TileSource se fija por código (TeselasLocales):
+      teselas preempaquetadas en assets/, sin red.
+    -->
+    <org.osmdroid.views.MapView
+        android:id="@+id/mapaSeleccion"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@id/barraAccionesMapa"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/toolbarMapa" />
+
+    <!-- Controles de zoom flotantes sobre el mapa (esquina superior derecha) -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardZoom"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="12dp"
+        app:cardBackgroundColor="?attr/colorSurface"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp"
+        app:layout_constraintEnd_toEndOf="@id/mapaSeleccion"
+        app:layout_constraintTop_toTopOf="@id/mapaSeleccion">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnZoomIn"
+                style="@style/Widget.Material3.Button.IconButton.Filled"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/mapa_zoom_in"
+                app:icon="@drawable/ic_zoom_in"
+                app:iconTint="?attr/colorOnPrimary" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnZoomOut"
+                style="@style/Widget.Material3.Button.IconButton.Filled"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/mapa_zoom_out"
+                app:icon="@drawable/ic_zoom_out"
+                app:iconTint="?attr/colorOnPrimary" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Atribución obligatoria de OpenStreetMap (esquina inferior izquierda) -->
+    <TextView
+        android:id="@+id/tvAtribucionOsm"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginBottom="8dp"
+        android:background="?attr/colorSurface"
+        android:paddingStart="6dp"
+        android:paddingTop="2dp"
+        android:paddingEnd="6dp"
+        android:paddingBottom="2dp"
+        android:text="@string/mapa_atribucion_osm"
+        android:textColor="?attr/colorOnSurface"
+        android:textSize="12sp"
+        app:layout_constraintBottom_toBottomOf="@id/mapaSeleccion"
+        app:layout_constraintStart_toStartOf="@id/mapaSeleccion" />
+
+    <!-- Acciones del selector -->
+    <LinearLayout
+        android:id="@+id/barraAccionesMapa"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCancelarMapa"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:text="@string/mapa_btn_cancelar" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnConfirmarMapa"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:text="@string/mapa_btn_confirmar" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

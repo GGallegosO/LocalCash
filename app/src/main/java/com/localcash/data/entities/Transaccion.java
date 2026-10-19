@@ -29,7 +29,15 @@ import androidx.room.PrimaryKey;
                 childColumns = "cuentaId",
                 onDelete = ForeignKey.CASCADE
         ),
-        indices = {@Index("cuentaId")}
+        indices = {
+                @Index("cuentaId"),
+                // Índice de geolocalización (bbox). data-model.md lo declara PARCIAL
+                // (WHERE latitud IS NOT NULL AND longitud IS NOT NULL); Room no puede
+                // expresar índices parciales en @Index, así que se declara sobre las
+                // dos columnas y la migración crea la forma parcial. La validación de
+                // Room ignora la cláusula WHERE, por lo que ambas formas son válidas.
+                @Index(name = "idx_transacciones_geo", value = {"latitud", "longitud"})
+        }
 )
 public class Transaccion {
 
@@ -55,6 +63,23 @@ public class Transaccion {
     /** Momento del movimiento en epoch millis (timestamp UTC). */
     private long fecha;
 
+    /**
+     * Latitud WGS84 del lugar, o {@code null} si el movimiento no está geolocalizado.
+     * <p>
+     * Se usa {@link Double} (nullable) y no {@code double}: no tener ubicación es un estado
+     * válido ({@code NULL} en la columna). Rige la regla "ambas o ninguna": {@code latitud} y
+     * {@code longitud} son {@code null} a la vez, o tienen valor a la vez
+     * ({@code data-model.md}).
+     * </p>
+     */
+    private Double latitud;
+
+    /** Longitud WGS84; {@code null} junto con {@link #latitud} (ambas o ninguna). */
+    private Double longitud;
+
+    /** Dirección legible del lugar (descriptiva, opcional); {@code null} si no se resolvió. */
+    private String direccionLugar;
+
     /** Constructor vacío requerido por Room. */
     public Transaccion() {
     }
@@ -67,6 +92,22 @@ public class Transaccion {
         this.monto = monto;
         this.concepto = concepto;
         this.fecha = fecha;
+    }
+
+    /**
+     * Constructor completo con geolocalización opcional.
+     * <p>
+     * {@code latitud} y {@code longitud} deben venir ambos con valor o ambos {@code null}
+     * (regla "ambas o ninguna"); la validación definitiva vive en el dominio.
+     * </p>
+     */
+    @Ignore
+    public Transaccion(long cuentaId, String tipo, long monto, String concepto, long fecha,
+                       Double latitud, Double longitud, String direccionLugar) {
+        this(cuentaId, tipo, monto, concepto, fecha);
+        this.latitud = latitud;
+        this.longitud = longitud;
+        this.direccionLugar = direccionLugar;
     }
 
     public long getId() {
@@ -115,5 +156,29 @@ public class Transaccion {
 
     public void setFecha(long fecha) {
         this.fecha = fecha;
+    }
+
+    public Double getLatitud() {
+        return latitud;
+    }
+
+    public void setLatitud(Double latitud) {
+        this.latitud = latitud;
+    }
+
+    public Double getLongitud() {
+        return longitud;
+    }
+
+    public void setLongitud(Double longitud) {
+        this.longitud = longitud;
+    }
+
+    public String getDireccionLugar() {
+        return direccionLugar;
+    }
+
+    public void setDireccionLugar(String direccionLugar) {
+        this.direccionLugar = direccionLugar;
     }
 }

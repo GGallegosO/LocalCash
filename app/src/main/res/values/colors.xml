@@ -42,6 +42,11 @@
     <color name="error">#FF5252</color>
     <color name="success">#00E676</color>
 
+    <!-- Contrato de color de pines del mapa (plan §2 Decisión 4).
+         Los pines de movimientos usan este color; la lista de compras (010)
+         usará otro, sin redefinir este. -->
+    <color name="mapa_pin_movimiento">#1E88E5</color>
+
     <!-- Legacy colors -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
