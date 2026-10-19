@@ -42,7 +42,13 @@ public class Transaccion {
     private final long fecha;
 
     /**
-     * Crea una instancia de movimiento.
+     * Ubicación del movimiento ({@code null} si no está geolocalizado).
+     * La regla "ambas o ninguna" y el rango los garantiza {@link Ubicacion}.
+     */
+    private final Ubicacion ubicacion;
+
+    /**
+     * Crea un movimiento sin geolocalización (equivale a {@code ubicacion = null}).
      *
      * @param id       Id persistido o 0 si aún no se ha guardado
      * @param cuentaId Id de la cuenta afectada
@@ -53,12 +59,29 @@ public class Transaccion {
      */
     public Transaccion(long id, long cuentaId, TipoTransaccion tipo,
                        BigDecimal monto, String concepto, long fecha) {
+        this(id, cuentaId, tipo, monto, concepto, fecha, Ubicacion.vacia());
+    }
+
+    /**
+     * Crea una instancia de movimiento, opcionalmente geolocalizado.
+     *
+     * @param id        Id persistido o 0 si aún no se ha guardado
+     * @param cuentaId  Id de la cuenta afectada
+     * @param tipo      INGRESO / EGRESO
+     * @param monto     Importe positivo en pesos CLP (BigDecimal)
+     * @param concepto  Concepto libre
+     * @param fecha     Epoch millis (UTC)
+     * @param ubicacion Ubicación WGS84 ya validada, o {@code null} si no está geolocalizado
+     */
+    public Transaccion(long id, long cuentaId, TipoTransaccion tipo,
+                       BigDecimal monto, String concepto, long fecha, Ubicacion ubicacion) {
         this.id = id;
         this.cuentaId = cuentaId;
         this.tipo = tipo;
         this.monto = monto;
         this.concepto = concepto;
         this.fecha = fecha;
+        this.ubicacion = ubicacion;
     }
 
     public long getId() {
@@ -86,6 +109,15 @@ public class Transaccion {
     }
 
     /**
+     * Ubicación del movimiento, o {@code null} si no está geolocalizado.
+     *
+     * @return la {@link Ubicacion} WGS84, o {@code null}
+     */
+    public Ubicacion getUbicacion() {
+        return ubicacion;
+    }
+
+    /**
      * Convierte este modelo de dominio a la entidad Room para persistencia.
      * <p>
      * Único punto de paso {@code BigDecimal → long}: pesos CLP directos (factor 1).
@@ -96,12 +128,18 @@ public class Transaccion {
      * @return Entidad Room equivalente
      */
     public com.localcash.data.entities.Transaccion toEntity() {
+        Double latitud = ubicacion != null ? ubicacion.getLatitud() : null;
+        Double longitud = ubicacion != null ? ubicacion.getLongitud() : null;
+        String direccionLugar = ubicacion != null ? ubicacion.getDireccionLugar() : null;
         return new com.localcash.data.entities.Transaccion(
                 cuentaId,
                 tipo.name(),
                 monto.longValueExact(),
                 concepto,
-                fecha
+                fecha,
+                latitud,
+                longitud,
+                direccionLugar
         );
     }
 
@@ -121,7 +159,9 @@ public class Transaccion {
                 TipoTransaccion.valueOf(entity.getTipo()),
                 BigDecimal.valueOf(entity.getMonto()),
                 entity.getConcepto(),
-                entity.getFecha()
+                entity.getFecha(),
+                Ubicacion.crear(entity.getLatitud(), entity.getLongitud(),
+                        entity.getDireccionLugar())
         );
     }
 
@@ -133,6 +173,7 @@ public class Transaccion {
                 + ", monto=" + monto
                 + ", concepto='" + concepto + '\''
                 + ", fecha=" + fecha
+                + ", ubicacion=" + ubicacion
                 + '}';
     }
 }

@@ -176,6 +176,7 @@
     <string name="aCuentas_toast_error_saldo_insuficiente">Saldo insuficiente para realizar el egreso</string>
     <string name="aCuentas_toast_error_cuenta_no_encontrada">La cuenta seleccionada no existe</string>
     <string name="aCuentas_toast_error_monto_invalido">Ingresa un monto mayor a 0</string>
+    <string name="aCuentas_toast_error_ubicacion_invalida">La ubicación seleccionada no es válida</string>
 
     <!-- Strings del selector de ubicación en el mapa (Feature 009, prefijo mapa_) -->
     <string name="mapa_titulo">Fijar ubicación</string>

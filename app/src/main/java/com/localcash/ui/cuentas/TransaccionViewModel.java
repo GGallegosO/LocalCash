@@ -13,6 +13,7 @@ import com.localcash.data.entities.Cuenta;
 import com.localcash.domain.error.BusinessRuleException;
 import com.localcash.domain.error.ErrorCode;
 import com.localcash.domain.model.TipoTransaccion;
+import com.localcash.domain.model.Ubicacion;
 import com.localcash.domain.service.TransaccionService;
 
 import java.math.BigDecimal;
@@ -93,10 +94,15 @@ public class TransaccionViewModel extends AndroidViewModel {
      *                 como {@code name()} del enum {@link TipoTransaccion})
      * @param monto    importe en pesos CLP (positivo; sin centavos)
      * @param concepto concepto libre del movimiento
+     * @param latitud  latitud WGS84 elegida, o {@code null} (sin ubicación)
+     * @param longitud longitud WGS84 elegida, o {@code null} (sin ubicación)
+     * @param direccion dirección legible opcional (hoy {@code null}: sin geocodificación inversa)
      * @return LiveData con {@code null} si se registró, o el {@link ErrorCode} del fallo
      */
     public LiveData<ErrorCode> registrarTransaccion(long cuentaId, String tipo,
-                                                    long monto, String concepto) {
+                                                    long monto, String concepto,
+                                                    Double latitud, Double longitud,
+                                                    String direccion) {
         MutableLiveData<ErrorCode> resultado = new MutableLiveData<>();
         AppDatabase db = AppDatabase.getInstance(getApplication());
 
@@ -120,6 +126,18 @@ public class TransaccionViewModel extends AndroidViewModel {
             com.localcash.domain.model.Cuenta cuentaDominio =
                     com.localcash.domain.model.Cuenta.fromEntity(entidad);
 
+            // Valida la ubicación con el value object (fuente única de la regla
+            // "ambas o ninguna" y del rango); null = sin geolocalización.
+            Ubicacion ubicacion;
+            try {
+                ubicacion = Ubicacion.crear(latitud, longitud, direccion);
+            } catch (IllegalArgumentException e) {
+                Log.w(TAG, "Ubicación inválida al registrar movimiento: lat=" + latitud
+                        + ", lon=" + longitud, e);
+                resultado.postValue(ErrorCode.UBICACION_INVALIDA);
+                return;
+            }
+
             com.localcash.domain.model.Transaccion transaccionDominio =
                     new com.localcash.domain.model.Transaccion(
                             0L,
@@ -127,7 +145,8 @@ public class TransaccionViewModel extends AndroidViewModel {
                             tipoMovimiento,
                             BigDecimal.valueOf(monto),
                             concepto,
-                            System.currentTimeMillis());
+                            System.currentTimeMillis(),
+                            ubicacion);
 
             try {
                 TransaccionService.validarTransaccion(transaccionDominio, cuentaDominio);

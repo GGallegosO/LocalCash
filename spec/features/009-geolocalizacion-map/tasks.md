@@ -60,8 +60,10 @@
 - [x] **T8. Integrar el selector con el panel.**
       `CuentasActivity`: al activar "Geolocalizar" lanza `MapaPickerActivity` con un `ActivityResultLauncher`,
       recibe las coordenadas en el callback, muestra la confirmación y conserva el estado del panel. ✅
-- [ ] **T9. Persistir las coordenadas al registrar el movimiento.**
-      `TransaccionViewModel` propaga `Ubicacion`; ambas coordenadas o ninguna (CA-3/CA-4/CA-7).
+- [x] **T9. Persistir las coordenadas al registrar el movimiento.**
+      `domain/model/Transaccion` propaga `Ubicacion` (`toEntity`/`fromEntity`); `TransaccionViewModel`
+      la construye/valida con `Ubicacion.crear` (incompleta o fuera de rango → `UBICACION_INVALIDA`) y la
+      persiste; sin ubicación → columnas `NULL`. Ambas coordenadas o ninguna (CA-3/CA-4/CA-7). ✅
 
 > **Pendiente de ubicar:** centrar el mapa en la **posición actual** (best-effort) con `LocationManager`
 > y gestionar el permiso en runtime (CA-6/E-1/E-2). La reformulación de la Fase 2 abre el mapa centrado

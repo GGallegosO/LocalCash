@@ -24,5 +24,8 @@ public enum ErrorCode {
     SALDO_INSUFICIENTE,
 
     /** La cuenta referenciada por el movimiento no existe en la base de datos. */
-    CUENTA_NO_ENCONTRADA
+    CUENTA_NO_ENCONTRADA,
+
+    /** Las coordenadas del movimiento no cumplen "ambas o ninguna" o están fuera de rango. */
+    UBICACION_INVALIDA
 }

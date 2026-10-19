@@ -432,7 +432,8 @@ public class CuentasActivity extends BaseActivity
 
         final long montoFinal = monto;
         LiveData<ErrorCode> resultado = transaccionViewModel.registrarTransaccion(
-                cuentaSeleccionadaId, tipo, montoFinal, concepto);
+                cuentaSeleccionadaId, tipo, montoFinal, concepto,
+                latitudSeleccionada, longitudSeleccionada, null);
 
         resultado.observe(this, new Observer<ErrorCode>() {
             @Override
@@ -475,6 +476,9 @@ public class CuentasActivity extends BaseActivity
                 break;
             case MONTO_INVALIDO:
                 mensaje = R.string.aCuentas_toast_error_monto_invalido;
+                break;
+            case UBICACION_INVALIDA:
+                mensaje = R.string.aCuentas_toast_error_ubicacion_invalida;
                 break;
             default:
                 mensaje = R.string.aCuentas_toast_movimiento_error;

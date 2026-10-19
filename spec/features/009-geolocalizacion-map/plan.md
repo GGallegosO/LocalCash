@@ -26,7 +26,7 @@
 | `data/entities/Transaccion.java` | Añadir `latitud`, `longitud`, `direccionLugar` (nullable) | MODIFICAR | MEDIA |
 | `domain/model/Transaccion.java` | Propagar las coordenadas en el modelo de dominio | MODIFICAR | MEDIA |
 | `domain/model/Ubicacion.java` | Value object de coordenadas (lat, lon, dirección) | CREAR | BAJA |
-| `domain/service/TransaccionService.java` | Validar el rango y la regla "ambas o ninguna" antes de persistir | MODIFICAR | MEDIA |
+| `domain/service/TransaccionService.java` | La validación geo vive en `Ubicacion` (value object); aquí no se requieren cambios | SIN CAMBIOS | BAJA |
 | `data/db/AppDatabase.java` | Migración `user_version` 2 → 3 (`ALTER TABLE`, no destructiva) e índice `idx_transacciones_geo` | MODIFICAR | ALTA |
 | `data/dao/TransaccionDao.java` | Consultas geográficas (movimientos con coordenada y por caja envolvente) | MODIFICAR | MEDIA |
 | `ui/mapa/MapaPickerActivity.java` | Activity de mapa que deja fijar un pin y devuelve coordenadas | CREAR | ALTA |
@@ -115,6 +115,14 @@
      arranque sin conexión y no depende de la política de uso de un servidor de teselas en runtime.
    - Consecuencia aceptada: cobertura limitada a Santiago (zoom 10-14) y ~30-50 MB más de APK; fuera del
      área empaquetada se verá un lienzo vacío navegable (no un error).
+
+10. **`direccionLugar` se persiste como `null` hasta que exista geocodificación inversa offline.**
+    - Decisión: la columna `direccion_lugar` viaja siempre como `null` en esta feature. La
+      geocodificación inversa **offline** (coordenada → dirección legible) queda **fuera del alcance**.
+    - Justificación: resolverla offline exige empaquetar un dataset de direcciones (peso adicional del
+      APK) y no es crítica para el objetivo (fijar el punto del movimiento); la columna queda como punto
+      de extensión para una feature futura.
+    - Consecuencia aceptada: la UI muestra la coordenada, no una dirección del lugar.
 
 ### Estrategia de teselas offline
 
