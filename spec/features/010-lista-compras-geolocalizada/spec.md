@@ -14,21 +14,23 @@
 
 La Feature 010 agrega al mapa de LocalCash la posibilidad de crear **Lugares de Compra**: el usuario
 mantiene presionado un punto del mapa y el sistema abre un formulario para registrar un nuevo lugar de
-compra (tipo de lugar, gasto promedio estimado e una lista de items asociada). Cada lugar de compra se
-muestra en el mapa con un pin de color distinto al de los movimientos (Feature 009). Al tocar un pin de
-compra se abre un popup con un resumen de 1-2 items y un botón "Ver detalle" que lleva a una actividad
-donde se gestiona la lista completa (agregar, eliminar, tachar items como comprados) y se puede eliminar
-el lugar de compra tras una confirmación de seguridad.
+compra (tipo de lugar predefinido o personalizado, gasto promedio estimado **opcional** y una lista de
+items asociada). Cada lugar de compra se muestra en el mapa con un pin de color distinto al de los
+movimientos (Feature 009). Al tocar un pin de compra se abre un popup con el tipo, el gasto estimado
+(o "Sin gasto estimado"), la cantidad de items y un botón "Ver detalle"; mantener presionado el pin
+también abre el detalle. Esa actividad gestiona la lista completa (agregar, eliminar, tachar items como
+comprados) y permite eliminar el lugar de compra tras una confirmación de seguridad.
 
 **Comportamiento esperado (narrativa):**
 
 1. El usuario abre la pestaña "Mapa" y mantiene presionado un punto del mapa.
 2. El sistema abre un diálogo/formulario para crear un nuevo Lugar de Compra, prellenado con las
    coordenadas del punto seleccionado.
-3. El usuario define el tipo de lugar (Supermercado, Farmacia, Ferretería u otro), opcionalmente elige
-   uno de los predefinidos, establece un gasto promedio estimado y agrega una lista de items (nombre,
-   cantidad, estado pendiente/comprado).
-4. Al guardar, el sistema persiste el lugar de compra con sus coordenadas y sus items asociados.
+3. El usuario elige el tipo de lugar de un Spinner (Supermercado, Farmacia, Ferretería, Panadería,
+   Verdulería u Otro), puede agregar o eliminar tipos personalizados, ingresa opcionalmente un gasto
+   promedio estimado y agrega una lista de items (nombre y cantidad) desde el mismo diálogo.
+4. Al guardar, el sistema persiste el lugar de compra con sus coordenadas, el gasto (o `NULL` si no
+   se ingresó) y sus items asociados.
 5. En el mapa, el lugar de compra aparece con un pin de color distinto al de los movimientos.
 6. Al tocar el pin de compra, aparece un popup con un resumen (1-2 items) y un botón "Ver detalle".
 7. Al tocar "Ver detalle", el sistema abre una actividad con un RecyclerView que permite gestionar la
@@ -67,17 +69,19 @@ el lugar de compra tras una confirmación de seguridad.
 | ID   | Criterio de Aceptación | Estado |
 |------|------------------------|--------|
 | CA-1 | **Dado** la pestaña "Mapa" abierta, **cuando** el usuario mantiene presionado un punto del mapa, **entonces** el sistema abre un diálogo/formulario para crear un nuevo Lugar de Compra con las coordenadas del punto seleccionado. | ⏳ Pendiente |
-| CA-2 | **Dado** el diálogo de creación abierto, **cuando** el usuario define el tipo de lugar (Supermercado, Farmacia, Ferretería u otro) y un gasto promedio estimado, **entonces** el sistema acepta el tipo elegido (predefinido o personalizado) y guarda el gasto promedio. | ⏳ Pendiente |
-| CA-3 | **Dado** el diálogo de creación abierto, **cuando** el usuario agrega una lista de items (nombre, cantidad, estado pendiente/comprado) y guarda el lugar, **entonces** el lugar de compra se persiste con sus coordenadas y sus items asociados. | ⏳ Pendiente |
+| CA-2 | **Dado** el diálogo de creación abierto, **cuando** el usuario elige un tipo del Spinner (predefinido o personalizado), **entonces** el sistema acepta el tipo; además puede agregar tipos personalizados persistentes y eliminar solo los personalizados. El gasto promedio es opcional: si el campo queda vacío, se guarda `NULL`; si se ingresa, se guarda como entero CLP ≥ 0. | ⏳ Pendiente |
+| CA-3 | **Dado** el diálogo de creación abierto, **cuando** el usuario agrega items (nombre y cantidad ≥ 1) y guarda el lugar, **entonces** el lugar de compra se persiste con sus coordenadas y sus items asociados en una sola transacción. | ⏳ Pendiente |
 | CA-4 | **Dado** hay lugares de compra registrados, **cuando** el usuario abre la pestaña "Mapa", **entonces** ve un pin por cada lugar de compra con un color/ícono distinto al de los movimientos (`@color/mapa_pin_compra`). | ⏳ Pendiente |
-| CA-5 | **Dado** un pin de compra en el mapa, **cuando** el usuario lo toca, **entonces** aparece un popup con un resumen (1-2 items) y un botón "Ver detalle". | ⏳ Pendiente |
+| CA-5 | **Dado** un pin de compra en el mapa, **cuando** el usuario lo toca, **entonces** aparece un InfoWindow con "Tipo: [tipo]", "Gasto estimado: $[monto]" (o "Sin gasto estimado"), "[N] items en la lista" y un botón "Ver detalle". | ⏳ Pendiente |
 | CA-6 | **Dado** el popup de un pin de compra, **cuando** el usuario toca "Ver detalle", **entonces** se abre una actividad con un RecyclerView para gestionar la lista completa de items (agregar, eliminar, tachar como comprado). | ⏳ Pendiente |
 | CA-7 | **Dado** una lista de compra en la actividad de detalle, **cuando** el usuario elige eliminarla, **entonces** aparece un diálogo de confirmación para evitar eliminar por error, y solo si confirma se borra el lugar y sus items. | ⏳ Pendiente |
+| CA-8 | **Dado** un pin de Lugar de Compra en el mapa, **cuando** el usuario lo mantiene presionado, **entonces** se abre la actividad de detalle con el id del lugar. El long press en mapa vacío sigue abriendo el diálogo de creación. | ⏳ Pendiente |
 
 **Requisitos no funcionales aplicables:**
 - **Offline:** 100% local (Room en SQLite), sin permiso `INTERNET`, sin llamadas de red.
 - **UI:** cero textos o colores hardcodeados (solo `strings.xml` y `colors.xml`); ViewBinding obligatorio en todas las Activities.
-- **Persistencia:** migración no destructiva del esquema (3 → 4), sin pérdida de datos existentes.
+- **Persistencia:** migraciones no destructivas del esquema (3 → 4 y 4 → 5), sin pérdida de datos
+  existentes. La 4 → 5 hace nullable `gastoPromedio`.
 
 ---
 
@@ -86,13 +90,15 @@ el lugar de compra tras una confirmación de seguridad.
 | # | Caso borde | Comportamiento esperado | Resuelto |
 |---|------------|-------------------------|----------|
 | E-1 | Long press sobre un punto sin coordenadas válidas (fuera del área de teselas). | El sistema permite crear el lugar con las coordenadas del punto; el mapa muestra un lienzo navegable vacío fuera del área empaquetada, sin bloquear. | [ ] |
-| E-2 | Diálogo de creación con tipo de lugar vacío. | El sistema impide guardar y muestra error junto al campo de tipo de lugar (campo obligatorio). | [ ] |
-| E-3 | Lista de items vacía al guardar el lugar. | El lugar se guarda sin items (lista vacía permitida); el popup mostrará "sin items". | [ ] |
-| E-4 | Item con nombre vacío o cantidad inválida (0 o negativa). | El sistema rechaza el item y muestra error junto al campo correspondiente. | [ ] |
+| E-2 | Diálogo de creación sin tipo de lugar seleccionado. | El sistema impide guardar y muestra un aviso; el Spinner siempre ofrece al menos los predefinidos. | [ ] |
+| E-3 | Lista de items vacía al guardar el lugar. | El lugar se guarda sin items (lista vacía permitida); el InfoWindow mostrará "0 items en la lista". | [ ] |
+| E-4 | Item con nombre vacío o cantidad inválida (0 o negativa). | El sistema rechaza el guardado y muestra un aviso; los ítems válidos no se persisten a medias. | [ ] |
 | E-5 | Eliminar lugar de compra sin confirmación. | Nunca se elimina sin que el usuario confirme en el diálogo de seguridad. | [ ] |
 | E-6 | Rotación de pantalla con el diálogo de creación abierto. | El sistema conserva los datos ya ingresados en el diálogo (estado de instancia). | [ ] |
 | E-7 | Muchos lugares de compra (decenas). | El mapa renderiza todos los pines de compra sin bloqueos perceptibles. | [ ] |
 | E-8 | Tocar un pin de movimiento y un pin de compra superpuestos. | El sistema distingue y abre el popup correspondiente al origen de cada pin (color distinto). | [ ] |
+| E-9 | Long press sobre un pin de compra o de movimiento existente. | No abre el diálogo de creación: el pin de compra abre el detalle y el de movimiento consume el gesto. El diálogo solo aparece en mapa vacío. | [ ] |
+| E-10 | Gasto estimado vacío al guardar. | Se persiste `NULL`; el InfoWindow muestra "Sin gasto estimado" en lugar de `$0`. | [ ] |
 
 ---
 
