@@ -74,7 +74,7 @@ lectura** por ahora, los movimientos que tienen coordenadas.
 
 | Categoría | Requisito | Verificación |
 |-----------|-----------|--------------|
-| Privacidad | 0 llamadas de red obligatorias para registrar y ver movimientos: el mapa funciona con teselas en caché local. | Revisión de dependencias + prueba en modo avión |
+| Privacidad | 0 llamadas de red: ni siquiera se declara el permiso `INTERNET`. El mapa usa teselas **preempaquetadas** (Santiago de Chile, zoom 10-14) y funciona desde el primer arranque sin conexión. | Revisión del manifiesto fusionado + prueba en modo avión |
 | Compatibilidad | Funciona en API 28+ (Android 9 en adelante). | `minSdk` del `build.gradle` |
 | Exactitud geográfica | Las coordenadas se guardan como grados WGS84 con rango válido (lat -90..90, lon -180..180) y nunca a medias. | `PRAGMA`/tests de DAO + tests de dominio |
 | Permisos | La ubicación se pide solo cuando el usuario activa "Geolocalizar"; su denegación no bloquea el registro. | Prueba manual |

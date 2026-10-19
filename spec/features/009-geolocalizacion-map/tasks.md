@@ -19,6 +19,12 @@
 
 ## Fase 1 — Fundaciones (dependencia, permisos, esquema y dominio)
 
+- [ ] **T0. Empaquetar las teselas offline de Santiago de Chile.**
+      Generar con **MOBAC** (Mobile Atlas Creator) o un script propio contra la API de OSM las teselas
+      raster de la Región Metropolitana (lat **-33.45..-33.30**, lon **-70.70..-70.55**, **zoom 10-14**)
+      y empaquetarlas en `app/src/main/assets/tiles/{z}/{x}/{y}.png` (esquema XYZ). Peso ~30-50 MB.
+      **Sin permiso `INTERNET`.** *Bloquea* la renderización del mapa (Fases 2-3), no las tareas de
+      esquema (T1-T5). *Criterio de salida:* teselas en `assets/` dentro del peso estimado.
 - [x] **T1. Declarar la dependencia de osmdroid (6.1.x).**
       `osmdroid-android:6.1.20` en `gradle/libs.versions.toml` e `app/build.gradle` (registrada en
       `tech-stack.md` §2). *Criterio de salida:* `./gradlew assembleDebug` resuelve la dependencia. ✅
@@ -40,7 +46,8 @@
 - [ ] **T6. Crear la Activity de selección de ubicación.**
       `ui/mapa/SeleccionarUbicacionActivity.java` + `res/layout/activity_seleccionar_ubicacion.xml`:
       `MapView` de osmdroid con un pin movible y acciones confirmar/cancelar; ciclo de vida del `MapView`
-      correctamente gestionado.
+      correctamente gestionado. El `MapView` usa el `TileSource` local (`ui/mapa/TeselasLocales.java`,
+      `assets/tiles`) y muestra la atribución "© OpenStreetMap contributors" (desde recursos).
 - [ ] **T7. Centrar en la posición actual (best-effort) y gestionar el permiso.**
       Con `LocationManager`; si el permiso falta o no hay señal, abrir en vista por defecto (CA-6/E-1/E-2).
 - [ ] **T8. Devolver el resultado al panel.**
@@ -52,8 +59,8 @@
 ## Fase 3 — Pestaña "Mapa" (modo lectura)
 
 - [ ] **T10. Reemplazar el texto de relleno por el mapa de lectura.**
-      `res/layout/view_mapa.xml` aloja un `MapView`; `ui/mapa/MapaViewModel.java` expone los movimientos
-      geolocalizados.
+      `res/layout/view_mapa.xml` aloja un `MapView` (con el `TileSource` local y la atribución OSM);
+      `ui/mapa/MapaViewModel.java` expone los movimientos geolocalizados.
 - [ ] **T11. Mostrar un pin por movimiento, con color por origen.**
       Un pin por fila geolocalizada; el color de los movimientos se centraliza en un recurso único
       (contrato que reutilizará 010 con otro color) (CA-5/CA-8).
