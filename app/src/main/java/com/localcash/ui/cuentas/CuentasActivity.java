@@ -37,9 +37,7 @@ import com.localcash.ui.theme.ThemeManager;
 import com.localcash.ui.util.CurrencyFormatter;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Activity principal de LocalCash (Módulo 1): 4 vistas en un {@code ViewFlipper}
@@ -259,118 +257,6 @@ public class CuentasActivity extends BaseActivity
         vistaHistorial.fabNuevaTransaccion.setOnClickListener(v -> mostrarBottomSheetTransaccion());
     }
 
-    // TODO(T9): eliminar definitivamente los datos de prueba. Este método ya no
-    // se invoca (el historial se alimenta de Room desde T8e); se conserva hasta T9.
-    /**
-     * Genera una lista mock de 10 transacciones variadas para el historial.
-     *
-     * @return Lista de transacciones mock
-     */
-    private List<Transaccion> generarTransaccionesMock() {
-        List<Transaccion> lista = new ArrayList<>();
-        Calendar cal = Calendar.getInstance();
-
-        // Transacción 1: Ingreso - Sueldo
-        cal.add(Calendar.DAY_OF_MONTH, -1);
-        lista.add(new Transaccion(
-                1, 1, TipoTransaccion.INGRESO,
-                new java.math.BigDecimal("500000"),
-                "Sueldo Octubre",
-                cal.getTimeInMillis()
-        ));
-
-        // Transacción 2: Egreso - Supermercado
-        cal.add(Calendar.HOUR_OF_DAY, -2);
-        lista.add(new Transaccion(
-                2, 1, TipoTransaccion.EGRESO,
-                new java.math.BigDecimal("45000"),
-                "Supermercado Jumbo",
-                cal.getTimeInMillis()
-        ));
-
-        // Transacción 3: Egreso - Transporte
-        cal.add(Calendar.DAY_OF_MONTH, -1);
-        cal.add(Calendar.HOUR_OF_DAY, 5);
-        lista.add(new Transaccion(
-                3, 2, TipoTransaccion.EGRESO,
-                new java.math.BigDecimal("2800"),
-                "Metro / Bus",
-                cal.getTimeInMillis()
-        ));
-
-        // Transacción 4: Ingreso - Transferencia recibida
-        cal.add(Calendar.DAY_OF_MONTH, -2);
-        cal.add(Calendar.HOUR_OF_DAY, 3);
-        lista.add(new Transaccion(
-                4, 1, TipoTransaccion.INGRESO,
-                new java.math.BigDecimal("25000"),
-                "Transferencia de Juan",
-                cal.getTimeInMillis()
-        ));
-
-        // Transacción 5: Egreso - Restaurante
-        cal.add(Calendar.DAY_OF_MONTH, -3);
-        cal.add(Calendar.HOUR_OF_DAY, -4);
-        lista.add(new Transaccion(
-                5, 2, TipoTransaccion.EGRESO,
-                new java.math.BigDecimal("18500"),
-                "Almuerzo en El Palacio",
-                cal.getTimeInMillis()
-        ));
-
-        // Transacción 6: Egreso - Farmacia
-        cal.add(Calendar.DAY_OF_MONTH, -4);
-        cal.add(Calendar.HOUR_OF_DAY, 2);
-        lista.add(new Transaccion(
-                6, 3, TipoTransaccion.EGRESO,
-                new java.math.BigDecimal("12000"),
-                "Farmacia Cruz Verde",
-                cal.getTimeInMillis()
-        ));
-
-        // Transacción 7: Ingreso - Venta artículo
-        cal.add(Calendar.DAY_OF_MONTH, -5);
-        cal.add(Calendar.HOUR_OF_DAY, -1);
-        lista.add(new Transaccion(
-                7, 1, TipoTransaccion.INGRESO,
-                new java.math.BigDecimal("35000"),
-                "Venta celular usado",
-                cal.getTimeInMillis()
-        ));
-
-        // Transacción 8: Egreso - Suscripción
-        cal.add(Calendar.DAY_OF_MONTH, -7);
-        cal.add(Calendar.HOUR_OF_DAY, 4);
-        lista.add(new Transaccion(
-                8, 2, TipoTransaccion.EGRESO,
-                new java.math.BigDecimal("8900"),
-                "Netflix / Spotify",
-                cal.getTimeInMillis()
-        ));
-
-        // Transacción 9: Egreso - Comida delivery
-        cal.add(Calendar.DAY_OF_MONTH, -8);
-        cal.add(Calendar.HOUR_OF_DAY, -3);
-        lista.add(new Transaccion(
-                9, 3, TipoTransaccion.EGRESO,
-                new java.math.BigDecimal("15000"),
-                "PedidosYa - Sushi",
-                cal.getTimeInMillis()
-        ));
-
-        // Transacción 10: Ingreso - Freelance
-        cal.add(Calendar.DAY_OF_MONTH, -10);
-        cal.add(Calendar.HOUR_OF_DAY, 6);
-        lista.add(new Transaccion(
-                10, 1, TipoTransaccion.INGRESO,
-                new java.math.BigDecimal("75000"),
-                "Proyecto freelance",
-                cal.getTimeInMillis()
-        ));
-
-        return lista;
-    }
-
     /**
      * Prepara el {@link TransaccionViewModel} que alimenta el BottomSheet de
      * registro de movimientos: observa las cuentas activas y mantiene la lista
@@ -407,6 +293,7 @@ public class CuentasActivity extends BaseActivity
 
         sheetTransaccionBinding = sheetBinding;
         poblarSpinnerCuentas(sheetBinding);
+        configurarConceptosPredefinidos(sheetBinding);
 
         sheetBinding.spinnerCuentas.setOnItemClickListener((parent, view, position, id) -> {
             if (position >= 0 && position < cuentasSpinner.size()) {
@@ -440,6 +327,23 @@ public class CuentasActivity extends BaseActivity
         // La lista cambió: la selección anterior ya no es válida.
         cuentaSeleccionadaId = -1L;
         sheetBinding.spinnerCuentas.setText("", false);
+    }
+
+    /**
+     * Rellena el campo de concepto del BottomSheet con las sugerencias
+     * predefinidas de {@code R.array.aCuentas_conceptos_predefinidos}. El campo
+     * sigue siendo editable: el usuario puede elegir una sugerencia o escribir
+     * un concepto propio. Se muestra la lista completa al enfocar el campo
+     * ({@code threshold(0)}), sin exigir texto previo.
+     *
+     * @param sheetBinding Binding del BottomSheet abierto
+     */
+    private void configurarConceptosPredefinidos(@NonNull BottomSheetTransaccionBinding sheetBinding) {
+        String[] conceptos = getResources().getStringArray(R.array.aCuentas_conceptos_predefinidos);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                this, android.R.layout.simple_dropdown_item_1line, conceptos);
+        sheetBinding.inputConcepto.setAdapter(adapter);
+        sheetBinding.inputConcepto.setThreshold(0);
     }
 
     /**

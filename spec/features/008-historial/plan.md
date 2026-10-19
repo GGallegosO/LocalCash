@@ -43,7 +43,8 @@
 ### Contrato de datos del registro
 
 - **Entrada del formulario:** `tipo` (INGRESO/EGRESO), `monto` (entero, pesos CLP > 0), `cuentaId`,
-  `concepto` (texto libre), `geolocalizar` (booleano) y, si aplica, `latitud`/`longitud`/`direccionLugar`.
+  `concepto` (sugerencias predefinidas editables), `geolocalizar` (booleano) y, si aplica,
+  `latitud`/`longitud`/`direccionLugar`.
 - **Salida:** movimiento persistido + saldo de la cuenta actualizado (aritmética atómica).
 - **Errores de dominio (códigos ya existentes en `ErrorCode`):** `MONTO_INVALIDO`,
   `CUENTA_NO_ENCONTRADA`, `SALDO_INSUFICIENTE`. La capa de UI los traduce a texto accionable.

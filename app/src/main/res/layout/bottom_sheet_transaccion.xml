@@ -90,20 +90,20 @@
 
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Concepto libre -->
+        <!-- Concepto con sugerencias predefinidas (editable: permite escribir otro) -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/inputLayoutConcepto"
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:hint="@string/aCuentas_transaccion_concepto_hint">
 
-            <com.google.android.material.textfield.TextInputEditText
+            <com.google.android.material.textfield.MaterialAutoCompleteTextView
                 android:id="@+id/inputConcepto"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="text"
+                android:inputType="textCapSentences"
                 tools:text="Supermercado" />
 
         </com.google.android.material.textfield.TextInputLayout>

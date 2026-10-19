@@ -1,9 +1,9 @@
 # tasks.md — Checklist Secuencial de Ejecución
 
 > **Identificación:** 008-historial | **Derivado de:** `spec.md` + `plan.md`
-> **Estado global:** Parcialmente completado (Fase 2 avanzada) — el historial ya se alimenta de Room y
-> se refresca por LiveData. Pendientes inmediatos: T9 (eliminación de datos mock) y T12 (saldo);
-> además, las Fases 4-5.
+> **Estado global:** Parcialmente completado (Fase 2 avanzada) — el historial se alimenta de Room, se
+> refresca por LiveData y ya no contiene datos de prueba. Pendiente inmediato: T12 (saldo); además,
+> las Fases 4-5.
 >
 > **Propósito de este documento:** Descomponer la implementación en pasos ejecutables, ordenados y
 > verificables. Cada casilla marcada `[x]` debe corresponder a un cambio real comprobable (tests
@@ -33,21 +33,24 @@
       El índice guardado se acota a 0..3 para no referenciar una vista eliminada.
       *Criterio de salida:* rotación/cambio de tema no rompe la navegación.
 
-## Fase 2 — Historial (avanzada; quedan T9 y T12) ⏳
+## Fase 2 — Historial (avanzada; queda T12) ⏳
 
 - [x] **T5. Layout de la vista de historial.**
       `view_historial.xml`: lista desplazable, estado vacío y botón flotante.
+      *(2026-10-19) `paddingBottom="160dp"` + `clipToPadding="false"` en el `RecyclerView` para que el
+      FAB no tape la última transacción al final del scroll.*
 - [x] **T6. Adapter y fila del historial.**
       `HistorialAdapter.java` + `item_transaccion.xml` (icono, concepto, fecha, monto con signo/color).
 - [x] **T7. Poblar la lista para validar la UI (datos de prueba — TEMPORAL).**
-      `generarTransaccionesMock()` con 10 movimientos. **Es deuda técnica: se elimina en T9.**
+      `generarTransaccionesMock()` con 10 movimientos. Deuda técnica **retirada en T9**.
 - [x] **T8. Cablear el historial a los datos reales.**
       `HistorialViewModel` (T8a-c) observa `TransaccionDao.getAll()` y mapea entidades → dominio;
       `CuentasActivity` (T8e) lo instancia con una `ViewModelProvider.Factory` y alimenta el adapter.
       *Criterio de salida:* la lista muestra los movimientos persistidos, ordenados por fecha DESC.
-- [ ] **T9. Eliminar los datos de prueba.**
-      Borrar `generarTransaccionesMock()` y su uso en `CuentasActivity`.
-      *Criterio de salida:* ninguna referencia a datos mock en el historial.
+- [x] **T9. Eliminar los datos de prueba.**
+      `generarTransaccionesMock()` y sus imports huérfanos (`java.util.Calendar`, `java.util.Locale`)
+      fueron eliminados de `CuentasActivity`; el historial se alimenta solo de Room.
+      *Criterio de salida:* ninguna referencia a datos mock en el historial. ✅
 - [x] **T10. Estado vacío real según los datos.**
       El estado vacío y la visibilidad de la lista dependen de la lista observable de la base de datos
       (observador de `HistorialViewModel` en `CuentasActivity`).
@@ -63,6 +66,8 @@
 - [x] **T13. Layout del formulario de registro.**
       `bottom_sheet_transaccion.xml`: Ingreso/Egreso (toggle), Monto, Cuenta (dropdown), Concepto,
       Geolocalizar (switch) y Guardar. Reutiliza los IDs de la vista eliminada.
+      *(2026-10-19) El campo Concepto usa sugerencias predefinidas editables
+      (`aCuentas_conceptos_predefinidos`) vía `MaterialAutoCompleteTextView`.*
 - [x] **T14. El botón flotante abre el panel inferior.**
       `mostrarBottomSheetTransaccion()` con un `BottomSheetDialog` real.
 - [x] **T15. Registrar el movimiento con validación de dominio.**
@@ -120,6 +125,6 @@
 | `./gradlew assembleDebug` | BUILD SUCCESSFUL | 18/10/2026 |
 | `./gradlew connectedCheck` | No ejecutado (requiere dispositivo) | — |
 
-> El historial ya se alimenta de Room (T8/T10/T11). Queda sin implementar la **geolocalización**
-> (Fase 4) y la limpieza de datos mock (T9). Estas verificaciones deben repetirse al cerrar las
-> Fases 4 y 5.
+> El historial se alimenta de Room y ya no contiene datos de prueba (T8/T9/T10/T11). Queda sin
+> implementar la **geolocalización** (Fase 4) y el saldo dinámico (T12). Estas verificaciones deben
+> repetirse al cerrar las Fases 4 y 5.
