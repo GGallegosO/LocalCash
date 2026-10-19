@@ -40,6 +40,7 @@ import com.localcash.domain.model.Transaccion;
 import com.localcash.ui.BaseActivity;
 import com.localcash.ui.mapa.MapaLecturaController;
 import com.localcash.ui.mapa.MapaPickerActivity;
+import com.localcash.ui.mapa.MapaViewModel;
 import com.localcash.ui.theme.ThemeManager;
 import com.localcash.ui.util.CurrencyFormatter;
 
@@ -95,6 +96,9 @@ public class CuentasActivity extends BaseActivity
 
     /** ViewModel del historial (Movimientos): observa Room y expone el dominio. */
     private HistorialViewModel historialViewModel;
+
+    /** ViewModel del mapa (Vista 2): observa los movimientos geolocalizados. */
+    private MapaViewModel mapaViewModel;
 
     /** Cuentas activas asociadas, en el mismo orden que el adapter del spinner. */
     private final List<Cuenta> cuentasSpinner = new ArrayList<>();
@@ -338,6 +342,25 @@ public class CuentasActivity extends BaseActivity
         mapaController = new MapaLecturaController(vistaMapa.mapaLectura);
         vistaMapa.btnZoomIn.setOnClickListener(v -> mapaController.cambiarZoom(1));
         vistaMapa.btnZoomOut.setOnClickListener(v -> mapaController.cambiarZoom(-1));
+
+        // El ViewModel recibe el DAO por constructor: necesita una
+        // ViewModelProvider.Factory, igual que HistorialViewModel.
+        mapaViewModel = new ViewModelProvider(this, new ViewModelProvider.Factory() {
+            @NonNull
+            @Override
+            @SuppressWarnings("unchecked")
+            public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
+                return (T) new MapaViewModel(
+                        AppDatabase.getInstance(getApplicationContext()).transaccionDao());
+            }
+        }).get(MapaViewModel.class);
+
+        // Un pin por movimiento geolocalizado; si no hay ninguno, estado vacío.
+        mapaViewModel.getTransaccionesConUbicacion().observe(this, transacciones -> {
+            List<Transaccion> lista = transacciones != null ? transacciones : new ArrayList<>();
+            mapaController.mostrarMovimientos(lista);
+            vistaMapa.tvSinMovimientos.setVisibility(lista.isEmpty() ? View.VISIBLE : View.GONE);
+        });
     }
 
     /**

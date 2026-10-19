@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
@@ -13,9 +12,7 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
-import androidx.core.graphics.drawable.DrawableCompat;
 
-import com.localcash.R;
 import com.localcash.databinding.ActivityMapaBinding;
 import com.localcash.ui.BaseActivity;
 
@@ -218,29 +215,13 @@ public class MapaPickerActivity extends BaseActivity {
         if (marcador == null) {
             marcador = new Marker(binding.mapaSeleccion);
             marcador.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-            marcador.setIcon(iconoPinTintado());
+            marcador.setIcon(PinMapa.iconoMovimiento(this));
             binding.mapaSeleccion.getOverlays().add(marcador);
         }
         marcador.setPosition(punto);
         ubicacionSeleccionada = punto;
         binding.btnConfirmarMapa.setEnabled(true);
         binding.mapaSeleccion.invalidate();
-    }
-
-    /**
-     * Devuelve el icono del pin teñido con el color de los movimientos
-     * ({@link R.color#mapa_pin_movimiento}), centralizado en recursos.
-     *
-     * @return drawable del pin listo para el {@code Marker}
-     */
-    private Drawable iconoPinTintado() {
-        Drawable icono = ContextCompat.getDrawable(this, R.drawable.ic_mapa_pin);
-        if (icono == null) {
-            return null;
-        }
-        Drawable tintado = DrawableCompat.wrap(icono).mutate();
-        DrawableCompat.setTint(tintado, ContextCompat.getColor(this, R.color.mapa_pin_movimiento));
-        return tintado;
     }
 
     /**

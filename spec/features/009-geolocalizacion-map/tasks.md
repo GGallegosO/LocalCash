@@ -72,15 +72,18 @@
 
 ## Fase 3 — Pestaña "Mapa" (modo lectura)
 
-- [ ] **T10. Reemplazar el texto de relleno por el mapa de lectura.**
-      `res/layout/view_mapa.xml` aloja un `MapView` (con el `TileSource` local y la atribución OSM);
-      `ui/mapa/MapaViewModel.java` expone los movimientos geolocalizados.
-- [ ] **T11. Mostrar un pin por movimiento, con color por origen.**
-      Un pin por fila geolocalizada; el color de los movimientos se centraliza en un recurso único
-      (contrato que reutilizará 010 con otro color) (CA-5/CA-8).
-- [ ] **T12. Consulta geográfica en el DAO.**
-      `TransaccionDao`: movimientos con coordenada y consulta por caja envolvente sobre
-      `idx_transacciones_geo` (punto de extensión para 010).
+- [x] **T10. Crear el layout de la pestaña "Mapa" y el mapa de lectura.**
+      `res/layout/view_mapa.xml` aloja un `MapView` (con el `TileSource` local, la atribución OSM,
+      los controles de zoom y el mensaje de estado vacío); `ui/mapa/MapaLecturaController` monta las
+      teselas locales offline y el encuadre inicial. ✅
+- [x] **T11. Exponer los movimientos geolocalizados (`TransaccionDao` + `MapaViewModel`).**
+      `TransaccionDao.getConUbicacion()` filtra `latitud IS NOT NULL AND longitud IS NOT NULL`
+      (apoyado en `idx_transacciones_geo`); `ui/mapa/MapaViewModel` transforma las entidades a dominio. ✅
+- [x] **T12. Dibujar un pin por movimiento, con popup y estado vacío.**
+      `MapaLecturaController.mostrarMovimientos` coloca un pin por fila geolocalizada con el color
+      `@color/mapa_pin_movimiento` (helper `PinMapa`, contrato que reutilizará 010), un popup con
+      concepto, monto y fecha, y alterna el mensaje de estado vacío (CA-5/CA-8). ✅
+      *(La consulta por caja envolvente sobre `idx_transacciones_geo` queda como punto de extensión para 010.)*
 
 ## Fase 4 — Tests
 
