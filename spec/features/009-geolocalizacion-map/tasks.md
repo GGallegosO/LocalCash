@@ -19,11 +19,12 @@
 
 ## Fase 1 — Fundaciones (dependencia, permisos, esquema y dominio)
 
-- [ ] **T1. Declarar la dependencia de osmdroid (6.1.x).**
-      Añadir la librería en `gradle/libs.versions.toml` e `app/build.gradle` (ya registrada en
-      `tech-stack.md` §2). *Criterio de salida:* compila con la dependencia sin advertencias nuevas.
-- [ ] **T2. Declarar los permisos de ubicación en `AndroidManifest.xml`.**
-      `ACCESS_FINE_LOCATION` y `ACCESS_COARSE_LOCATION` (denegación → best-effort).
+- [x] **T1. Declarar la dependencia de osmdroid (6.1.x).**
+      `osmdroid-android:6.1.20` en `gradle/libs.versions.toml` e `app/build.gradle` (registrada en
+      `tech-stack.md` §2). *Criterio de salida:* `./gradlew assembleDebug` resuelve la dependencia. ✅
+- [x] **T2. Declarar los permisos de ubicación en `AndroidManifest.xml`.**
+      `ACCESS_FINE_LOCATION` y `ACCESS_COARSE_LOCATION` (denegación → best-effort). Manifiesto fusionado
+      sin duplicados. ✅
 - [ ] **T3. Añadir las columnas de coordenadas a la entidad Room.**
       `latitud` (`Double`), `longitud` (`Double`) y `direccionLugar` (`String`) nullable en
       `data/entities/Transaccion.java`, según `data-model.md`.

@@ -68,6 +68,8 @@ dependencies {
     annotationProcessor "androidx.room:room-compiler:2.6.1"
     testImplementation "androidx.room:room-testing:2.6.1"
     testImplementation libs.junit
+    // Mapas offline: osmdroid (tech-stack.md §2, re-confirmado el 2026-10-19). Sin Google Play Services.
+    implementation libs.osmdroid.android
     // Robolectric: tests de DAO en JVM local sin dispositivo (tech-stack.md §4/§7)
     testImplementation "org.robolectric:robolectric:4.17"
     androidTestImplementation libs.espresso.core
