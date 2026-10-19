@@ -48,18 +48,24 @@
 
 ## Fase 2 — Captura de pin e integración con el panel
 
-- [ ] **T6. Crear la Activity de selección de ubicación.**
-      `ui/mapa/SeleccionarUbicacionActivity.java` + `res/layout/activity_seleccionar_ubicacion.xml`:
-      `MapView` de osmdroid con un pin movible y acciones confirmar/cancelar; ciclo de vida del `MapView`
-      correctamente gestionado. El `MapView` usa el `TileSource` local (`ui/mapa/TeselasLocales.java`,
-      `assets/tiles`) y muestra la atribución "© OpenStreetMap contributors" (desde recursos).
-- [ ] **T7. Centrar en la posición actual (best-effort) y gestionar el permiso.**
-      Con `LocationManager`; si el permiso falta o no hay señal, abrir en vista por defecto (CA-6/E-1/E-2).
-- [ ] **T8. Devolver el resultado al panel.**
-      La Activity retorna `latitud`/`longitud` por `setResult`; `CuentasActivity` la lanza desde el
-      interruptor "Geolocalizar" con un `ActivityResultLauncher` y conserva el estado del panel.
+- [x] **T6. Crear el layout del mapa (`activity_mapa.xml`) y el `TileSource` local.**
+      `res/layout/activity_mapa.xml`: `MapView` de osmdroid + controles de zoom (+/−) + atribución
+      "© OpenStreetMap contributors" (desde recursos). `ui/mapa/TeselasLocales.java`: `TileSource` propio
+      que lee las teselas de `assets/tiles` con `MapTileAssetsProvider` (sin descargador de red). ✅
+- [ ] **T7. Crear `MapaPickerActivity` (selector de ubicación).**
+      `ui/mapa/MapaPickerActivity.java`: abre centrada en Santiago de Chile (lat -33.4489, lon -70.6693),
+      coloca un pin al tocar el mapa; "Confirmar" devuelve `setResult(RESULT_OK)` con extras
+      `latitud`/`longitud`/`direccion`, "Cancelar" cierra sin resultado. Ciclo de vida del `MapView`
+      gestionado y Activity registrada en el manifiesto.
+- [ ] **T8. Integrar el selector con el panel.**
+      `CuentasActivity`: al activar "Geolocalizar" lanza `MapaPickerActivity` con un `ActivityResultLauncher`,
+      recibe las coordenadas en el callback, muestra la confirmación y conserva el estado del panel.
 - [ ] **T9. Persistir las coordenadas al registrar el movimiento.**
       `TransaccionViewModel` propaga `Ubicacion`; ambas coordenadas o ninguna (CA-3/CA-4/CA-7).
+
+> **Pendiente de ubicar:** centrar el mapa en la **posición actual** (best-effort) con `LocationManager`
+> y gestionar el permiso en runtime (CA-6/E-1/E-2). La reformulación de la Fase 2 abre el mapa centrado
+> en Santiago; falta decidir en qué tarea entra el centrado por GPS.
 
 ## Fase 3 — Pestaña "Mapa" (modo lectura)
 

@@ -29,11 +29,11 @@
 | `domain/service/TransaccionService.java` | Validar el rango y la regla "ambas o ninguna" antes de persistir | MODIFICAR | MEDIA |
 | `data/db/AppDatabase.java` | Migración `user_version` 2 → 3 (`ALTER TABLE`, no destructiva) e índice `idx_transacciones_geo` | MODIFICAR | ALTA |
 | `data/dao/TransaccionDao.java` | Consultas geográficas (movimientos con coordenada y por caja envolvente) | MODIFICAR | MEDIA |
-| `ui/mapa/SeleccionarUbicacionActivity.java` | Activity de mapa que deja fijar un pin y devuelve coordenadas | CREAR | ALTA |
+| `ui/mapa/MapaPickerActivity.java` | Activity de mapa que deja fijar un pin y devuelve coordenadas | CREAR | ALTA |
 | `ui/mapa/MapaViewModel.java` | Expone los movimientos geolocalizados al mapa (modo lectura) | CREAR | MEDIA |
 | `ui/cuentas/CuentasActivity.java` | Abre la Activity de selección desde el interruptor y puebla la pestaña "Mapa" | MODIFICAR | MEDIA |
 | `ui/cuentas/TransaccionViewModel.java` | Persistir las coordenadas al registrar el movimiento | MODIFICAR | MEDIA |
-| `res/layout/activity_seleccionar_ubicacion.xml` | Vista de mapa + confirmación/cancelación | CREAR | MEDIA |
+| `res/layout/activity_mapa.xml` | Vista de mapa + confirmación/cancelación | CREAR | MEDIA |
 | `res/layout/view_mapa.xml` | Sustituir el texto de relleno por el contenedor del mapa de lectura | MODIFICAR | MEDIA |
 | `res/values/strings.xml` | Cadenas de la vista de mapa y mensajes | MODIFICAR | BAJA |
 | `test/.../TransaccionDaoGeoTest.java` | Persistencia geográfica y regla "ambas o ninguna" | CREAR | MEDIA |
@@ -197,3 +197,17 @@ colisionaba con el registro de memoria de esta feature.
 **Resuelto (2026-10-19):** se renombró a `doc/011-actualizacion-diagrama.md` (dejando `009` para esta
 feature y `010` reservado para la lista de compras) y se actualizaron sus referencias internas. El
 registro de memoria de esta feature es, por tanto, `doc/009-geolocalizacion-map.md`.
+
+## 8. Nota de nombres (resuelta)
+
+Al iniciar la Fase 2 se fijó el nombre de los artefactos del selector de ubicación, que difiere del
+borrador inicial del plan:
+
+| Borrador | Definitivo |
+|---|---|
+| `ui/mapa/SeleccionarUbicacionActivity.java` | `ui/mapa/MapaPickerActivity.java` |
+| `res/layout/activity_seleccionar_ubicacion.xml` | `res/layout/activity_mapa.xml` |
+
+**Motivo:** nombre más corto y explícito de la función (elegir un punto en el mapa) indicado por el
+usuario al ejecutar T6; se actualizan el plan y `tasks.md` para no dejar referencias colgando.
+

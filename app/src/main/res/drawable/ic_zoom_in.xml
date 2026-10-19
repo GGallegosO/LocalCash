@@ -1,0 +1,15 @@
+<!--
+  ~ Icono "acercar" (zoom in) - Material Symbols. Sigue la convención del
+  ~ proyecto para iconos: tint neutro + fillColor blanco; los componentes
+  ~ Material lo recolorean con su propio iconTint (tema, sin colores ad hoc).
+  -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:height="24dp"
+    android:tint="#000000"
+    android:viewportHeight="960"
+    android:viewportWidth="960"
+    android:width="24dp">
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M784,840L532,588Q500,612 460,626Q420,640 380,640Q280,640 210,570Q140,500 140,400Q140,300 210,230Q280,160 380,160Q480,160 550,230Q620,300 620,400Q620,440 606,480Q592,520 568,552L820,804L784,840ZM380,600Q460,600 510,550Q560,500 560,420Q560,340 510,290Q460,240 380,240Q300,240 250,290Q200,340 200,420Q200,500 250,550Q300,600 380,600ZM360,520L360,440L280,440L280,400L360,400L360,320L400,320L400,400L480,400L480,440L400,440L400,520L360,520Z" />
+</vector>
