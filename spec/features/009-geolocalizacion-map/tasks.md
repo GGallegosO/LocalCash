@@ -79,8 +79,8 @@
       denegado y modo avión (CA-6/E-5).
 - [ ] **T18. Actualizar `data-model.md` si la implementación diverge del DDL (en el mismo cambio).**
 - [ ] **T19. Registro de memoria final.**
-      Crear `doc/009-geolocalizacion-map.md` y actualizar el hito del roadmap. **Resolver antes la nota
-      de numeración de `plan.md` §7** (renombrar `doc/009-actualizacion-diagrama.md`).
+      Crear `doc/009-geolocalizacion-map.md` y actualizar el hito del roadmap. (La numeración de `doc/`
+      ya quedó resuelta: el registro de mantenimiento se renombró a `011`.)
 
 ---
 
