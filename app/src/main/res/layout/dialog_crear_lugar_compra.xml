@@ -1,51 +1,111 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Diálogo para crear un lugar de compra desde el mapa (Feature 010, Fase 2).
+  Diálogo para crear un lugar de compra desde el mapa (Feature 010, Fases 2 y 2.5).
 
   Se infla con ViewBinding (DialogCrearLugarCompraBinding) y se muestra dentro
   de un MaterialAlertDialogBuilder, que aporta el título y los botones
-  Guardar/Cancelar. Reglas de estilo: cero textos y colores hardcodeados.
+  Guardar/Cancelar. El contenido se desplaza en pantallas pequeñas y la lista de
+  ítems tiene altura acotada (5-6 filas visibles) con scroll propio.
+
+  Reglas de estilo: cero textos y colores hardcodeados.
 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="24dp">
+    android:fillViewport="true">
 
-    <!-- Tipo de lugar: texto libre (Supermercado, Farmacia, etc.). -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/inputLayoutTipo"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="@string/dialog_crear_lugar_tipo">
+        android:orientation="vertical"
+        android:padding="24dp">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/inputTipo"
+        <!-- Tipo de lugar: Spinner con predefinidos + tipos personalizados. -->
+        <TextView
+            android:id="@+id/tvTipoLugarLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/dialog_crear_lugar_tipo"
+            android:textAppearance="?attr/textAppearanceLabelLarge" />
+
+        <Spinner
+            android:id="@+id/spinnerTipoLugar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:imeOptions="actionNext"
-            android:inputType="textCapWords" />
+            android:layout_marginTop="8dp"
+            android:minHeight="48dp" />
 
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <!-- Gasto promedio estimado en pesos CLP (entero, sin centavos). -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/inputLayoutGasto"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:hint="@string/dialog_crear_lugar_gasto">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/inputGasto"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:imeOptions="actionDone"
-            android:inputType="number"
-            android:maxLength="10" />
+            android:layout_marginTop="4dp"
+            android:orientation="horizontal">
 
-    </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAgregarTipo"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/dialog_crear_lugar_tipo_agregar" />
 
-</LinearLayout>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnEliminarTipo"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:enabled="false"
+                android:text="@string/dialog_crear_lugar_tipo_eliminar" />
+
+        </LinearLayout>
+
+        <!-- Gasto estimado opcional: vacío = sin gasto estimado (NULL). -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/inputLayoutGasto"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:hint="@string/dialog_crear_lugar_gasto"
+            app:helperText="@string/dialog_crear_lugar_gasto_ayuda">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputGasto"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:imeOptions="actionDone"
+                android:inputType="number"
+                android:maxLength="10" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Lista de compras editable al crear el lugar. -->
+        <TextView
+            android:id="@+id/tvListaCompraLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/dialog_crear_lugar_lista_titulo"
+            android:textAppearance="?attr/textAppearanceLabelLarge" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvItemsCompra"
+            android:layout_width="match_parent"
+            android:layout_height="320dp"
+            android:layout_marginTop="8dp"
+            android:clipToPadding="false"
+            android:scrollbars="vertical" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAgregarItem"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/dialog_crear_lugar_agregar_item"
+            app:icon="@drawable/ic_add_circle" />
+
+    </LinearLayout>
+
+</androidx.core.widget.NestedScrollView>

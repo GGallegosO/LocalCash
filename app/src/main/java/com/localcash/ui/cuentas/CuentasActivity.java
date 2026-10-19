@@ -6,12 +6,14 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.Toolbar;
@@ -29,10 +31,13 @@ import com.google.android.material.textfield.TextInputLayout;
 import com.localcash.R;
 import com.localcash.data.db.AppDatabase;
 import com.localcash.data.entities.Cuenta;
+import com.localcash.data.entities.ItemCompra;
 import com.localcash.data.entities.LugarCompra;
+import com.localcash.data.preferences.TiposLugarPreferencias;
 import com.localcash.data.relations.LugarCompraConItems;
 import com.localcash.databinding.ActivityCuentasBinding;
 import com.localcash.databinding.BottomSheetTransaccionBinding;
+import com.localcash.databinding.DialogAgregarTipoLugarBinding;
 import com.localcash.databinding.DialogCrearLugarCompraBinding;
 import com.localcash.databinding.ViewCuentasBinding;
 import com.localcash.databinding.ViewHistorialBinding;
@@ -42,6 +47,7 @@ import com.localcash.domain.model.TipoCuenta;
 import com.localcash.domain.model.TipoTransaccion;
 import com.localcash.domain.model.Transaccion;
 import com.localcash.ui.BaseActivity;
+import com.localcash.ui.compras.ItemCompraCreacionAdapter;
 import com.localcash.ui.mapa.MapaLecturaController;
 import com.localcash.ui.mapa.MapaPickerActivity;
 import com.localcash.ui.mapa.MapaViewModel;
@@ -373,20 +379,22 @@ public class CuentasActivity extends BaseActivity
             mapaController.mostrarLugaresCompra(lista);
         });
 
-        // Pulsación larga sobre el mapa: abre el diálogo de creación con las
-        // coordenadas del punto presionado (Feature 010, Fase 2).
+        // Pulsación larga sobre el mapa vacío: abre el diálogo de creación con
+        // las coordenadas del punto presionado (Feature 010, Fase 2).
         mapaController.setOnLongPressListener(this::mostrarDialogCrearLugarCompra);
     }
 
     /**
      * Muestra el diálogo para crear un lugar de compra en las coordenadas de
-     * una pulsación larga sobre el mapa (Feature 010, Fase 2).
+     * una pulsación larga sobre el mapa (Feature 010, Fases 2 y 2.5).
      * <p>
-     * El diálogo se infla con ViewBinding. La validación es local (tipo no
-     * vacío y gasto promedio entero no negativo); la persistencia se delega en
-     * {@link MapaViewModel#insertarLugar(LugarCompra)} para no tocar Room desde
-     * la vista. Al guardar, Room notifica al {@code LiveData} de lugares y el
-     * pin aparece en el mapa sin recargar manualmente.
+     * El diálogo se infla con ViewBinding. El tipo se elige de un Spinner que
+     * combina los predefinidos ({@code strings.xml}) con los personalizados
+     * persistidos en {@link TiposLugarPreferencias}. El gasto es opcional
+     * ({@code null} = sin gasto estimado) y la lista de ítems se edita en un
+     * RecyclerView. La persistencia se delega en
+     * {@link MapaViewModel#insertarLugar(LugarCompra, List)} para no tocar Room
+     * desde la vista.
      * </p>
      *
      * @param latitud  latitud del punto presionado
@@ -395,6 +403,12 @@ public class CuentasActivity extends BaseActivity
     private void mostrarDialogCrearLugarCompra(double latitud, double longitud) {
         DialogCrearLugarCompraBinding dialogBinding =
                 DialogCrearLugarCompraBinding.inflate(getLayoutInflater());
+
+        ItemCompraCreacionAdapter itemsAdapter = new ItemCompraCreacionAdapter();
+        dialogBinding.rvItemsCompra.setLayoutManager(new LinearLayoutManager(this));
+        dialogBinding.rvItemsCompra.setHasFixedSize(true);
+        dialogBinding.rvItemsCompra.setAdapter(itemsAdapter);
+        poblarSpinnerTipos(dialogBinding, null);
 
         AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.dialog_crear_lugar_titulo)
@@ -410,38 +424,81 @@ public class CuentasActivity extends BaseActivity
                     WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         }
 
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-            String tipo = dialogBinding.inputTipo.getText() != null
-                    ? dialogBinding.inputTipo.getText().toString().trim() : "";
-            if (tipo.isEmpty()) {
-                dialogBinding.inputLayoutTipo.setError(
-                        getString(R.string.dialog_crear_lugar_error_tipo));
-                return;
-            }
-            dialogBinding.inputLayoutTipo.setError(null);
+        dialogBinding.spinnerTipoLugar.setOnItemSelectedListener(
+                new AdapterView.OnItemSelectedListener() {
+                    @Override
+                    public void onItemSelected(AdapterView<?> parent, View view,
+                                               int position, long id) {
+                        Object seleccionado = parent.getItemAtPosition(position);
+                        boolean personalizado = seleccionado instanceof String
+                                && TiposLugarPreferencias.esPersonalizado(
+                                        CuentasActivity.this, (String) seleccionado);
+                        dialogBinding.btnEliminarTipo.setEnabled(personalizado);
+                    }
 
-            long gastoPromedio;
-            try {
-                String textoGasto = dialogBinding.inputGasto.getText() != null
-                        ? dialogBinding.inputGasto.getText().toString().trim() : "";
-                gastoPromedio = Long.parseLong(textoGasto);
-            } catch (NumberFormatException e) {
-                dialogBinding.inputLayoutGasto.setError(
-                        getString(R.string.dialog_crear_lugar_error_gasto));
+                    @Override
+                    public void onNothingSelected(AdapterView<?> parent) {
+                        dialogBinding.btnEliminarTipo.setEnabled(false);
+                    }
+                });
+
+        dialogBinding.btnAgregarTipo.setOnClickListener(
+                v -> mostrarDialogAgregarTipo(dialogBinding));
+        dialogBinding.btnEliminarTipo.setOnClickListener(
+                v -> eliminarTipoSeleccionado(dialogBinding));
+        dialogBinding.btnAgregarItem.setOnClickListener(v -> {
+            itemsAdapter.agregarItem();
+            dialogBinding.rvItemsCompra.scrollToPosition(itemsAdapter.getItemCount() - 1);
+        });
+
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            Object seleccion = dialogBinding.spinnerTipoLugar.getSelectedItem();
+            String tipo = seleccion instanceof String ? ((String) seleccion).trim() : "";
+            if (tipo.isEmpty()) {
+                Toast.makeText(this, R.string.dialog_crear_lugar_error_tipo,
+                        Toast.LENGTH_SHORT).show();
                 return;
             }
-            if (gastoPromedio < 0) {
-                dialogBinding.inputLayoutGasto.setError(
-                        getString(R.string.dialog_crear_lugar_error_gasto));
-                return;
+
+            // Gasto opcional: vacío se persiste como NULL.
+            Long gastoPromedio = null;
+            String textoGasto = dialogBinding.inputGasto.getText() != null
+                    ? dialogBinding.inputGasto.getText().toString().trim() : "";
+            if (!textoGasto.isEmpty()) {
+                try {
+                    gastoPromedio = Long.parseLong(textoGasto);
+                } catch (NumberFormatException e) {
+                    dialogBinding.inputLayoutGasto.setError(
+                            getString(R.string.dialog_crear_lugar_error_gasto));
+                    return;
+                }
+                if (gastoPromedio < 0) {
+                    dialogBinding.inputLayoutGasto.setError(
+                            getString(R.string.dialog_crear_lugar_error_gasto));
+                    return;
+                }
             }
             dialogBinding.inputLayoutGasto.setError(null);
+
+            // Lista de ítems: nombre obligatorio y cantidad ≥ 1.
+            List<ItemCompra> items = itemsAdapter.obtenerItems();
+            for (int i = 0; i < items.size(); i++) {
+                ItemCompra item = items.get(i);
+                String nombre = item.getNombre() == null ? "" : item.getNombre().trim();
+                if (nombre.isEmpty() || item.getCantidad() < 1) {
+                    dialogBinding.rvItemsCompra.scrollToPosition(i);
+                    Toast.makeText(this, R.string.dialog_crear_lugar_error_item,
+                            Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                item.setNombre(nombre);
+            }
 
             LugarCompra lugar = new LugarCompra(
                     latitud, longitud, tipo, gastoPromedio, System.currentTimeMillis());
 
             v.setEnabled(false);
-            mapaViewModel.insertarLugar(lugar).observe(this, guardado -> {
+            mapaViewModel.insertarLugar(lugar, items).observe(this, guardado -> {
                 if (Boolean.TRUE.equals(guardado)) {
                     Toast.makeText(this, R.string.dialog_crear_lugar_toast_creado,
                             Toast.LENGTH_SHORT).show();
@@ -453,6 +510,119 @@ public class CuentasActivity extends BaseActivity
                 }
             });
         });
+    }
+
+    /**
+     * Repuebla el Spinner de tipos con los predefinidos y los personalizados.
+     *
+     * @param dialogBinding binding del diálogo de creación
+     * @param seleccionado  tipo a seleccionar tras repoblar ({@code null} = primero)
+     */
+    private void poblarSpinnerTipos(@NonNull DialogCrearLugarCompraBinding dialogBinding,
+                                    @Nullable String seleccionado) {
+        List<String> tipos = new ArrayList<>();
+        for (String tipo : getResources().getStringArray(R.array.tipos_lugar_predefinidos)) {
+            tipos.add(tipo);
+        }
+        tipos.addAll(TiposLugarPreferencias.obtenerPersonalizados(this));
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                this, android.R.layout.simple_spinner_item, tipos);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        dialogBinding.spinnerTipoLugar.setAdapter(adapter);
+
+        String tipoActual = seleccionado;
+        if (tipoActual == null && !tipos.isEmpty()) {
+            tipoActual = tipos.get(0);
+        }
+        if (tipoActual != null) {
+            int posicion = tipos.indexOf(tipoActual);
+            if (posicion >= 0) {
+                dialogBinding.spinnerTipoLugar.setSelection(posicion);
+            }
+            dialogBinding.btnEliminarTipo.setEnabled(
+                    TiposLugarPreferencias.esPersonalizado(this, tipoActual));
+        } else {
+            dialogBinding.btnEliminarTipo.setEnabled(false);
+        }
+    }
+
+    /**
+     * Abre el mini-diálogo para agregar un tipo personalizado y, si se guarda,
+     * lo agrega al Spinner del diálogo de creación.
+     *
+     * @param dialogBinding binding del diálogo de creación
+     */
+    private void mostrarDialogAgregarTipo(@NonNull DialogCrearLugarCompraBinding dialogBinding) {
+        DialogAgregarTipoLugarBinding tipoBinding =
+                DialogAgregarTipoLugarBinding.inflate(getLayoutInflater());
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.dialog_agregar_tipo_titulo)
+                .setView(tipoBinding.getRoot())
+                .setPositiveButton(R.string.dialog_agregar_tipo_guardar, null)
+                .setNegativeButton(R.string.dialog_agregar_tipo_cancelar, null)
+                .create();
+        dialog.show();
+
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String tipo = tipoBinding.inputNuevoTipo.getText() != null
+                    ? tipoBinding.inputNuevoTipo.getText().toString().trim() : "";
+            if (tipo.isEmpty()) {
+                tipoBinding.inputLayoutNuevoTipo.setError(
+                        getString(R.string.dialog_agregar_tipo_error_vacio));
+                return;
+            }
+            if (existeTipoEnSpinner(dialogBinding, tipo)
+                    || !TiposLugarPreferencias.agregarPersonalizado(this, tipo)) {
+                tipoBinding.inputLayoutNuevoTipo.setError(
+                        getString(R.string.dialog_agregar_tipo_error_duplicado));
+                return;
+            }
+            poblarSpinnerTipos(dialogBinding, tipo);
+            dialog.dismiss();
+        });
+    }
+
+    /**
+     * Elimina el tipo personalizado seleccionado en el Spinner. Los
+     * predefinidos no se pueden eliminar.
+     *
+     * @param dialogBinding binding del diálogo de creación
+     */
+    private void eliminarTipoSeleccionado(@NonNull DialogCrearLugarCompraBinding dialogBinding) {
+        Object seleccion = dialogBinding.spinnerTipoLugar.getSelectedItem();
+        if (!(seleccion instanceof String)) {
+            return;
+        }
+        String tipo = ((String) seleccion).trim();
+        if (!TiposLugarPreferencias.esPersonalizado(this, tipo)) {
+            Toast.makeText(this, R.string.dialog_crear_lugar_tipo_solo_personalizados,
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
+        TiposLugarPreferencias.eliminarPersonalizado(this, tipo);
+        poblarSpinnerTipos(dialogBinding, null);
+        Toast.makeText(this, R.string.dialog_crear_lugar_tipo_eliminado,
+                Toast.LENGTH_SHORT).show();
+    }
+
+    /**
+     * Indica si un tipo ya existe en el Spinner (predefinido o personalizado).
+     *
+     * @param dialogBinding binding del diálogo de creación
+     * @param tipo          nombre a buscar (sin distinguir mayúsculas)
+     * @return {@code true} si ya está en la lista
+     */
+    private boolean existeTipoEnSpinner(@NonNull DialogCrearLugarCompraBinding dialogBinding,
+                                        @NonNull String tipo) {
+        for (int i = 0; i < dialogBinding.spinnerTipoLugar.getCount(); i++) {
+            Object item = dialogBinding.spinnerTipoLugar.getItemAtPosition(i);
+            if (item instanceof String && ((String) item).equalsIgnoreCase(tipo)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

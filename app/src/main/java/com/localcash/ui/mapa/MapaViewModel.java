@@ -11,6 +11,7 @@ import androidx.lifecycle.ViewModel;
 import com.localcash.data.dao.LugarCompraDao;
 import com.localcash.data.dao.TransaccionDao;
 import com.localcash.data.db.AppDatabase;
+import com.localcash.data.entities.ItemCompra;
 import com.localcash.data.entities.LugarCompra;
 import com.localcash.data.relations.LugarCompraConItems;
 import com.localcash.domain.model.Transaccion;
@@ -93,23 +94,25 @@ public class MapaViewModel extends ViewModel {
     }
 
     /**
-     * Inserta un lugar de compra sin ítems en un hilo secundario.
+     * Inserta un lugar de compra y su lista de ítems en un hilo secundario.
      * <p>
-     * Usa {@link LugarCompraDao#insertLugarConItems(LugarCompra, List)} con una
-     * lista vacía: la cabecera y sus ítems (en fases posteriores) se guardan en
-     * una sola transacción. El resultado se publica en el hilo principal a
+     * Usa {@link LugarCompraDao#insertLugarConItems(LugarCompra, List)}: la
+     * cabecera y sus ítems se guardan en una sola transacción, asignando el id
+     * generado a cada ítem. El resultado se publica en el hilo principal a
      * través del {@link MutableLiveData} para que la vista muestre el aviso.
      * </p>
      *
      * @param lugar Lugar de compra a insertar
+     * @param items Ítems de la lista (puede ser vacía)
      * @return LiveData que emite {@code true} si se guardó y {@code false} si
      *         falló la persistencia
      */
-    public LiveData<Boolean> insertarLugar(@NonNull LugarCompra lugar) {
+    public LiveData<Boolean> insertarLugar(@NonNull LugarCompra lugar,
+                                           @NonNull List<ItemCompra> items) {
         MutableLiveData<Boolean> resultado = new MutableLiveData<>();
         AppDatabase.getExecutor().execute(() -> {
             try {
-                lugarCompraDao.insertLugarConItems(lugar, new ArrayList<>());
+                lugarCompraDao.insertLugarConItems(lugar, items);
                 resultado.postValue(Boolean.TRUE);
             } catch (RuntimeException e) {
                 Log.e(TAG, "No se pudo insertar el lugar de compra", e);

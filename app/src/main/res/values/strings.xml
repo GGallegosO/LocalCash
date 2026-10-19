@@ -193,4 +193,49 @@
     <string name="dialog_crear_lugar_toast_error">No se pudo crear el lugar de compra</string>
     <string name="dialog_crear_lugar_error_tipo">Ingresa el tipo de lugar</string>
     <string name="dialog_crear_lugar_error_gasto">Ingresa un gasto promedio válido</string>
+    <string name="dialog_crear_lugar_gasto_ayuda">Dejar vacío si no aplica</string>
+    <string name="dialog_crear_lugar_lista_titulo">Lista de compras</string>
+    <string name="dialog_crear_lugar_agregar_item">Agregar item</string>
+    <string name="dialog_crear_lugar_error_item">Completa el nombre y la cantidad de todos los items</string>
+    <string name="dialog_crear_lugar_tipo_agregar">Agregar tipo</string>
+    <string name="dialog_crear_lugar_tipo_eliminar">Eliminar tipo</string>
+    <string name="dialog_crear_lugar_tipo_solo_personalizados">Solo puedes eliminar tipos personalizados</string>
+    <string name="dialog_crear_lugar_tipo_eliminado">Tipo eliminado</string>
+
+    <!-- Mini-diálogo para agregar un tipo de lugar personalizado -->
+    <string name="dialog_agregar_tipo_titulo">Agregar tipo de lugar</string>
+    <string name="dialog_agregar_tipo_hint">Nombre del tipo</string>
+    <string name="dialog_agregar_tipo_error_vacio">Ingresa un nombre</string>
+    <string name="dialog_agregar_tipo_error_duplicado">Ese tipo ya existe</string>
+    <string name="dialog_agregar_tipo_guardar">Agregar</string>
+    <string name="dialog_agregar_tipo_cancelar">Cancelar</string>
+
+    <!-- Tipos de lugar predefinidos (los personalizados se agregan en runtime) -->
+    <string-array name="tipos_lugar_predefinidos">
+        <item>Supermercado</item>
+        <item>Farmacia</item>
+        <item>Ferretería</item>
+        <item>Panadería</item>
+        <item>Verdulería</item>
+        <item>Otro</item>
+    </string-array>
+
+    <!-- Fila editable de un ítem durante la creación del lugar -->
+    <string name="item_compra_nombre_hint">Producto</string>
+    <string name="item_compra_cantidad_hint">Cantidad</string>
+    <string name="item_compra_eliminar">Eliminar item</string>
+
+    <!-- InfoWindow del pin de un lugar de compra -->
+    <string name="mapa_compra_info_titulo">Tipo: %1$s</string>
+    <string name="mapa_compra_info_gasto">Gasto estimado: %1$s</string>
+    <string name="mapa_compra_info_sin_gasto">Sin gasto estimado</string>
+    <string name="mapa_compra_info_ver_detalle">Ver detalle</string>
+    <plurals name="mapa_compra_info_items">
+        <item quantity="one">%1$d item en la lista</item>
+        <item quantity="other">%1$d items en la lista</item>
+    </plurals>
+
+    <!-- Placeholder de la Activity de detalle (Fase 4) -->
+    <string name="detalle_lugar_titulo_barra">Detalle del lugar</string>
+    <string name="detalle_lugar_texto">Detalle del lugar: %1$d</string>
 </resources>
