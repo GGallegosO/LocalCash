@@ -1,4 +1,4 @@
-# doc/008-historial.md — Registro de Memoria: Historial de Movimientos (Fase 2 avanzada)
+# doc/008-historial.md — Registro de Memoria: Historial de Movimientos (Fases 2-3 completas)
 
 > **Propósito de este archivo:** Dejar constancia de qué se decidió y qué se hizo en la Feature 008
 > (`spec/features/008-historial/`) y, sobre todo, **del estado real a la fecha**: una entrega
@@ -13,7 +13,7 @@
 | **Fecha** | 2026-10-18 |
 | **Tarea ejecutada** | Feature 008 — Historial de movimientos: lista, botón flotante y panel de registro |
 | **Responsable** | GG |
-| **Estado** | **Parcialmente completado (Fase 2 avanzada)**. Historial cableado a Room y sin datos de prueba; faltan la geolocalización y el saldo dinámico (T12). No cumple todavía la Definition of Done completa. |
+| **Estado** | **Parcialmente completado (Fases 2 y 3 completas)**. Historial cableado a Room, sin datos de prueba y con saldo dinámico; falta la geolocalización/mapa (Fase 4). No cumple todavía la Definition of Done completa. |
 | **Rama** | `feat/008-historial` |
 
 ---
@@ -34,7 +34,12 @@ mapeo de la navegación inferior.
 - Navegación inferior con índices correctos (Mapa/Contactos ya no estaban cruzados) y títulos del
   encabezado alineados a la pestaña activa.
 - Historial cableado a Room mediante `HistorialViewModel`: la lista y el estado vacío se actualizan en
-  vivo y un movimiento recién guardado aparece sin recargar (T8/T10/T11).
+  vivo y un movimiento recién guardado aparece sin recargar (T8/T10/T11/T17).
+- **Saldo dinámico (T12):** al registrar un movimiento, el saldo de la cuenta y el **saldo total** se
+  actualizan solos. `CuentasViewModel.getSaldoTotal()` se deriva de `CuentaDao.getAll()` (Room reactivo)
+  y las escrituras se serializan en el executor único de `AppDatabase`.
+- El selector de cuentas del panel se rellena de forma **observable** (T18): se refresca si las cuentas
+  cambian mientras el panel está abierto.
 - El campo **Concepto** del panel de registro ofrece **sugerencias predefinidas**
   (Transporte, Supermercado, Alimentación, Casa, Entretenimiento, Salud, Servicios, Educación, Otros)
   sin dejar de ser editable: el usuario puede elegir una sugerencia o escribir un concepto propio.
@@ -45,7 +50,6 @@ mapeo de la navegación inferior.
 **Deuda técnica explícita (ver `tasks.md`):**
 - La **geolocalización** está diseñada y especificada, pero **no implementada**: no hay columnas de
   coordenadas en la entidad, ni permisos en el manifiesto, ni captura real, ni migración de base de datos.
-- El **saldo total** no se refresca dinámicamente en la vista de historial tras registrar (T12).
 
 ---
 
@@ -121,8 +125,7 @@ mapeo de la navegación inferior.
 - `./gradlew connectedCheck`: **no ejecutado** (requiere dispositivo/emulador activo).
 
 > Estas validaciones cubren el estado **parcialmente completado**. No habilitan el cierre de la
-> feature: faltan la geolocalización (CA-7), la limpieza de datos mock (T9) y la verificación de
-> migración.
+> feature: falta la geolocalización/mapa (CA-7, Fase 4) y la verificación de migración (Fase 5).
 
 - Re-verificado tras T8e y T9 (2026-10-19): `./gradlew assembleDebug` y `./gradlew lint`
   → BUILD SUCCESSFUL (0 errores, 41 advertencias preexistentes, 0 nuevas).
@@ -149,13 +152,14 @@ mapeo de la navegación inferior.
 
 ## Próximos pasos pendientes
 
-1. **T12 — Actualización dinámica del saldo total** tras registrar un movimiento.
-2. **Implementar la geolocalización** (Fase 4): columnas, migración 2→3, permisos, captura y
-   persistencia (T19-T26).
-3. **Verificar la migración** y cubrir los criterios de aceptación con tests (T27, T28).
-4. **Ejecutar la Definition of Done completa** (incluido `connectedCheck`) y cerrar el registro (T29, T30).
+1. **Implementar la geolocalización y el mapa** (Fase 4): columnas, migración 2→3, permisos y el flujo
+   del interruptor "Geolocalizar" → Activity de mapa para fijar un pin (T19-T26). Requiere decidir la
+   tecnología de mapa offline y registrarla en `tech-stack.md`.
+2. **Verificar la migración** y cubrir los criterios de aceptación con tests (T27, T28).
+3. **Ejecutar la Definition of Done completa** (incluido `connectedCheck`) y cerrar el registro (T29, T30).
 
-**Ya resueltas:** T8 (cableado a Room), T9 (retiro de datos de prueba), T10 (estado vacío real) y
-T11 (refresco dinámico por LiveData).
+**Ya resueltas:** T8 (cableado a Room), T9 (retiro de datos de prueba), T10 (estado vacío real),
+T11 (refresco dinámico por LiveData), T12 (saldo dinámico), T17 (refresco tras registrar) y
+T18 (selector de cuentas observable).
 
 Estos pasos están detallados y estado-lizados en `spec/features/008-historial/tasks.md`.

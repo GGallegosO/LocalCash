@@ -1,9 +1,8 @@
 # tasks.md — Checklist Secuencial de Ejecución
 
 > **Identificación:** 008-historial | **Derivado de:** `spec.md` + `plan.md`
-> **Estado global:** Parcialmente completado (Fase 2 avanzada) — el historial se alimenta de Room, se
-> refresca por LiveData y ya no contiene datos de prueba. Pendiente inmediato: T12 (saldo); además,
-> las Fases 4-5.
+> **Estado global:** Parcialmente completado — Fases 2 y 3 completas. Pendiente: Fase 4 (geolocalización
+> y mapa) y Fase 5 (verificación y cierre).
 >
 > **Propósito de este documento:** Descomponer la implementación en pasos ejecutables, ordenados y
 > verificables. Cada casilla marcada `[x]` debe corresponder a un cambio real comprobable (tests
@@ -33,7 +32,7 @@
       El índice guardado se acota a 0..3 para no referenciar una vista eliminada.
       *Criterio de salida:* rotación/cambio de tema no rompe la navegación.
 
-## Fase 2 — Historial (avanzada; queda T12) ⏳
+## Fase 2 — Historial ✅
 
 - [x] **T5. Layout de la vista de historial.**
       `view_historial.xml`: lista desplazable, estado vacío y botón flotante.
@@ -57,11 +56,13 @@
 - [x] **T11. Refresco dinámico tras registrar (CA-6).**
       El `LiveData` de Room re-emite al insertar, así que el movimiento aparece en la lista sin
       recargar la pantalla.
-- [ ] **T12. Actualización dinámica del saldo total.**
-      Verificar/garantizar que el saldo consolidado de las cuentas refleja el movimiento recién
-      registrado en la vista de historial.
+- [x] **T12. Actualización dinámica del saldo total.**
+      Verificado: `CuentasViewModel.getSaldoTotal()` se deriva con `Transformations.map` de
+      `CuentaDao.getAll()` (Room reactivo). Al registrar, el executor único de `AppDatabase`
+      (`newSingleThreadExecutor`) serializa `insert` + `updateSaldo`, Room re-emite y el saldo total y
+      el de la cuenta seleccionada se actualizan sin recargar. ✅
 
-## Fase 3 — Registro vía panel inferior (parcial) ⏳
+## Fase 3 — Registro vía panel inferior ✅
 
 - [x] **T13. Layout del formulario de registro.**
       `bottom_sheet_transaccion.xml`: Ingreso/Egreso (toggle), Monto, Cuenta (dropdown), Concepto,
@@ -75,13 +76,21 @@
       mensajes accionables.
 - [x] **T16. Manejo de éxito y error del registro.**
       Éxito: mensaje, limpiar formulario, cerrar panel. Error: mensaje y panel abierto.
-- [ ] **T17. Refresco del historial tras un registro exitoso.**
-      Depende de T8/T11.
-- [ ] **T18. Poblar el selector de cuentas desde datos observables.**
-      Hoy se puebla puntualmente; verificar que se actualiza si cambian las cuentas mientras el panel
-      está abierto.
+- [x] **T17. Refresco del historial tras un registro exitoso.**
+      Cubierto por T8/T11: `HistorialViewModel` observa `TransaccionDao.getAll()`; tras registrar,
+      Room re-emite y la lista se actualiza sola. ✅
+- [x] **T18. Poblar el selector de cuentas desde datos observables.**
+      `configurarTransaccionViewModel` observa `TransaccionViewModel.getCuentasActivas()` y, si el panel
+      está abierto (`sheetTransaccionBinding != null`), repuebla el selector con
+      `poblarSpinnerCuentas`. ✅
 
-## Fase 4 — Geolocalización (PENDIENTE) ⏳
+## Fase 4 — Geolocalización y mapa (PENDIENTE) ⏳
+
+> **Aclaración (2026-10-19):** al activar el interruptor "Geolocalizar" **no** se captura la ubicación en
+> silencio: debe abrir la **Activity de mapa** para que el usuario fije un pin. Ese mapa también mostrará
+> los pines de los movimientos y, a futuro, los de una **lista de compras**, con **colores distintos**
+> según su origen. La tecnología de mapa debe ser **offline** y registrarse en `tech-stack.md` antes de
+> usarla (prohibición dura de `.agent.md`).
 
 - [ ] **T19. Añadir las columnas de coordenadas a la entidad Room de movimientos.**
       `latitud` (`REAL`), `longitud` (`REAL`), `direccionLugar` (`TEXT`), según `data-model.md`.
@@ -125,6 +134,6 @@
 | `./gradlew assembleDebug` | BUILD SUCCESSFUL | 18/10/2026 |
 | `./gradlew connectedCheck` | No ejecutado (requiere dispositivo) | — |
 
-> El historial se alimenta de Room y ya no contiene datos de prueba (T8/T9/T10/T11). Queda sin
-> implementar la **geolocalización** (Fase 4) y el saldo dinámico (T12). Estas verificaciones deben
-> repetirse al cerrar las Fases 4 y 5.
+> El historial se alimenta de Room, ya no contiene datos de prueba (T8/T9/T10/T11/T17), el saldo se
+> actualiza dinámicamente (T12) y el selector de cuentas es observable (T18). Queda sin implementar la
+> **Fase 4 (geolocalización y mapa)** y la verificación/cierre de la **Fase 5**.
