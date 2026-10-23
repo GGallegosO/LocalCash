@@ -460,8 +460,10 @@ public class CuentasActivity extends BaseActivity
      * Abre el BottomSheet con la lista de lugares activos. Al tocar uno, el
      * mapa se centra en su pin y muestra la ventana de información (CA-15).
      * <p>
-     * El detalle completo en BottomSheet llega en la Fase 3 (T19); en esta fase
-     * el detalle ligero es la ventana del marcador.
+     * Seleccionar desde la lista es solo navegación: no abre el editor del pin
+     * ni cambia su estado, por lo que el lugar sigue apareciendo en "Mis
+     * lugares". El editor se abre manteniendo pulsado el mapa (alta de pin) o
+     * tocando un marcador en el mapa.
      * </p>
      */
     private void mostrarListaLugares() {
@@ -477,8 +479,9 @@ public class CuentasActivity extends BaseActivity
             dialog.dismiss();
             binding.viewFlipper.setDisplayedChild(2);
             binding.bottomNav.setSelectedItemId(R.id.nav_mapa);
+            // Solo centra la cámara y resalta el pin: abrir el detalle desde
+            // aquí permitía cerrar/eliminar el lugar y lo sacaba de la lista.
             mapaController.mostrarLugar(lugar);
-            mostrarDetalleLugar(lugar);
         });
 
         refrescarEstadoListaLugares();
