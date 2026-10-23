@@ -84,7 +84,7 @@ mapeo de la navegación inferior.
 - `app/src/main/res/layout/view_transaccion.xml` (la vista propia de registro, sustituida por el panel).
 
 **Renuméricación asociada:**
-- `doc/008-actualizacion-diagrama.md` → `doc/009-actualizacion-diagrama.md`, para respetar la
+- `doc/008-actualizacion-diagrama.md` → `doc/010-actualizacion-diagrama.md`, para respetar la
   numeración compartida `spec/features/NNN` ↔ `doc/NNN` (ese registro se había creado como `008`
   cuando `007` era la feature activa).
 
@@ -168,7 +168,7 @@ La Feature 008 queda **cerrada**. Todo lo relativo a la geolocalización se cont
 **Tecnología:** osmdroid 6.1.x ya está registrada en `tech-stack.md` §2; se re-confirmó el 2026-10-19
 frente a MapLibre Native (registro en §7 de ese documento).
 
-**Nota de numeración:** existe `doc/009-actualizacion-diagrama.md`; al cerrar la Feature 009 habrá que
+**Nota de numeración:** existe `doc/010-actualizacion-diagrama.md`; al cerrar la Feature 009 habrá que
 renombrarlo para respetar la numeración compartida (propuesta en
 `spec/features/009-geolocalizacion-map/plan.md` §7).
 

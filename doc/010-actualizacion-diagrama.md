@@ -1,4 +1,4 @@
-# doc/009-actualizacion-diagrama.md — Sincronizaciones del ERD de LocalCash
+# doc/010-actualizacion-diagrama.md — Sincronizaciones del ERD de LocalCash
 
 ## Ficha de la tarea
 
@@ -30,11 +30,12 @@ estructurales. El único cambio previo era semántico: unidad monetaria de centa
   `AGENTS.md` "Reglas del esquema de datos" (ya dice pesos CLP + excepción documentada en
   `doc/007-cuentas.md` y `spec/features/007-cuentas/plan.md`). No se tocó la regla
   "el Mermaid es la fuente de verdad".
-- **Creado:** este archivo `doc/009-actualizacion-diagrama.md`.
+- **Creado:** este archivo `doc/010-actualizacion-diagrama.md`.
 
-Nota de numeración: este registro se creó originalmente como `008` porque `007` era la feature
-activa por entonces. Al abrirse la Feature 008 (`spec/features/008-historial/`) se **reasignó a
-`009`** para respetar la numeración compartida `spec/features/NNN` ↔ `doc/NNN` (`.agent.md`).
+Nota de numeración: este registro nació como `008` (porque `007` era la feature activa), se
+**reasignó a `009`** al abrirse la Feature 008 y, al cerrar la Feature 009, se movió definitivamente
+a `009` → `10`: el nuevo número libre disponible en ese momento. La numeración queda
+`doc/NNN` ↔ `spec/features/NNN` (`.agent.md`).
 
 ## Decisiones tomadas
 
@@ -102,9 +103,27 @@ es estructural y obliga a sincronizar el diagrama y el DDL canónico.
 - El SVG de `spec/constitution/diagrams/erd-localcash.svg` queda pendiente de regeneración: el
   Mermaid es la fuente de verdad y la herramienta de render no está disponible en el entorno.
 
+### Actualización 2026-10-23 (cierre de la Feature 009)
+
+La feature se implementó con la migración Room **2 → 3** (no 1 → 2, porque `cuentas.activa` de la
+Feature 007 ya llevaba el archivo a la versión 2 de Room). El esquema del archivo quedó en
+`user_version = 3` con cuatro tablas: `cuentas`, `transacciones`, `LUGARES`, `ITEMS_LUGAR`.
+
+Desviaciones conscientes respecto al DDL canónico de este documento, sincronizadas en
+`spec/constitution/data-model.md` (§3.9 y nota de §6):
+
+- Room no permite `CHECK` en `@Entity`: las reglas canon (nombre/emoji no vacíos, dominio de tipos,
+  rango WGS84, par coordenada atómica) las valida `LugarService`/`Ubicacion` con tests propios.
+- Índices con la convención de nombres de Room (`index_LUGARES_*`, `index_ITEMS_LUGAR_lugar_id`).
+- El único del vínculo es no parcial; en SQLite los `NULL` no colisionan, así que semánticamente
+  equivale al `ux_lugares_transaccion` parcial canon.
+
+Validación del archivo real: `LugarDaoTest.testForeignKeysActivasEnLaConexion` comprueba
+`PRAGMA foreign_keys` por conexión y `MigracionV2V3Test` siembra el esquema v2 real, aplica la
+migración y verifica `PRAGMA foreign_key_check` limpio y `user_version = 3`.
+
 ### Nota de numeración
 
-Este registro conserva el nombre `doc/009-actualizacion-diagrama.md` por continuidad histórica. Al
-cerrar la Feature 009 se creará `doc/009-geolocalizacion-map.md`; la colisión se resolverá antes del
-cierre moviendo este registro a un número libre (ver `spec/features/009-geolocalizacion-map/plan.md`
-§7).
+Al cerrar la Feature 009 este registro se movió a `doc/010-actualizacion-diagrama.md` para liberar
+el número 009 para el registro de memoria (`doc/009-geolocalizacion-map.md`), respetando la
+numeración compartida `doc/NNN` ↔ `spec/features/NNN` (`.agent.md`).

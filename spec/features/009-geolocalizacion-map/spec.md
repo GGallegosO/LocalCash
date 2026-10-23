@@ -81,24 +81,24 @@ se gestionan con las mismas acciones, pero el detalle indica su origen.
 
 | ID    | Criterio de Aceptación | Estado |
 |-------|------------------------|--------|
-| CA-1  | **Dado** el panel de registro con el interruptor "Geolocalizar", **cuando** el usuario lo activa, **entonces** el sistema abre una vista de mapa para elegir un punto. | ⏳ Pendiente |
-| CA-2  | **Dado** la vista de mapa abierta desde el registro, **cuando** el usuario elige un punto y confirma, **entonces** vuelve al panel con ambas coordenadas y el movimiento queda listo para guardarse con ubicación. | ⏳ Pendiente |
-| CA-3  | **Dado** un movimiento guardado con coordenadas, **cuando** el sistema persiste, **entonces** crea un pin vinculado a ese movimiento y lo muestra en la pestaña "Mapa". | ⏳ Pendiente |
-| CA-4  | **Dado** un movimiento sin punto confirmado, **cuando** el usuario lo guarda, **entonces** el movimiento se guarda sin coordenadas, sin pin y sin error. | ⏳ Pendiente |
-| CA-5  | **Dado** el usuario en la pestaña "Mapa", **cuando** mantiene pulsado un punto del mapa, **entonces** el sistema abre el formulario de nuevo pin con esa coordenada. | ⏳ Pendiente |
-| CA-6  | **Dado** el formulario de nuevo pin, **cuando** el usuario elige un tipo de lugar, **entonces** el sistema muestra el emoji asociado y permite confirmar el pin. | ⏳ Pendiente |
-| CA-7  | **Dado** el formulario de nuevo pin, **cuando** el usuario no escribe nombre, **entonces** el sistema usa el nombre del tipo de lugar como nombre por defecto y no bloquea el guardado. | ⏳ Pendiente |
-| CA-8  | **Dado** el detalle de un pin, **cuando** el usuario agrega, edita o marca como completado un elemento de la lista, **entonces** el cambio se persiste y se refleja al volver a abrir el pin. | ⏳ Pendiente |
-| CA-9  | **Dado** un pin existente, **cuando** el usuario edita su nombre, tipo, emoji o descripción, **entonces** el cambio se guarda y se refleja en el mapa y en la lista de lugares. | ⏳ Pendiente |
-| CA-10 | **Dado** un pin independiente, **cuando** el usuario edita su posición, **entonces** el mapa actualiza el pin; un pin vinculado a un movimiento conserva la posición del movimiento y no permite moverla. | ⏳ Pendiente |
-| CA-11 | **Dado** un pin existente, **cuando** el usuario confirma su eliminación, **entonces** el pin y su lista de cosas desaparecen del mapa y de la lista de lugares. | ⏳ Pendiente |
-| CA-12 | **Dado** un pin abierto, **cuando** el usuario lo cierra, **entonces** deja de listarse entre los lugares activos, permanece visible con estilo atenuado y puede reabrirse. | ⏳ Pendiente |
-| CA-13 | **Dado** el botón "Mi ubicación", **cuando** el usuario lo pulsa y concede el permiso, **entonces** el mapa se centra en su posición actual. | ⏳ Pendiente |
-| CA-14 | **Dado** el permiso de ubicación denegado o sin señal, **cuando** el usuario pulsa "Mi ubicación", **entonces** el sistema informa la situación y el mapa sigue operativo sin bloquearse. | ⏳ Pendiente |
-| CA-15 | **Dado** la lista de lugares, **cuando** el usuario toca un lugar, **entonces** el mapa se centra en su pin y abre su detalle. | ⏳ Pendiente |
-| CA-16 | **Dado** un pin vinculado a un movimiento, **cuando** el usuario abre su detalle, **entonces** el sistema indica que proviene de un movimiento y muestra la información del lugar sin duplicar el pin. | ⏳ Pendiente |
-| CA-17 | **Dado** el mapa sin conexión, **cuando** el usuario lo abre, **entonces** los pines y las listas siguen disponibles y el sistema no se bloquea si las teselas base no pueden descargarse. | ⏳ Pendiente |
-| CA-18 | **Dado** una base con datos de la versión anterior, **cuando** la app se actualiza, **entonces** la migración conserva cuentas y movimientos y crea la estructura de lugares sin pérdida de información. | ⏳ Pendiente |
+| CA-1  | **Dado** el panel de registro con el interruptor "Geolocalizar", **cuando** el usuario lo activa, **entonces** el sistema abre una vista de mapa para elegir un punto. | ✅ Verificado |
+| CA-2  | **Dado** la vista de mapa abierta desde el registro, **cuando** el usuario elige un punto y confirma, **entonces** vuelve al panel con ambas coordenadas y el movimiento queda listo para guardarse con ubicación. | ✅ Verificado |
+| CA-3  | **Dado** un movimiento guardado con coordenadas, **cuando** el sistema persiste, **entonces** crea un pin vinculado a ese movimiento y lo muestra en la pestaña "Mapa". | ✅ Verificado |
+| CA-4  | **Dado** un movimiento sin punto confirmado, **cuando** el usuario lo guarda, **entonces** el movimiento se guarda sin coordenadas, sin pin y sin error. | ✅ Verificado |
+| CA-5  | **Dado** el usuario en la pestaña "Mapa", **cuando** mantiene pulsado un punto del mapa, **entonces** el sistema abre el formulario de nuevo pin con esa coordenada. | ✅ Verificado |
+| CA-6  | **Dado** el formulario de nuevo pin, **cuando** el usuario elige un tipo de lugar, **entonces** el sistema muestra el emoji asociado y permite confirmar el pin. | ✅ Verificado |
+| CA-7  | **Dado** el formulario de nuevo pin, **cuando** el usuario no escribe nombre, **entonces** el sistema usa el nombre del tipo de lugar como nombre por defecto y no bloquea el guardado. | ✅ Verificado |
+| CA-8  | **Dado** el detalle de un pin, **cuando** el usuario agrega, edita o marca como completado un elemento de la lista, **entonces** el cambio se persiste y se refleja al volver a abrir el pin. | ✅ Verificado |
+| CA-9  | **Dado** un pin existente, **cuando** el usuario edita su nombre, tipo, emoji o descripción, **entonces** el cambio se guarda y se refleja en el mapa y en la lista de lugares. | ✅ Verificado |
+| CA-10 | **Dado** un pin independiente, **cuando** el usuario edita su posición, **entonces** el mapa actualiza el pin; un pin vinculado a un movimiento conserva la posición del movimiento y no permite moverla. | ✅ Verificado |
+| CA-11 | **Dado** un pin existente, **cuando** el usuario confirma su eliminación, **entonces** el pin y su lista de cosas desaparecen del mapa y de la lista de lugares. | ✅ Verificado |
+| CA-12 | **Dado** un pin abierto, **cuando** el usuario lo cierra, **entonces** deja de listarse entre los lugares activos, permanece visible con estilo atenuado y puede reabrirse. | ✅ Verificado |
+| CA-13 | **Dado** el botón "Mi ubicación", **cuando** el usuario lo pulsa y concede el permiso, **entonces** el mapa se centra en su posición actual. | ✅ Verificado |
+| CA-14 | **Dado** el permiso de ubicación denegado o sin señal, **cuando** el usuario pulsa "Mi ubicación", **entonces** el sistema informa la situación y el mapa sigue operativo sin bloquearse. | ✅ Verificado |
+| CA-15 | **Dado** la lista de lugares, **cuando** el usuario toca un lugar, **entonces** el mapa se centra en su pin y abre su detalle. | ✅ Verificado |
+| CA-16 | **Dado** un pin vinculado a un movimiento, **cuando** el usuario abre su detalle, **entonces** el sistema indica que proviene de un movimiento y muestra la información del lugar sin duplicar el pin. | ✅ Verificado |
+| CA-17 | **Dado** el mapa sin conexión, **cuando** el usuario lo abre, **entonces** los pines y las listas siguen disponibles y el sistema no se bloquea si las teselas base no pueden descargarse. | ✅ Verificado |
+| CA-18 | **Dado** una base con datos de la versión anterior, **cuando** la app se actualiza, **entonces** la migración conserva cuentas y movimientos y crea la estructura de lugares sin pérdida de información. | ✅ Verificado |
 
 ---
 

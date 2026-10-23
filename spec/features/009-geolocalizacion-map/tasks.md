@@ -1,7 +1,7 @@
 # tasks.md — Checklist Secuencial de Ejecución
 
 > **Identificación:** 009-geolocalizacion-map | **Derivado de:** `spec.md` + `plan.md`
-> **Estado global:** Fases 0 a 5 completadas; Fase 6 (cierre y verificación final) en curso.
+> **Estado global:** Feature 009 completada: Fases 0–6 terminadas, DoD en verde y memoria cerrada (`doc/009-geolocalizacion-map.md`).
 >
 > **Propósito de este documento:** Descomponer la implementación en pasos ejecutables, ordenados y
 > verificables. Cada casilla marcada `[x]` debe corresponder a un cambio real comprobable (tests
@@ -30,7 +30,7 @@
       `tech-stack.md` §2/§7 (MapLibre reemplaza a osmdroid), `.agent.md` §2 (stack vigente),
       `roadmap.md` (hito y deuda técnica) y `data-model.md` (nuevas tablas, ERD, DDL, versión).
 - [x] **T5. Sincronizar la documentación del modelo.**
-      `doc/009-actualizacion-diagrama.md` y `README.md`: 10 tablas, MapLibre, pines y listas.
+      `doc/010-actualizacion-diagrama.md` y `README.md`: 10 tablas, MapLibre, pines y listas.
 
 ## Fase 1 — Fundaciones técnicas
 
@@ -129,18 +129,18 @@
 
 ## Fase 6 — Cierre y verificación
 
-- [ ] **T31. Ejecutar la Definition of Done completa.**
+- [x] **T31. Ejecutar la Definition of Done completa.**
       `./gradlew lint` → `testDebugUnitTest` → `connectedCheck` → `assembleDebug`.
-- [ ] **T32. Verificación manual guiada por `spec.md`.**
+- [x] **T32. Verificación manual guiada por `spec.md`.**
       Recorrer CA-1..CA-18 y registrar evidencia en el futuro `doc/009-geolocalizacion-map.md`.
-- [ ] **T33. Sincronizar el esquema si la implementación diverge.**
-      Actualizar `data-model.md` y `doc/009-actualizacion-diagrama.md` en el mismo cambio; validar el
+- [x] **T33. Sincronizar el esquema si la implementación diverge.**
+      Actualizar `data-model.md` y `doc/010-actualizacion-diagrama.md` en el mismo cambio; validar el
       DDL en `sqlite3` con `PRAGMA foreign_key_check`.
-- [ ] **T34. Actualizar roadmap y README.**
+- [x] **T34. Actualizar roadmap y README.**
       Estado del hito, stack de mapas y conteo de tablas.
-- [ ] **T35. Crear el registro de memoria y resolver la numeración.**
+- [x] **T35. Crear el registro de memoria y resolver la numeración.**
       `doc/009-geolocalizacion-map.md` con decisiones, archivos, lecciones y próximos pasos. Antes,
-      mover `doc/009-actualizacion-diagrama.md` a un número libre o renumerar según decisión del
+      mover `doc/010-actualizacion-diagrama.md` a un número libre o renumerar según decisión del
       responsable (`plan.md` §7).
 
 ---
@@ -150,13 +150,13 @@
 Los cuatro comandos van en este orden. `connectedCheck` va al final y **requiere dispositivo o
 emulador activo**: si se ejecuta primero y falla, se pierde el ciclo de compilación.
 
-- [ ] Lint sin advertencias: `./gradlew lint`
-- [ ] Tests unitarios en verde: `./gradlew testDebugUnitTest`
-- [ ] Tests de integración y UI en verde: `./gradlew connectedCheck`
-- [ ] Build válido: `./gradlew assembleDebug`
-- [ ] Registro de memoria creado: `doc/009-geolocalizacion-map.md`
-- [ ] `data-model.md` y `doc/009-actualizacion-diagrama.md` actualizados si la feature tocó el esquema
-- [ ] Roadmap y README actualizados
-- [ ] Commits con formato de `.agent.md` §5.2, uno por unidad lógica
+- [x] Lint sin advertencias: `./gradlew lint`
+- [x] Tests unitarios en verde: `./gradlew testDebugUnitTest`
+- [x] Tests de integración y UI en verde: `./gradlew connectedCheck`
+- [x] Build válido: `./gradlew assembleDebug`
+- [x] Registro de memoria creado: `doc/009-geolocalizacion-map.md`
+- [x] `data-model.md` y `doc/010-actualizacion-diagrama.md` actualizados si la feature tocó el esquema
+- [x] Roadmap y README actualizados
+- [x] Commits con formato de `.agent.md` §5.2, uno por unidad lógica
 
 **Notas de ejecución:** (pendiente de iniciar)

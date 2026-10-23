@@ -457,6 +457,15 @@ persona y un importe, no es un dato derivable que se pueda recalcular sin contex
   movimiento vinculado, el lugar **sobrevive** con `transaccion_id = NULL` porque la lista y el pin
   son datos del usuario que no deben perderse sin su decisión.
 
+> **Estado implementado (Feature 009, Room v3).** Room no permite declarar `CHECK` en las
+> anotaciones `@Entity`, así que el esquema real del archivo no los incluye. Las reglas equivalentes
+> (nombre/emoji no vacíos, tipo y estado en dominio, rango WGS84) las valida `LugarService` antes de
+> persistir, con tests en `LugarServiceTest` y `LugarDaoTest`. La unicidad del vínculo se implementa
+> con un índice `UNIQUE` no parcial: en SQLite los `NULL` no colisionan entre sí, por lo que el
+> resultado es el mismo que el índice parcial `ux_lugares_transaccion`. Los nombres reales de los
+> índices siguen la convención de Room (`index_LUGARES_*`, `index_ITEMS_LUGAR_lugar_id`). La
+> migración `2 → 3` de `AppDatabase` reproduce estas tablas y el archivo queda en `user_version = 3`.
+
 ### 3.10 ITEMS_LUGAR
 
 - **Propósito:** Lista de cosas asociada a un pin (por ejemplo, la lista de compras de un
@@ -657,9 +666,9 @@ obligatorios, así que las reglas siguientes se validan en la capa de dominio y 
 | I-6 | Toda `COMPRAS_GRUPALES` tiene ≥ 1 ítem; una compra `abierta` puede no tener deudas (compra propia) | DAO + test |
 | I-7 | Adeudado del usuario = `Σ (monto_asignado − monto_pagado)` de las deudas no liquidadas | Consulta de balance + test de la fórmula de reparto |
 | I-8 | `TRANSACCIONES.monto > 0` | `CHECK` del motor (§3.4) |
-| I-9 | Todo `LUGARES` tiene coordenadas completas y dentro de rango WGS84 | `CHECK` del motor + test de `LugarService` |
-| I-10 | Un movimiento tiene como máximo un pin vinculado | `UNIQUE` parcial `ux_lugares_transaccion` + test de DAO |
-| I-11 | `ITEMS_LUGAR.completado` solo vale 0 o 1 y todo elemento pertenece a un lugar existente | `CHECK` + `FK` + test de cascada |
+| I-9 | Todo `LUGARES` tiene coordenadas completas y dentro de rango WGS84 | Capa de dominio: `LugarService` + `Ubicacion` + tests (`LugarServiceTest`); Room no expresa `CHECK` (§3.9) |
+| I-10 | Un movimiento tiene como máximo un pin vinculado | Índice `UNIQUE index_LUGARES_transaccion_id` (no parcial; los `NULL` no colisionan) + test de DAO `testVinculoConMovimientoEsUnico` |
+| I-11 | `ITEMS_LUGAR.completado` solo vale 0 o 1 y todo elemento pertenece a un lugar existente | Dominio (`ItemLugar` booleano) + `FK` `ON DELETE CASCADE` del motor + test de cascada |
 
 > **Límite explícito de las garantías del motor.** El `CHECK` de coherencia estado ↔ importe valida
 > la **fila**, no el **historial**: SQLite aceptaría escribir `estado = 'pendiente',
@@ -779,13 +788,17 @@ UPDATE DEUDAS_PARTICIPANTES
 | `user_version` | Cambios | Estado |
 |---|---|---|
 | 1 | Versión inicial: las 8 tablas, sus `CHECK`, `FOREIGN KEY` e índices (§3.11) | Vigente |
-| 2 | Geolocalización de movimientos (`TRANSACCIONES.latitud/longitud/direccion_lugar`) y nuevas tablas `LUGARES` e `ITEMS_LUGAR` con sus índices (§3.9-§3.11) | En preparación (Feature 009) |
+| 2 | Geolocalización de movimientos (`TRANSACCIONES.latitud/longitud/direccion_lugar`) y nuevas tablas `LUGARES` e `ITEMS_LUGAR` con sus índices (§3.9-§3.11) | Implementado (Feature 009, migración Room 2 → 3) |
 
-> **Nota de implementación (Room):** la base Android ya está en `version = 2` por la migración
+> **Nota de implementación (Room):** la base Android ya estaba en `version = 2` por la migración
 > 1 → 2 que agregó `CUENTAS.activa` en la Feature 007. Esa columna no forma parte del DDL canónico
 > de este documento, así que la Feature 009 se implementa con una migración Room **2 → 3** que
 > materializa la revisión **2** del esquema canónico. No son dos numeraciones equivalentes: una es la
 > ruta de migración del archivo y la otra la revisión del contrato de datos.
+>
+> **Desviaciones conocidas y conscientes del archivo real** (documentadas en §3.9): Room no expresa
+> `CHECK`, los índices usan su convención de nombres y el único del vínculo es no parcial. El
+> `PRAGMA foreign_keys = ON` sí se activa por conexión y lo comprueba `LugarDaoTest`.
 
 - **Datos semilla (seed):** las 7 categorías base se insertan en el primer arranque, dentro de la misma transacción que crea el esquema, con `INSERT OR IGNORE` sobre el índice único `(nombre, tipo_transaccion)` para que reejecutar el arranque sea idempotente. Se usa `OR IGNORE` y no `ON CONFLICT DO NOTHING` porque la sintaxis de _upsert_ requiere SQLite 3.24 y el proyecto declara compatibilidad 3.8+ (`minSdk` 28). Las cuentas y los contactos los crea el usuario: no hay datos de prueba en producción. Para desarrollo y test se usa la base en memoria de Room, sembrada desde el mismo script de §A.1.
 

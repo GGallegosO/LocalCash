@@ -269,11 +269,12 @@ conexión a red para la primera carga de teselas. Ninguna credencial real en doc
 
 ## 7. Notas de cierre
 
-- **Numeración de memoria:** existe `doc/009-actualizacion-diagrama.md` (registro de mantenimiento).
-  Al cerrar esta feature se creará `doc/009-geolocalizacion-map.md`, por lo que antes del cierre se
-  debe resolver la colisión de numeración: mover el registro de mantenimiento a `doc/010-*` o
-  renumerar la feature según decida el responsable. La decisión se anota en el registro final.
-- **Sincronización del ERD:** `spec/constitution/data-model.md` y `doc/009-actualizacion-diagrama.md`
+- **Numeración de memoria:** existía `doc/009-actualizacion-diagrama.md` (registro de
+  mantenimiento). **Decisión tomada al cierre:** se movió a `doc/010-actualizacion-diagrama.md`,
+  liberando `009` para el registro de memoria de esta feature; con ello la numeración queda
+  alineada `doc/NNN` ↔ `spec/features/NNN` (`.agent.md`). Todas las referencias cruzadas se
+  actualizaron en el mismo cambio.
+- **Sincronización del ERD:** `spec/constitution/data-model.md` y `doc/010-actualizacion-diagrama.md`
   se actualizan en el mismo cambio que la migración; el Mermaid es la fuente de verdad y el SVG es
   complementario.
 - **Alcance de la dependencia:** MapLibre aporta un mapa base online con caché. No se declara que el
