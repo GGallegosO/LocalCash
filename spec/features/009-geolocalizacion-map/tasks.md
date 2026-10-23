@@ -34,28 +34,29 @@
 
 ## Fase 1 — Fundaciones técnicas
 
-- [ ] **T6. Declarar MapLibre Native 13.4.0.**
-      Añadir `org.maplibre.gl:android-sdk:13.4.0` en `gradle/libs.versions.toml` y `app/build.gradle`.
-      Inicializar `MapLibre.getInstance(context)` antes de inflar el `MapView`.
-      *Salida:* compila con la dependencia y sin advertencias nuevas.
-- [ ] **T7. Declarar permisos y Activity en `AndroidManifest.xml`.**
-      `INTERNET`, `ACCESS_NETWORK_STATE`, `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION` y
-      `SeleccionarUbicacionActivity` (no exportada).
+- [x] **T6. Declarar MapLibre Native 13.4.0.**
+      Añadido `org.maplibre.gl:android-sdk:13.4.0` en `gradle/libs.versions.toml` y
+      `app/build.gradle`, más el helper `MapaConfig.inicializar(context)`. `CuentasActivity` ya
+      inicializa MapLibre antes de inflar las vistas internas.
+      *Salida:* compila con la dependencia y sin errores nuevos.
+- [x] **T7. Declarar permisos en `AndroidManifest.xml`.**
+      `INTERNET`, `ACCESS_NETWORK_STATE`, `ACCESS_FINE_LOCATION` y `ACCESS_COARSE_LOCATION`.
+      El registro de `SeleccionarUbicacionActivity` se hará en T23, cuando exista la clase.
       *Salida:* el mapa puede descargar teselas y la ubicación se solicita en runtime.
-- [ ] **T8. Crear las entidades y DAOs de lugares.**
-      `Lugar`, `ItemLugar`, `LugarDao` e `ItemLugarDao` según `data-model.md`; registrar las
-      entidades en `AppDatabase`. *Salida:* compila y las consultas observables están definidas.
-- [ ] **T9. Implementar la migración 2 → 3.**
-      Agregar `latitud`, `longitud` y `direccionLugar` a `TRANSACCIONES`; crear `LUGARES` e
-      `ITEMS_LUGAR` con sus índices; subir `version` a 3. Prohibido `DROP TABLE` o
+- [x] **T8. Crear las entidades y DAOs de lugares.**
+      `Lugar`, `ItemLugar`, `LugarDao` e `ItemLugarDao` según `data-model.md`; registradas en
+      `AppDatabase`. *Salida:* compila y las consultas observables están definidas.
+- [x] **T9. Implementar la migración 2 → 3.**
+      Agregadas `latitud`, `longitud` y `direccion_lugar` a `TRANSACCIONES`; creadas `LUGARES` e
+      `ITEMS_LUGAR` con sus índices; `version` subida a 3. Sin `DROP TABLE` ni
       `fallbackToDestructiveMigration()`.
       *Salida:* migración compilada y cubierta por T29.
-- [ ] **T10. Crear el dominio del lugar.**
-      `Ubicacion`, `TipoLugar`, `EstadoLugar`, `Lugar`, `ItemLugar` y `LugarService`; agregar los
-      códigos de error nuevos. *Salida:* validaciones invocables sin Android y cubiertas por T27.
-- [ ] **T11. Centralizar el estilo y la atribución del mapa.**
-      Constante única con el estilo `https://tiles.openfreemap.org/styles/liberty` y vista de
-      atribución visible. *Salida:* no hay URLs de teselas dispersas en el código.
+- [x] **T10. Crear el dominio del lugar.**
+      `Ubicacion`, `TipoLugar`, `EstadoLugar`, `Lugar`, `ItemLugar` y `LugarService`; códigos de
+      error nuevos. *Salida:* validaciones invocables sin Android y cubiertas por T27.
+- [x] **T11. Centralizar el estilo y la atribución del mapa.**
+      `MapaConfig` con el estilo `https://tiles.openfreemap.org/styles/liberty` y la atribución.
+      *Salida:* no hay URLs de teselas dispersas en el código.
 
 ## Fase 2 — Mapa de lectura y ubicación actual
 
@@ -98,9 +99,9 @@
 
 ## Fase 4 — Integración con la geolocalización de movimientos
 
-- [ ] **T23. Crear `SeleccionarUbicacionActivity`.**
+- [ ] **T23. Crear `SeleccionarUbicacionActivity` y registrarla en el manifiesto.**
       Mapa MapLibre con pin seleccionable, confirmar/cancelar y devolución de `latitud`/`longitud`
-      por `setResult` (CA-1/CA-2).
+      por `setResult` (CA-1/CA-2). Declararla `android:exported="false"` en `AndroidManifest.xml`.
 - [ ] **T24. Conectar el interruptor "Geolocalizar".**
       `CuentasActivity` lanza la Activity con `ActivityResultLauncher` y conserva el estado del panel;
       sin confirmación, el movimiento queda sin coordenadas (CA-4).

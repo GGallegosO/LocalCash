@@ -24,5 +24,17 @@ public enum ErrorCode {
     SALDO_INSUFICIENTE,
 
     /** La cuenta referenciada por el movimiento no existe en la base de datos. */
-    CUENTA_NO_ENCONTRADA
+    CUENTA_NO_ENCONTRADA,
+
+    /** Nombre, tipo, emoji, estado o descripción de un lugar fuera de dominio. */
+    LUGAR_INVALIDO,
+
+    /** El lugar solicitado no existe en la base de datos. */
+    LUGAR_NO_ENCONTRADO,
+
+    /** Coordenada WGS84 fuera de rango o incompleta. */
+    UBICACION_INVALIDA,
+
+    /** El usuario denegó el permiso necesario para obtener su ubicación. */
+    PERMISO_UBICACION_DENEGADO
 }

@@ -23,12 +23,15 @@ import java.util.List;
 public interface TransaccionDao {
 
     /**
-     * Inserta un movimiento (ingreso o egreso). Room rellena el {@code id}.
+     * Inserta un movimiento (ingreso o egreso). Room rellena el {@code id}
+     * y lo devuelve para poder crear el pin vinculado en la misma transacción
+     * de base de datos.
      *
      * @param transaccion Movimiento a insertar (monto en pesos CLP, positivo)
+     * @return id autogenerado
      */
     @Insert
-    void insert(Transaccion transaccion);
+    long insert(Transaccion transaccion);
 
     /**
      * Observa los movimientos de una cuenta en orden cronológico inverso.
@@ -62,4 +65,16 @@ public interface TransaccionDao {
      */
     @Query("SELECT * FROM transacciones ORDER BY fecha DESC")
     LiveData<List<Transaccion>> getAll();
+
+    /**
+     * Observa los movimientos con coordenadas completas. La regla de negocio
+     * {@code ambas o ninguna} se valida antes de persistir; la consulta filtra
+     * filas históricas incompletas por seguridad.
+     *
+     * @return LiveData con los movimientos geolocalizados
+     */
+    @Query("SELECT * FROM transacciones"
+            + " WHERE latitud IS NOT NULL AND longitud IS NOT NULL"
+            + " ORDER BY fecha DESC")
+    LiveData<List<Transaccion>> getGeolocalizadas();
 }

@@ -33,6 +33,7 @@ import com.localcash.domain.model.TipoCuenta;
 import com.localcash.domain.model.TipoTransaccion;
 import com.localcash.domain.model.Transaccion;
 import com.localcash.ui.BaseActivity;
+import com.localcash.ui.mapa.MapaConfig;
 import com.localcash.ui.theme.ThemeManager;
 import com.localcash.ui.util.CurrencyFormatter;
 
@@ -125,6 +126,11 @@ public class CuentasActivity extends BaseActivity
             }
             return false;
         });
+
+        // MapLibre debe inicializarse antes de inflar cualquier MapView.
+        // La pestaña Mapa todavía usa un placeholder; la inicialización queda
+        // lista para la fase 2.
+        MapaConfig.inicializar(this);
 
         // Inflar los 4 layouts internos dentro del ViewFlipper
         // Vista 0: Cuentas (binding propio: sus vistas no forman parte de activity_cuentas.xml)

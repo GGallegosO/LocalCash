@@ -58,6 +58,7 @@ dependencies {
     implementation libs.appcompat
     implementation libs.biometric
     implementation libs.constraintlayout
+    implementation libs.maplibre
     implementation libs.material
     // Biometría: AndroidX Biometric para BiometricPrompt (API 23+)
     implementation "androidx.biometric:biometric:1.2.0-alpha05"

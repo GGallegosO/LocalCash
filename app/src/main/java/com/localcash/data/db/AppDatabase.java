@@ -10,8 +10,12 @@ import androidx.room.migration.Migration;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
 import com.localcash.data.dao.CuentaDao;
+import com.localcash.data.dao.ItemLugarDao;
+import com.localcash.data.dao.LugarDao;
 import com.localcash.data.dao.TransaccionDao;
 import com.localcash.data.entities.Cuenta;
+import com.localcash.data.entities.ItemLugar;
+import com.localcash.data.entities.Lugar;
 import com.localcash.data.entities.Transaccion;
 
 import java.util.concurrent.ExecutorService;
@@ -34,8 +38,8 @@ import java.util.concurrent.Executors;
  * </p>
  */
 @Database(
-        entities = {Cuenta.class, Transaccion.class},
-        version = 2,
+        entities = {Cuenta.class, Transaccion.class, Lugar.class, ItemLugar.class},
+        version = 3,
         exportSchema = true
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -53,6 +57,63 @@ public abstract class AppDatabase extends RoomDatabase {
         public void migrate(@NonNull SupportSQLiteDatabase database) {
             database.execSQL(
                     "ALTER TABLE cuentas ADD COLUMN activa INTEGER NOT NULL DEFAULT 1");
+        }
+    };
+
+    /**
+     * Migración no destructiva 2 → 3 (Feature 009):
+     * <ul>
+     *   <li>agrega las coordenadas opcionales a {@code transacciones};</li>
+     *   <li>crea {@code LUGARES} y {@code ITEMS_LUGAR} con sus índices.</li>
+     * </ul>
+     * No se usa {@code DROP TABLE} ni {@code fallbackToDestructiveMigration()}
+     * ({@code .agent.md} §6.11). La tabla de movimientos existente conserva sus
+     * filas y las nuevas columnas quedan {@code NULL} hasta que el usuario
+     * geolocalice un movimiento.
+     */
+    public static final Migration MIGRATION_2_3 = new Migration(2, 3) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE transacciones ADD COLUMN latitud REAL");
+            database.execSQL("ALTER TABLE transacciones ADD COLUMN longitud REAL");
+            database.execSQL("ALTER TABLE transacciones ADD COLUMN direccion_lugar TEXT");
+
+            database.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `LUGARES` ("
+                            + "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, "
+                            + "`transaccion_id` INTEGER, "
+                            + "`nombre` TEXT NOT NULL, "
+                            + "`tipo_lugar` TEXT NOT NULL, "
+                            + "`emoji` TEXT NOT NULL DEFAULT '📍', "
+                            + "`descripcion` TEXT, "
+                            + "`latitud` REAL NOT NULL, "
+                            + "`longitud` REAL NOT NULL, "
+                            + "`estado` TEXT NOT NULL DEFAULT 'abierto', "
+                            + "FOREIGN KEY(`transaccion_id`) REFERENCES `transacciones`(`id`) "
+                            + "ON UPDATE CASCADE ON DELETE SET NULL)");
+
+            database.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS `index_LUGARES_transaccion_id` "
+                            + "ON `LUGARES` (`transaccion_id`)");
+            database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_LUGARES_latitud_longitud` "
+                            + "ON `LUGARES` (`latitud`, `longitud`)");
+            database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_LUGARES_estado_id` "
+                            + "ON `LUGARES` (`estado`, `id`)");
+
+            database.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `ITEMS_LUGAR` ("
+                            + "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, "
+                            + "`lugar_id` INTEGER NOT NULL, "
+                            + "`descripcion` TEXT NOT NULL, "
+                            + "`completado` INTEGER NOT NULL DEFAULT 0, "
+                            + "FOREIGN KEY(`lugar_id`) REFERENCES `LUGARES`(`id`) "
+                            + "ON UPDATE CASCADE ON DELETE CASCADE)");
+
+            database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_ITEMS_LUGAR_lugar_id` "
+                            + "ON `ITEMS_LUGAR` (`lugar_id`)");
         }
     };
 
@@ -83,7 +144,7 @@ public abstract class AppDatabase extends RoomDatabase {
                                     DATABASE_NAME
                             )
                             // fallbackToDestructiveMigration() PROHIBIDO (.agent.md §6.11)
-                            .addMigrations(MIGRATION_1_2)
+                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                             .addCallback(new SeedDataInitializer())
                             .build();
                 }
@@ -106,4 +167,10 @@ public abstract class AppDatabase extends RoomDatabase {
 
     /** Expone el DAO de transacciones. */
     public abstract TransaccionDao transaccionDao();
+
+    /** Expone el DAO de lugares/pines. */
+    public abstract LugarDao lugarDao();
+
+    /** Expone el DAO de la lista de cosas de un lugar. */
+    public abstract ItemLugarDao itemLugarDao();
 }

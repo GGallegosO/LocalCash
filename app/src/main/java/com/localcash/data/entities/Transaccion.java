@@ -1,5 +1,6 @@
 package com.localcash.data.entities;
 
+import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.ForeignKey;
 import androidx.room.Ignore;
@@ -55,18 +56,44 @@ public class Transaccion {
     /** Momento del movimiento en epoch millis (timestamp UTC). */
     private long fecha;
 
+    /**
+     * Latitud WGS84 opcional. {@code null} = movimiento no geolocalizado.
+     * El tipo es {@link Double} para poder persistir la ausencia de ubicación
+     * sin inventar un punto (0,0).
+     */
+    @ColumnInfo(name = "latitud")
+    private Double latitud;
+
+    /** Longitud WGS84 opcional; ambas coordenadas se guardan o ninguna. */
+    @ColumnInfo(name = "longitud")
+    private Double longitud;
+
+    /** Dirección o referencia textual opcional del punto elegido. */
+    @ColumnInfo(name = "direccion_lugar")
+    private String direccionLugar;
+
     /** Constructor vacío requerido por Room. */
     public Transaccion() {
     }
 
-    /** Constructor completo para registrar un movimiento. */
+    /** Constructor completo para registrar un movimiento sin geolocalización. */
     @Ignore
     public Transaccion(long cuentaId, String tipo, long monto, String concepto, long fecha) {
+        this(cuentaId, tipo, monto, concepto, fecha, null, null, null);
+    }
+
+    /** Constructor completo para registrar un movimiento, con ubicación opcional. */
+    @Ignore
+    public Transaccion(long cuentaId, String tipo, long monto, String concepto, long fecha,
+                       Double latitud, Double longitud, String direccionLugar) {
         this.cuentaId = cuentaId;
         this.tipo = tipo;
         this.monto = monto;
         this.concepto = concepto;
         this.fecha = fecha;
+        this.latitud = latitud;
+        this.longitud = longitud;
+        this.direccionLugar = direccionLugar;
     }
 
     public long getId() {
@@ -115,5 +142,29 @@ public class Transaccion {
 
     public void setFecha(long fecha) {
         this.fecha = fecha;
+    }
+
+    public Double getLatitud() {
+        return latitud;
+    }
+
+    public void setLatitud(Double latitud) {
+        this.latitud = latitud;
+    }
+
+    public Double getLongitud() {
+        return longitud;
+    }
+
+    public void setLongitud(Double longitud) {
+        this.longitud = longitud;
+    }
+
+    public String getDireccionLugar() {
+        return direccionLugar;
+    }
+
+    public void setDireccionLugar(String direccionLugar) {
+        this.direccionLugar = direccionLugar;
     }
 }
