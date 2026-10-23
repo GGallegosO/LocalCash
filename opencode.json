@@ -1,0 +1,44 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "servers": {
+      "context7": {
+        "type": "remote",
+        "url": "https://mcp.context7.com/mcp",
+        "oauth": false,
+        "headers": {
+          "CONTEXT7_API_KEY": "{env:CONTEXT7_API_KEY}"
+        }
+      },
+      "filesystem": {
+        "type": "local",
+        "command": [
+          "npx",
+          "-y",
+          "@modelcontextprotocol/server-filesystem",
+          "/Users/gustavo/workspace/LocalCash"
+        ]
+      },
+      "git": {
+        "type": "local",
+        "command": [
+          "uvx",
+          "mcp-server-git",
+          "--repository",
+          "/Users/gustavo/workspace/LocalCash"
+        ]
+      },
+      "github": {
+        "type": "local",
+        "command": [
+          "npx",
+          "-y",
+          "@modelcontextprotocol/server-github"
+        ],
+        "environment": {
+          "GITHUB_PERSONAL_ACCESS_TOKEN": "{env:GITHUB_PERSONAL_ACCESS_TOKEN}"
+        }
+      }
+    }
+  }
+}
