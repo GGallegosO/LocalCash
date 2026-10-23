@@ -4,6 +4,7 @@ import android.app.Application;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -12,7 +13,12 @@ import com.localcash.data.db.AppDatabase;
 import com.localcash.data.entities.Cuenta;
 import com.localcash.domain.error.BusinessRuleException;
 import com.localcash.domain.error.ErrorCode;
+import com.localcash.domain.model.EstadoLugar;
+import com.localcash.domain.model.Lugar;
+import com.localcash.domain.model.TipoLugar;
 import com.localcash.domain.model.TipoTransaccion;
+import com.localcash.domain.model.Ubicacion;
+import com.localcash.domain.service.LugarService;
 import com.localcash.domain.service.TransaccionService;
 
 import java.math.BigDecimal;
@@ -97,7 +103,52 @@ public class TransaccionViewModel extends AndroidViewModel {
      */
     public LiveData<ErrorCode> registrarTransaccion(long cuentaId, String tipo,
                                                     long monto, String concepto) {
+        return registrarTransaccion(cuentaId, tipo, monto, concepto, null, null, null);
+    }
+
+    /**
+     * Registra un movimiento y, si trae coordenadas, crea su pin vinculado en
+     * la misma transacción de base de datos (T25).
+     * <p>
+     * El pin hereda del movimiento el nombre (concepto) y la ubicación; nace
+     * abierto, de tipo {@link com.localcash.domain.model.TipoLugar#OTRO} y sin
+     * lista de cosas. Si cualquier escritura falla, Room revierte todo: no
+     * queda ni el movimiento ni un pin a medias (CA-3). Sin coordenadas no se
+     * crea pin y el movimiento se guarda normal (CA-4).
+     * </p>
+     *
+     * @param cuentaId       id de la cuenta afectada
+     * @param tipo           tipo de movimiento ({@code INGRESO} o {@code EGRESO})
+     * @param monto          importe en pesos CLP (positivo)
+     * @param concepto       concepto libre del movimiento
+     * @param latitud        latitud WGS84 o {@code null} si no hay ubicación
+     * @param longitud       longitud WGS84 o {@code null} si no hay ubicación
+     * @param direccionLugar referencia textual opcional del punto
+     * @return LiveData con {@code null} si se registró, o el {@link ErrorCode} del fallo
+     */
+    public LiveData<ErrorCode> registrarTransaccion(long cuentaId, String tipo,
+                                                    long monto, String concepto,
+                                                    Double latitud, Double longitud,
+                                                    String direccionLugar) {
         MutableLiveData<ErrorCode> resultado = new MutableLiveData<>();
+
+        final Ubicacion ubicacion;
+        if (latitud == null && longitud == null) {
+            ubicacion = null;
+        } else if (latitud == null || longitud == null) {
+            Log.w(TAG, "Coordenada incompleta: latitud=" + latitud + ", longitud=" + longitud);
+            resultado.setValue(ErrorCode.UBICACION_INVALIDA);
+            return resultado;
+        } else {
+            try {
+                ubicacion = new Ubicacion(latitud, longitud);
+            } catch (BusinessRuleException e) {
+                Log.w(TAG, "Ubicación inválida para el movimiento", e);
+                resultado.setValue(e.getErrorCode());
+                return resultado;
+            }
+        }
+
         AppDatabase db = AppDatabase.getInstance(getApplication());
 
         db.getExecutor().execute(() -> {
@@ -138,15 +189,63 @@ public class TransaccionViewModel extends AndroidViewModel {
                 return;
             }
 
-            db.transaccionDao().insert(transaccionDominio.toEntity());
+            try {
+                db.runInTransaction(() -> {
+                    com.localcash.data.entities.Transaccion entidadTransaccion =
+                            transaccionDominio.toEntity();
+                    if (ubicacion != null) {
+                        entidadTransaccion.setLatitud(ubicacion.getLatitud());
+                        entidadTransaccion.setLongitud(ubicacion.getLongitud());
+                        entidadTransaccion.setDireccionLugar(direccionLugar);
+                    }
+                    long transaccionId = db.transaccionDao().insert(entidadTransaccion);
 
-            BigDecimal nuevoSaldo =
-                    TransaccionService.calcularNuevoSaldo(cuentaDominio, transaccionDominio);
-            db.cuentaDao().updateSaldo(cuentaId, nuevoSaldo.longValueExact());
+                    if (ubicacion != null) {
+                        insertarPinVinculado(db, transaccionId, concepto, ubicacion);
+                    }
 
-            resultado.postValue(null);
+                    BigDecimal nuevoSaldo = TransaccionService.calcularNuevoSaldo(
+                            cuentaDominio, transaccionDominio);
+                    db.cuentaDao().updateSaldo(cuentaId, nuevoSaldo.longValueExact());
+                });
+                resultado.postValue(null);
+            } catch (BusinessRuleException e) {
+                Log.w(TAG, "Movimiento revertido por regla de negocio", e);
+                resultado.postValue(e.getErrorCode());
+            } catch (RuntimeException e) {
+                Log.e(TAG, "No se pudo persistir el movimiento y su pin", e);
+                resultado.postValue(ErrorCode.LUGAR_INVALIDO);
+            }
         });
 
         return resultado;
+    }
+
+    /**
+     * Inserta el pin vinculado a un movimiento recién creado. Se ejecuta dentro
+     * de la misma transacción de Room que el movimiento y el saldo (T25).
+     *
+     * @param db            base de datos activa
+     * @param transaccionId id del movimiento recién insertado
+     * @param concepto      concepto del movimiento, usado como nombre del pin
+     * @param ubicacion     coordenada confirmada por el usuario
+     */
+    private void insertarPinVinculado(@NonNull AppDatabase db, long transaccionId,
+                                      @Nullable String concepto, @NonNull Ubicacion ubicacion) {
+        String nombre = concepto != null ? concepto.trim() : "";
+        if (nombre.isEmpty()) {
+            nombre = "Movimiento";
+        }
+        Lugar pin = new Lugar(
+                0L,
+                transaccionId,
+                nombre,
+                TipoLugar.OTRO,
+                TipoLugar.OTRO.getEmojiPorDefecto(),
+                null,
+                ubicacion,
+                EstadoLugar.ABIERTO);
+        LugarService.validarLugar(pin);
+        db.lugarDao().insert(pin.toEntity());
     }
 }

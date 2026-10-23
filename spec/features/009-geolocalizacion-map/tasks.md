@@ -1,7 +1,7 @@
 # tasks.md — Checklist Secuencial de Ejecución
 
 > **Identificación:** 009-geolocalizacion-map | **Derivado de:** `spec.md` + `plan.md`
-> **Estado global:** Fases 0 a 3 completadas y verificadas en emulador; Fase 4 pendiente.
+> **Estado global:** Fases 0 a 4 completadas y verificadas en emulador; Fase 5 pendiente.
 >
 > **Propósito de este documento:** Descomponer la implementación en pasos ejecutables, ordenados y
 > verificables. Cada casilla marcada `[x]` debe corresponder a un cambio real comprobable (tests
@@ -99,16 +99,16 @@
 
 ## Fase 4 — Integración con la geolocalización de movimientos
 
-- [ ] **T23. Crear `SeleccionarUbicacionActivity` y registrarla en el manifiesto.**
+- [x] **T23. Crear `SeleccionarUbicacionActivity` y registrarla en el manifiesto.**
       Mapa MapLibre con pin seleccionable, confirmar/cancelar y devolución de `latitud`/`longitud`
       por `setResult` (CA-1/CA-2). Declararla `android:exported="false"` en `AndroidManifest.xml`.
-- [ ] **T24. Conectar el interruptor "Geolocalizar".**
+- [x] **T24. Conectar el interruptor "Geolocalizar".**
       `CuentasActivity` lanza la Activity con `ActivityResultLauncher` y conserva el estado del panel;
       sin confirmación, el movimiento queda sin coordenadas (CA-4).
-- [ ] **T25. Persistir movimiento y pin vinculado de forma atómica.**
+- [x] **T25. Persistir movimiento y pin vinculado de forma atómica.**
       `TransaccionDao.insert` devuelve el id; `TransaccionViewModel` guarda coordenadas y crea el
       lugar dentro de `AppDatabase.runInTransaction` (CA-3). *Salida:* un fallo no deja medio pin.
-- [ ] **T26. Mostrar pines vinculados e indicar su origen.**
+- [x] **T26. Mostrar pines vinculados e indicar su origen.**
       El mapa incluye los lugares con `transaccionId`; el detalle indica "vinculado a un movimiento"
       sin duplicar el marcador (CA-16).
 

@@ -1,6 +1,7 @@
 package com.localcash.ui.cuentas;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
@@ -55,6 +56,7 @@ import com.localcash.ui.mapa.LugaresAdapter;
 import com.localcash.ui.mapa.MapaConfig;
 import com.localcash.ui.mapa.MapaController;
 import com.localcash.ui.mapa.MapaViewModel;
+import com.localcash.ui.mapa.SeleccionarUbicacionActivity;
 import com.localcash.ui.theme.ThemeManager;
 import com.localcash.ui.util.CurrencyFormatter;
 
@@ -105,6 +107,21 @@ public class CuentasActivity extends BaseActivity
 
     /** Id de la cuenta seleccionada en el spinner ({@code -1} si no hay selección). */
     private long cuentaSeleccionadaId = -1L;
+
+    /** Latitud confirmada para el movimiento en curso ({@code null} = sin ubicación). */
+    private Double latitudMovimiento;
+
+    /** Longitud confirmada para el movimiento en curso ({@code null} = sin ubicación). */
+    private Double longitudMovimiento;
+
+    /**
+     * Evita que el cambio programático del interruptor "Geolocalizar" vuelva a
+     * lanzar la selección de ubicación al recibir el resultado.
+     */
+    private boolean actualizandoSwitchUbicacion;
+
+    /** Lanzador de la Activity de selección de ubicación (T24). */
+    private ActivityResultLauncher<Intent> lanzadorUbicacion;
 
     /** Tiempo máximo de espera para una fijación de ubicación (ms). */
     private static final long TIEMPO_MAXIMO_UBICACION_MS = 15_000L;
@@ -192,10 +209,10 @@ public class CuentasActivity extends BaseActivity
             return false;
         });
 
-        // MapLibre debe inicializarse antes de inflar cualquier MapView.
-        // La pestaña Mapa todavía usa un placeholder; la inicialización queda
-        // lista para la fase 2.
+        // MapLibre debe inicializarse antes de inflar cualquier MapView. La
+        // pestaña Mapa y la selección de ubicación comparten esta inicialización.
         MapaConfig.inicializar(this);
+        registrarLanzadorUbicacion();
 
         // Inflar los 4 layouts internos dentro del ViewFlipper
         // Vista 0: Cuentas (binding propio: sus vistas no forman parte de activity_cuentas.xml)
@@ -715,6 +732,83 @@ public class CuentasActivity extends BaseActivity
     }
 
     /**
+     * Registra el contrato con {@link SeleccionarUbicacionActivity} (T24).
+     * <p>
+     * Con un resultado confirmado guarda las coordenadas y actualiza el
+     * resumen del panel. Si el usuario cancela, apaga el interruptor y el
+     * movimiento quedará sin ubicación (CA-4).
+     * </p>
+     */
+    private void registrarLanzadorUbicacion() {
+        lanzadorUbicacion = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(), resultado -> {
+                    if (sheetTransaccionBinding == null) {
+                        return;
+                    }
+                    if (resultado.getResultCode() == RESULT_OK
+                            && resultado.getData() != null) {
+                        double latitud = resultado.getData().getDoubleExtra(
+                                SeleccionarUbicacionActivity.EXTRA_LATITUD, Double.NaN);
+                        double longitud = resultado.getData().getDoubleExtra(
+                                SeleccionarUbicacionActivity.EXTRA_LONGITUD, Double.NaN);
+                        if (Double.isNaN(latitud) || Double.isNaN(longitud)) {
+                            limpiarUbicacionMovimiento(sheetTransaccionBinding);
+                            return;
+                        }
+                        latitudMovimiento = latitud;
+                        longitudMovimiento = longitud;
+                        actualizandoSwitchUbicacion = true;
+                        sheetTransaccionBinding.switchGeolocalizacion.setChecked(true);
+                        actualizandoSwitchUbicacion = false;
+                        mostrarResumenUbicacion(sheetTransaccionBinding);
+                    } else {
+                        limpiarUbicacionMovimiento(sheetTransaccionBinding);
+                    }
+                });
+    }
+
+    /**
+     * Abre la Activity de selección de ubicación.
+     */
+    private void lanzarSeleccionUbicacion() {
+        lanzadorUbicacion.launch(
+                new Intent(this, SeleccionarUbicacionActivity.class));
+    }
+
+    /**
+     * Descarta la ubicación elegida y apaga el interruptor sin relanzar la
+     * selección.
+     *
+     * @param sheetBinding binding del panel abierto
+     */
+    private void limpiarUbicacionMovimiento(
+            @NonNull BottomSheetTransaccionBinding sheetBinding) {
+        latitudMovimiento = null;
+        longitudMovimiento = null;
+        actualizandoSwitchUbicacion = true;
+        sheetBinding.switchGeolocalizacion.setChecked(false);
+        actualizandoSwitchUbicacion = false;
+        mostrarResumenUbicacion(sheetBinding);
+    }
+
+    /**
+     * Muestra u oculta el resumen de coordenadas del panel.
+     *
+     * @param sheetBinding binding del panel abierto
+     */
+    private void mostrarResumenUbicacion(
+            @NonNull BottomSheetTransaccionBinding sheetBinding) {
+        if (latitudMovimiento == null || longitudMovimiento == null) {
+            sheetBinding.tvUbicacionSeleccionada.setVisibility(View.GONE);
+            return;
+        }
+        sheetBinding.tvUbicacionSeleccionada.setText(getString(
+                R.string.aCuentas_transaccion_ubicacion,
+                latitudMovimiento, longitudMovimiento));
+        sheetBinding.tvUbicacionSeleccionada.setVisibility(View.VISIBLE);
+    }
+
+    /**
      * Abre el BottomSheet para registrar un movimiento nuevo.
      * <p>
      * Infla {@code bottom_sheet_transaccion.xml}, puebla el selector de cuentas
@@ -741,6 +835,27 @@ public class CuentasActivity extends BaseActivity
 
         sheetBinding.btnGuardarMovimiento.setOnClickListener(v ->
                 registrarMovimiento(sheetBinding, sheetDialog));
+
+        // El movimiento nuevo empieza sin ubicación; si el usuario activa el
+        // interruptor se abre el mapa de selección (T24).
+        latitudMovimiento = null;
+        longitudMovimiento = null;
+        actualizandoSwitchUbicacion = true;
+        sheetBinding.switchGeolocalizacion.setChecked(false);
+        actualizandoSwitchUbicacion = false;
+        mostrarResumenUbicacion(sheetBinding);
+        sheetBinding.switchGeolocalizacion.setOnCheckedChangeListener((boton, activo) -> {
+            if (actualizandoSwitchUbicacion) {
+                return;
+            }
+            if (activo) {
+                lanzarSeleccionUbicacion();
+            } else {
+                latitudMovimiento = null;
+                longitudMovimiento = null;
+                mostrarResumenUbicacion(sheetBinding);
+            }
+        });
 
         sheetDialog.setOnDismissListener(dialog -> sheetTransaccionBinding = null);
         sheetDialog.show();
@@ -838,8 +953,11 @@ public class CuentasActivity extends BaseActivity
                 : TipoTransaccion.INGRESO.name();
 
         final long montoFinal = monto;
+        final Double latitudFinal = latitudMovimiento;
+        final Double longitudFinal = longitudMovimiento;
         LiveData<ErrorCode> resultado = transaccionViewModel.registrarTransaccion(
-                cuentaSeleccionadaId, tipo, montoFinal, concepto);
+                cuentaSeleccionadaId, tipo, montoFinal, concepto,
+                latitudFinal, longitudFinal, null);
 
         resultado.observe(this, new Observer<ErrorCode>() {
             @Override
@@ -904,6 +1022,7 @@ public class CuentasActivity extends BaseActivity
         sheetBinding.inputLayoutCuenta.setError(null);
         sheetBinding.spinnerCuentas.setText("", false);
         cuentaSeleccionadaId = -1L;
+        limpiarUbicacionMovimiento(sheetBinding);
     }
 
     /**

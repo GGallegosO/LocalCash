@@ -46,6 +46,7 @@
 | `ui/cuentas/TransaccionViewModel.java` | Persistir coordenadas y crear el pin vinculado en una sola transacción | MODIFICAR | ALTA |
 | `res/layout/view_mapa.xml` | Mapa, botones "Mi ubicación"/"Mis lugares" y estado vacío | MODIFICAR | MEDIA |
 | `res/layout/activity_seleccionar_ubicacion.xml` | Mapa de selección + confirmar/cancelar | CREAR | MEDIA |
+| `res/layout/bottom_sheet_transaccion.xml` | Resumen de la coordenada elegida junto al interruptor "Geolocalizar" | MODIFICAR | BAJA |
 | `res/layout/bottom_sheet_lugar.xml` | Formulario de lugar y lista de cosas | CREAR | MEDIA |
 | `res/layout/bottom_sheet_detalle_lugar.xml` | Detalle del pin y sus acciones de gestión | CREAR | MEDIA |
 | `res/layout/bottom_sheet_lugares.xml` | Lista de lugares registrados | CREAR | MEDIA |
@@ -76,6 +77,9 @@
   transacción de Room; si falla una, no se confirma la otra.
 - **Pin vinculado:** su posición se copia del movimiento y no se puede mover; sí se pueden editar
   nombre, tipo, emoji, descripción y lista.
+- **Nombre del pin vinculado:** se toma del concepto del movimiento (o "Movimiento" si está vacío);
+  nace de tipo `OTRO`, con emoji `📍`, abierto y sin lista de cosas. La lista se gestiona después
+  desde el detalle del pin, igual que en un pin independiente.
 - **Pin independiente:** permite editar también su posición.
 - **Cerrar/reabrir:** cambia `estado`; no borra el pin ni sus elementos.
 - **Errores de dominio:** `LUGAR_INVALIDO` (nombre, tipo, emoji o estado fuera de dominio),

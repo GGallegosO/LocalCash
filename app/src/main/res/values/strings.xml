@@ -148,6 +148,7 @@
     <string name="aCuentas_transaccion_cuenta_hint">Cuenta</string>
     <string name="aCuentas_transaccion_concepto_hint">Concepto</string>
     <string name="aCuentas_transaccion_geolocalizacion">Geolocalizar transacción</string>
+    <string name="aCuentas_transaccion_ubicacion">Ubicación: %1$.5f, %2$.5f</string>
     <string name="aCuentas_transaccion_guardar">Guardar Movimiento</string>
 
     <!-- Conceptos sugeridos para el campo Concepto (el usuario puede escribir otro) -->
@@ -179,6 +180,12 @@
     <string name="aMapa_mi_ubicacion">Mi ubicación</string>
     <string name="aMapa_mis_lugares">Mis lugares</string>
     <string name="aMapa_atribucion_desc">Atribución de OpenStreetMap y OpenFreeMap</string>
+    <string name="aMapa_seleccionar_titulo">Ubicación del movimiento</string>
+    <string name="aMapa_seleccionar_indicacion">Toca el mapa para marcar el punto</string>
+    <string name="aMapa_seleccionar_pendiente">Sin punto elegido</string>
+    <string name="aMapa_seleccionar_elegido">Punto elegido</string>
+    <string name="aMapa_btn_confirmar">Confirmar</string>
+    <string name="aMapa_error_ubicacion">No se pudo usar ese punto del mapa</string>
     <string name="aMapa_sin_lugares">Aún no tienes lugares guardados</string>
     <string name="aMapa_titulo_lugares">Mis lugares</string>
     <string name="aMapa_sin_lugares_activos">No hay lugares activos</string>

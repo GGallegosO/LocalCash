@@ -108,13 +108,24 @@
 
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Geolocalización (solo UI por ahora; feature 008) -->
+        <!-- Geolocalización: el interruptor abre el mapa de selección (Feature 009) -->
         <com.google.android.material.materialswitch.MaterialSwitch
             android:id="@+id/switchGeolocalizacion"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:text="@string/aCuentas_transaccion_geolocalizacion" />
+
+        <TextView
+            android:id="@+id/tvUbicacionSeleccionada"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="?attr/colorPrimary"
+            android:visibility="gone"
+            tools:text="Ubicación: -33.44890, -70.66930"
+            tools:visibility="visible" />
 
         <!-- Guardar movimiento -->
         <com.google.android.material.button.MaterialButton

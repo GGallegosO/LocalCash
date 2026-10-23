@@ -44,6 +44,12 @@
             android:parentActivityName="com.localcash.ui.login.LoginActivity"
             android:windowSoftInputMode="adjustResize" />
 
+        <!-- SeleccionarUbicacionActivity: elige el punto de un movimiento (Feature 009) -->
+        <activity
+            android:name="com.localcash.ui.mapa.SeleccionarUbicacionActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
     </application>
 
 </manifest>
