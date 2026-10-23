@@ -6,9 +6,9 @@
 [![Methodology](https://img.shields.io/badge/Architecture-Spec--Driven_Development_(SDD)-purple.svg?style=flat-square)](https://github.com/GGallegosO/Template-SSD)
 [![License](https://img.shields.io/badge/License-MIT-lightgrey.svg?style=flat-square)](LICENSE)
 
-**LocalCash** es una aplicación móvil Android nativa desarrollada en **Java** concebida para operar **100% de forma local y offline**. Combina la administración de cuentas financieras personales, el registro georreferenciado de movimientos en mapa, la planificación de compras futuras y un motor avanzado para la división de gastos compartidos y deudas entre contactos.
+**LocalCash** es una aplicación móvil Android nativa desarrollada en **Java** concebida para que los **datos financieros** operen de forma **100% local y offline**. Combina la administración de cuentas personales, el registro georreferenciado de movimientos en un mapa interactivo, pines de lugar con listas de cosas, la planificación de compras futuras y un motor avanzado para la división de gastos compartidos y deudas entre contactos.
 
-El proyecto pone un énfasis crítico en la **privacidad absoluta del usuario** (cero comunicación con servidores externos) y en el rigor de ingeniería mediante la metodología **Spec-Driven Development (SDD)**.
+El proyecto pone un énfasis crítico en la **privacidad del usuario** (cero comunicación de datos financieros con servidores externos) y en el rigor de ingeniería mediante la metodología **Spec-Driven Development (SDD)**. El mapa base usa teselas vectoriales públicas con caché local; la información financiera y las listas nunca salen del dispositivo.
 
 ---
 
@@ -16,7 +16,8 @@ El proyecto pone un énfasis crítico en la **privacidad absoluta del usuario** 
 
 - 🔐 **Seguridad Biométrica Local:** Acceso protegido mediante la API nativa `BiometricPrompt` (huella dactilar).
 - 💳 **Gestión Multicuenta y Transacciones:** Administración de fuentes de dinero (Efectivo, Tarjetas, Ahorros) e historial de ingresos/egresos.
-- 📍 **Mapa Espacial Interactivo:** Visualización y filtrado offline de movimientos mediante coordenadas GPS (`latitud`, `longitud`) integradas con `osmdroid`.
+- 📍 **Mapa Espacial Interactivo:** Visualización de movimientos geolocalizados y pines de lugar con `MapLibre Native` + `OpenFreeMap/OpenStreetMap`; incluye "Mi ubicación", lista de lugares y pulsación larga para crear pines.
+- 🛒 **Pines con Lista de Cosas:** Cada pin puede clasificarse por tipo (supermercado, farmacia, restaurante, etc.), mostrar un emoji y guardar una lista de recordatorio con elementos completables.
 - 🗓️ **Planificación de Compras:** Programación de compras e historial con presupuestos estimados.
 - 👥 **Gastos Compartidos y División de Deudas:** Motor de cuentas claras para compras grupales con dos modalidades (División equitativa global o desglose itemizado por producto).
 
@@ -47,14 +48,14 @@ El desarrollo del proyecto no improvisa líneas de código: sigue la metodologí
 ### Decisión de Persistencia y Precisión Financiera
 
 Para garantizar la integridad matemática en los cálculos financieros offline (evitando errores binarios de coma flotante IEEE 754):
-- 💰 **Montos y Saldos:** Se almacenan estrictamente como números enteros (**`INTEGER`**) en la unidad mínima de moneda (centavos).
-- 🗺️ **Coordenadas GPS:** Se almacenan como **`REAL`** para filtrado por radio geográfico.
+- 💰 **Montos y Saldos:** Se almacenan estrictamente como números enteros (**`INTEGER`**) en pesos CLP directos (sin centavos en circulación desde 1984).
+- 🗺️ **Coordenadas GPS:** Se almacenan como **`REAL`** (grados WGS84) para el filtrado por caja envolvente del mapa.
 
 ---
 
 ## 📊 Modelo de Datos (ERD)
 
-El esquema relacional SQLite está compuesto por 8 tablas interconectadas:
+El esquema relacional SQLite está compuesto por 10 tablas interconectadas:
 
 ```mermaid
 erDiagram
@@ -65,7 +66,9 @@ erDiagram
     CUENTAS ||--o{ TRANSACCIONES : "registra"
     CATEGORIAS ||--o{ TRANSACCIONES : "clasifica"
     TRANSACCIONES ||--o| COMPRAS_GRUPALES : "vincula pago de"
+    TRANSACCIONES ||--o| LUGARES : "se marca con"
 
+    LUGARES ||--o{ ITEMS_LUGAR : "contiene"
     COMPRAS_GRUPALES ||--|{ ITEMS_COMPRA : "desglosa en"
     COMPRAS_GRUPALES |o--o{ DEUDAS_PARTICIPANTES : "genera"
     ITEMS_COMPRA |o--o{ DEUDAS_PARTICIPANTES : "asigna elemento a"
@@ -105,6 +108,25 @@ erDiagram
         REAL latitud
         REAL longitud
         TEXT direccion_lugar
+    }
+
+    LUGARES {
+        INTEGER id PK
+        INTEGER transaccion_id FK
+        TEXT nombre
+        TEXT tipo_lugar
+        TEXT emoji
+        TEXT descripcion
+        REAL latitud
+        REAL longitud
+        TEXT estado
+    }
+
+    ITEMS_LUGAR {
+        INTEGER id PK
+        INTEGER lugar_id FK
+        TEXT descripcion
+        INTEGER completado
     }
 
     COMPRAS_PLANIFICADAS {
@@ -153,7 +175,7 @@ erDiagram
 | :--- | :--- | :--- |
 | **Lenguaje** | Java 8+ / JDK 11 | Compatibilidad nativa en Android Studio. |
 | **Persistencia** | SQLite (`SQLiteOpenHelper` → Room) | Persistencia relacional local de alto rendimiento y cero dependencia de servidores. |
-| **Mapas & Geometría** | `osmdroid` 6.x | Renderizado de mapa interactivo 100% offline sin llaves API pagadas. |
+| **Mapas & Geometría** | `MapLibre Native` 13.4.0 + `OpenFreeMap/OpenStreetMap` | Renderizado vectorial sin llaves API, con pines personalizados, emojis, pulsación larga y caché local de teselas. |
 | **Seguridad** | `BiometricPrompt` API | Estándar de la plataforma Android para autenticación biométrica local. |
 | **UI Components** | Material Design Components | Interfaz limpia, responsiva y adaptable. |
 | **Testing** | JUnit, Mockito, Robolectric, Espresso | Cobertura objetivo ≥ 70% en capas de Dominio y DAOs. |

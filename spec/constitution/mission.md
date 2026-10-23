@@ -12,7 +12,7 @@
 
 ## 1. Visión del Producto
 
-En el mediano plazo, los usuarios de dispositivos Android podrán gestionar sus cuentas personales, geolocalizar sus movimientos y dividir deudas grupales en un entorno totalmente autónomo, lo que resultará en un control financiero cotidiano eficiente y con privacidad absoluta sin depender de internet ni de infraestructura en la nube
+En el mediano plazo, los usuarios de dispositivos Android podrán gestionar sus cuentas personales, geolocalizar sus movimientos con pines y listas de lugar, y dividir deudas grupales en un entorno local y privado, lo que resultará en un control financiero cotidiano eficiente y con privacidad absoluta. Los datos financieros no dependen de infraestructura propia en la nube; el mapa base puede usar teselas públicas cacheadas sin exponer cuentas, movimientos ni listas.
 
 > _Guía de redacción:_ Describe el estado futuro del mundo si el producto tiene éxito total.
 > Estructura sugerida: "En [PLAZO_DE_TIEMPO], [ROL_DE_USUARIO] podrá [CAPACIDAD_NUEVA], lo que
@@ -22,7 +22,7 @@ En el mediano plazo, los usuarios de dispositivos Android podrán gestionar sus 
 > inventario desde el teléfono sin contratar software especializado, reduciendo pérdidas por stock
 > descontrolado."
 
-**Principio rector no negociable:** Privacidad y funcionamiento 100% local (_offline-first_ por defecto)
+**Principio rector no negociable:** Privacidad y funcionamiento local de los datos del usuario (_offline-first_ por defecto). El mapa base puede solicitar teselas públicas con caché; nunca se envían datos financieros ni listas al proveedor.
 
 > _Ejemplos de principios:_ privacidad por defecto, simplicidad sobre funcionalidad, latencia
 > mínima, accesibilidad. Elige UNO: es el criterio de desempate cuando haya conflicto de decisiones.
@@ -53,7 +53,7 @@ Define entre 3 y 5 objetivos. Cada uno debe tener métrica, línea base y meta c
 
 | #   | Objetivo                                                | Métrica                                         | Línea base actual | Meta                                       | Fecha límite       |
 | --- | ------------------------------------------------------- | ----------------------------------------------- | ----------------- | ------------------------------------------ | ------------------ |
-| 1   | Garantizar la operatividad del sistema sin conectividad | % de funciones ejecutables de forma local       | 0%                | 100% de las funciones operativas _offline_ | 19 de Octubre 2026 |
+| 1   | Garantizar la operatividad de los datos sin conectividad | % de funciones financieras y de datos ejecutables de forma local | 0%                | 100% de las funciones de datos operativas _offline_ (el mapa base puede usar caché) | 19 de Octubre 2026 |
 | 2   | Proteger el acceso a la información financiera          | % de inicios de sesión validados por biometría  | 0%                | 100% mediante `BiometricPrompt`            | 19 de Octubre 2026 |
 | 3   | Automatizar el desglose y asignación de gastos grupales | Tiempo promedio en calcular deudas por contacto | 5 minutos         | &lt; 30 segundos en el sistema             | 19 de Octubre 2026 |
 

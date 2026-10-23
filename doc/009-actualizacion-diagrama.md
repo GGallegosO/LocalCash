@@ -1,4 +1,4 @@
-# doc/009-actualizacion-diagrama.md — Sincronización visual del ERD tras cambio semántico CLP
+# doc/009-actualizacion-diagrama.md — Sincronizaciones del ERD de LocalCash
 
 ## Ficha de la tarea
 
@@ -66,3 +66,45 @@ activa por entonces. Al abrirse la Feature 008 (`spec/features/008-historial/`) 
 ## Próximos pasos pendientes
 
 - Nada pendiente de esta tarea. La Feature 007 (`007-cuentas`) consume este esquema como contrato.
+
+---
+
+## Actualización 2026-10-23 — Revisión v2 del ERD (Feature 009)
+
+La Feature `009-geolocalizacion-map` reescribe el alcance del mapa: además de geolocalizar
+movimientos, incorpora **pines de lugar** con tipo, emoji, estado y una **lista de cosas**. El cambio
+es estructural y obliga a sincronizar el diagrama y el DDL canónico.
+
+### Cambios en el modelo
+
+- Se agregan dos entidades: **`LUGARES`** (pin referencial) e **`ITEMS_LUGAR`** (lista de cosas).
+- `LUGARES.transaccion_id` es una FK opcional y única hacia `TRANSACCIONES`: un movimiento genera como
+  máximo un pin; los pines independientes quedan con `NULL`.
+- `LUGARES` guarda `nombre`, `tipo_lugar`, `emoji`, `descripcion`, `latitud`, `longitud` y `estado`
+  (`abierto`/`cerrado`).
+- `ITEMS_LUGAR` guarda `descripcion` y `completado` (0/1), con borrado en cascada desde `LUGARES`.
+- El esquema canónico pasa de **8 a 10 tablas** y de `user_version = 1` a **`user_version = 2`**.
+- El mapa adopta **MapLibre Native + OpenFreeMap/OpenStreetMap**; las coordenadas siguen en `REAL`
+  WGS84.
+
+### Archivos sincronizados
+
+- `spec/constitution/data-model.md`: ERD Mermaid, diccionario, relaciones, invariantes I-9..I-11,
+  índices, historial de versiones y Apéndice A (DDL v2).
+- `spec/features/009-geolocalizacion-map/spec.md`, `plan.md` y `tasks.md`.
+- `spec/constitution/tech-stack.md`, `spec/constitution/roadmap.md`, `.agent.md` y `README.md`.
+
+### Validación
+
+- DDL v2 extraído del Apéndice A y ejecutado en `sqlite3`: 10 tablas, `PRAGMA foreign_key_check`
+  limpio y `user_version = 2`.
+- El diagrama Mermaid referencia únicamente entidades declaradas; no hay entidades fantasma.
+- El SVG de `spec/constitution/diagrams/erd-localcash.svg` queda pendiente de regeneración: el
+  Mermaid es la fuente de verdad y la herramienta de render no está disponible en el entorno.
+
+### Nota de numeración
+
+Este registro conserva el nombre `doc/009-actualizacion-diagrama.md` por continuidad histórica. Al
+cerrar la Feature 009 se creará `doc/009-geolocalizacion-map.md`; la colisión se resolverá antes del
+cierre moviendo este registro a un número libre (ver `spec/features/009-geolocalizacion-map/plan.md`
+§7).

@@ -25,7 +25,8 @@
 | Fecha de aprobación          | 2026-09-28                                  |
 | Aprobado por                 | GG (`doc/000-initial-setup.md` §1)           |
 | Tarea que originó la decisión| `003-modelo-datos` (archivo en `/doc/`)      |
-| Estado del esquema           | CONGELADO PARA v1                            |
+| Última revisión              | 2026-10-23 (Feature `009-geolocalizacion-map`) |
+| Estado del esquema           | v1 vigente; v2 en preparación (10 tablas)    |
 
 > **Justificación en una línea:** se prioriza la integridad referencial sobre la flexibilidad de
 > esquema porque el dominio tiene relaciones estables (un movimiento pertenece a una cuenta, una
@@ -33,9 +34,11 @@
 > usuario, sin servidor que pueda normalizar inconsistencias.
 
 **Alcance.** Persistencia relacional local en SQLite para la gestión financiera personal y grupal
-**100% offline** y con **privacidad absoluta**: 8 tablas que cubren cuentas, movimientos
-geolocalizados, categorías, agenda local de contactos y el ciclo completo de gasto compartido
-(compra planificada → compra grupal → ítems → deuda por participante). Quedan fuera de alcance la
+**100% offline para los datos del usuario** y con **privacidad absoluta**: 10 tablas que cubren
+cuentas, movimientos geolocalizados, categorías, agenda local de contactos, lugares/pines con sus
+listas de cosas y el ciclo completo de gasto compartido (compra planificada → compra grupal → ítems
+→ deuda por participante). El mapa base puede descargar teselas públicas con caché local, pero los
+datos financieros y las listas nunca salen del dispositivo. Quedan fuera de alcance la
 sincronización, el multiusuario, la conversión de moneda, la auditoría de cambios y cualquier
 construcción dependiente de un servidor remoto, conforme a los anti-objetivos de `mission.md` §3 y a
 `tech-stack.md` §3.
@@ -58,7 +61,9 @@ erDiagram
     CUENTAS ||--o{ TRANSACCIONES : "registra"
     CATEGORIAS ||--o{ TRANSACCIONES : "clasifica"
     TRANSACCIONES ||--o| COMPRAS_GRUPALES : "vincula pago de"
+    TRANSACCIONES ||--o| LUGARES : "se marca con"
 
+    LUGARES ||--o{ ITEMS_LUGAR : "contiene"
     COMPRAS_GRUPALES ||--|{ ITEMS_COMPRA : "desglosa en"
     COMPRAS_GRUPALES |o--o{ DEUDAS_PARTICIPANTES : "genera"
     ITEMS_COMPRA |o--o{ DEUDAS_PARTICIPANTES : "asigna elemento a"
@@ -98,6 +103,25 @@ erDiagram
         REAL latitud
         REAL longitud
         TEXT direccion_lugar
+    }
+
+    LUGARES {
+        INTEGER id PK
+        INTEGER transaccion_id FK
+        TEXT nombre
+        TEXT tipo_lugar
+        TEXT emoji
+        TEXT descripcion
+        REAL latitud
+        REAL longitud
+        TEXT estado
+    }
+
+    ITEMS_LUGAR {
+        INTEGER id PK
+        INTEGER lugar_id FK
+        TEXT descripcion
+        INTEGER completado
     }
 
     COMPRAS_PLANIFICADAS {
@@ -154,6 +178,8 @@ erDiagram
 | `CUENTAS` → `TRANSACCIONES`               | 1:N          | Una cuenta es el contenedor de los movimientos; sin cuenta no hay movimiento.                   |
 | `CATEGORIAS` → `TRANSACCIONES`            | 1:N opcional | La clasificación es opcional: un movimiento sin categoría sigue siendo válido.                  |
 | `TRANSACCIONES` → `COMPRAS_GRUPALES`      | 1:0..1       | Un movimiento genera **a lo sumo una** compra grupal. La compra puede existir sin movimiento (`NULL`). |
+| `TRANSACCIONES` → `LUGARES`               | 1:0..1       | Un movimiento puede originar **a lo sumo un pin** vinculado. Un lugar independiente tiene `transaccion_id` `NULL`. |
+| `LUGARES` → `ITEMS_LUGAR`                 | 1:0..N       | Un lugar puede no tener lista de cosas o tener muchos elementos; el elemento no existe sin lugar. |
 | `COMPRAS_GRUPALES` → `ITEMS_COMPRA`       | 1:N (mín. 1) | Una compra grupal se desglosa en al menos un ítem; no hay compra vacía.                        |
 | `COMPRAS_GRUPALES` → `DEUDAS_PARTICIPANTES` | 1:0..N     | Una compra puede no tener deudas (compra propia, sin reparto) o generar una por participante.   |
 | `ITEMS_COMPRA` → `DEUDAS_PARTICIPANTES`   | 1:0..N       | Un ítem puede no tener deudas asignadas, y una deuda puede no imputarse a ningún ítem concreto. |
@@ -186,7 +212,7 @@ erDiagram
 | Familia de columnas | Tipo SQLite | Unidad | Por qué |
 |---|---|---|---|
 | Montos, saldos y precios | `INTEGER` | pesos CLP (unidad mínima, sin centavos en circulación desde 1984) | Aritmética exacta: el saldo se acumula por sumas repetidas y el reparto debe cuadrar al peso. En IEEE 754 (`REAL`), `0.1 + 0.2 = 0.30000000000000004` y el error aparecería en el saldo que ve el usuario. |
-| Coordenadas | `REAL` | grados WGS84 (`double`) | Es el tipo que consume `osmdroid` (`GeoPoint`), sin conversión por lectura. A 7 decimales la resolución es de ~1 cm, muy por debajo del error del GPS. |
+| Coordenadas | `REAL` | grados WGS84 (`double`) | Es el tipo que consume MapLibre (`LatLng`), sin conversión por lectura. A 7 decimales la resolución es de ~1 cm, muy por debajo del error del GPS. |
 | Fechas y horas | `TEXT` | ISO-8601 UTC | El orden lexicográfico coincide con el cronológico, así que `ORDER BY fecha_hora` usa el índice sin conversión y el `.db` exportado queda legible. |
 | Estados | `TEXT` + `CHECK` | dominio cerrado | El motor rechaza valores fuera de dominio en el punto de escritura. |
 | Cantidades de producto | `INTEGER` | unidades | Es un conteo, no dinero: por eso no lleva centavos ni `REAL`. |
@@ -277,7 +303,7 @@ leyendo antes el valor: se actualiza con aritmética atómica (§4.2).
 | `tipo` | `TEXT` | `NOT NULL` · `CHECK IN ('ingreso','egreso')` | No | Naturaleza del movimiento. No existe `transferencia` porque `mission.md` §3 excluye transferencias entre cuentas propias. |
 | `fecha_hora` | `TEXT` | `NOT NULL` · `CHECK` de formato `YYYY-MM-DDTHH:MM:SSZ` | No | Momento en UTC. Es la columna de orden del historial. |
 | `descripcion` | `TEXT` | — | Sí | Concepto libre ("Supermercado del barrio"). |
-| `latitud` | `REAL` | `CHECK (-90.0 <= latitud <= 90.0)` · grados | Sí | Latitud WGS84 tal cual la consume `osmdroid`. `NULL` = movimiento no geolocalizado. |
+| `latitud` | `REAL` | `CHECK (-90.0 <= latitud <= 90.0)` · grados | Sí | Latitud WGS84 tal cual la consume MapLibre. `NULL` = movimiento no geolocalizado. |
 | `longitud` | `REAL` | `CHECK (-180.0 <= longitud <= 180.0)` · grados | Sí | Longitud WGS84 con el rango completo del planeta. |
 | `direccion_lugar` | `TEXT` | — | Sí | Dirección legible resuelta en el punto. Descriptiva: no se usa para consultas ni geocodificación. |
 
@@ -403,11 +429,60 @@ persona y un importe, no es un dato derivable que se pueda recalcular sin contex
 
 
 
-### 3.9 Índices y plan de consultas
+### 3.9 LUGARES
+
+- **Propósito:** Pin referencial del mapa. Puede representar la ubicación de un movimiento o un
+  lugar independiente creado por el usuario (supermercado, farmacia, restaurante, etc.) con una
+  lista de cosas asociada.
+- **Ciclo de vida:** se crea desde el mapa o desde el registro geolocalizado de un movimiento;
+  `abierto → cerrado → abierto` es reversible y no borra la fila. Se elimina físicamente con
+  confirmación explícita y sus elementos se borran en cascada.
+
+| Campo | Tipo SQLite | Clave / Restricción | Nullable | Descripción y regla de negocio |
+|---|---|---|---|---|
+| `id` | `INTEGER` | `PK` · `AUTOINCREMENT` | No | Identificador local. |
+| `transaccion_id` | `INTEGER` | `FK → TRANSACCIONES(id)` · `UNIQUE` parcial · `ON DELETE SET NULL` | Sí | Movimiento que originó el pin. `NULL` = pin independiente creado desde la pestaña "Mapa". |
+| `nombre` | `TEXT` | `NOT NULL` · `CHECK (length(trim(nombre)) > 0)` | No | Nombre visible. Si el usuario no lo escribe, la UI usa el nombre del tipo de lugar. |
+| `tipo_lugar` | `TEXT` | `NOT NULL` · `CHECK IN ('supermercado','farmacia','restaurante','ferreteria','panaderia','cafeteria','banco','otro')` | No | Clasificación del lugar. Define el emoji por defecto y el texto de la lista. |
+| `emoji` | `TEXT` | `NOT NULL` · `DEFAULT '📍'` · `CHECK (length(trim(emoji)) > 0)` | No | Emoji visible en el pin y en la lista. El usuario puede elegir otro de la paleta. |
+| `descripcion` | `TEXT` | — | Sí | Nota libre del lugar ("abre hasta las 21:00"). |
+| `latitud` | `REAL` | `NOT NULL` · `CHECK (-90.0 <= latitud <= 90.0)` · grados | No | Latitud WGS84 del pin. |
+| `longitud` | `REAL` | `NOT NULL` · `CHECK (-180.0 <= longitud <= 180.0)` · grados | No | Longitud WGS84 del pin. |
+| `estado` | `TEXT` | `NOT NULL` · `DEFAULT 'abierto'` · `CHECK IN ('abierto','cerrado')` | No | `cerrado` oculta el pin de la lista activa y lo atenúa en el mapa; no lo elimina. |
+
+- **Índices:** `idx_lugares_geo (latitud, longitud)` para la consulta por caja envolvente;
+  `idx_lugares_estado (estado, id)` para la lista activa; `ux_lugares_transaccion`, único parcial
+  (`WHERE transaccion_id IS NOT NULL`), para garantizar un pin por movimiento.
+- **Eliminación:** FÍSICA con confirmación; los `ITEMS_LUGAR` se borran en cascada. Si se elimina el
+  movimiento vinculado, el lugar **sobrevive** con `transaccion_id = NULL` porque la lista y el pin
+  son datos del usuario que no deben perderse sin su decisión.
+
+### 3.10 ITEMS_LUGAR
+
+- **Propósito:** Lista de cosas asociada a un pin (por ejemplo, la lista de compras de un
+  supermercado). Es un checklist de recordatorio, no una transacción financiera.
+- **Ciclo de vida:** se crea y se edita mientras el lugar exista; se elimina en cascada con él. El
+  campo `completado` permite marcar y desmarcar un elemento sin borrarlo.
+
+| Campo | Tipo SQLite | Clave / Restricción | Nullable | Descripción y regla de negocio |
+|---|---|---|---|---|
+| `id` | `INTEGER` | `PK` · `AUTOINCREMENT` | No | Identificador local. |
+| `lugar_id` | `INTEGER` | `FK → LUGARES(id)` · `NOT NULL` · `ON DELETE CASCADE` | No | Lugar al que pertenece el elemento. Sin lugar no tiene significado. |
+| `descripcion` | `TEXT` | `NOT NULL` · `CHECK (length(trim(descripcion)) > 0)` | No | Qué hay que recordar ("leche", "pan", "llamar al taller"). |
+| `completado` | `INTEGER` | `NOT NULL` · `DEFAULT 0` · `CHECK (completado IN (0,1))` | No | 0 = pendiente, 1 = completado. SQLite no tiene booleano nativo. |
+
+- **Índices:** `idx_items_lugar (lugar_id)` para cargar la lista de un pin.
+- **Eliminación:** FÍSICA en cascada desde `LUGARES` → Justificación: un elemento sin pin no tiene
+  contexto ni consulta posible.
+
+### 3.11 Índices y plan de consultas
 
 | Consulta de la interfaz                                                            | Índice que la sirve                                    | Nota                                                                                                  |
 |-----------------------------------------------------------------------------------|--------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
 | Marcas del mapa dentro de un zoom: `WHERE latitud BETWEEN ? AND ? AND longitud BETWEEN ? AND ?` | `idx_transacciones_geo` (parcial)                      | Índice parcial: solo las filas con coordenada. La caja envolvente usa las dos columnas.              |
+| Pines de lugar dentro de un zoom: `WHERE latitud BETWEEN ? AND ? AND longitud BETWEEN ? AND ?` | `idx_lugares_geo`                                      | Consulta la tabla de pines en la zona visible del mapa.                                              |
+| Lista de lugares activos: `WHERE estado = 'abierto' ORDER BY id`                     | `idx_lugares_estado`                                   | La lista principal no mezcla pines cerrados.                                                          |
+| Lista de cosas de un pin: `WHERE lugar_id = ? ORDER BY id`                          | `idx_items_lugar`                                      | Consulta de igualdad por la clave foránea.                                                            |
 | Historial de una cuenta, página a página                                            | `idx_transacciones_cuenta_fecha`                       | Compuesto y **cubriente**: resuelve `WHERE` y `ORDER BY` leyendo solo el índice, sin ordenar.         |
 | Filtro "solo esta categoría"                                                        | `idx_transacciones_categoria` (parcial)                | Parcial: los movimientos sin categoría no ensucian el índice.                                        |
 | "Quién me debe": `WHERE contacto_id = ? AND estado <> 'liquidado'`                    | `idx_deudas_contacto_estado` (parcial)                 | Índice parcial sobre el estado pendiente, que es el que la UI consulta.                              |
@@ -420,10 +495,25 @@ Apéndice A):
 
 
 ```sql
--- Geolocalización: filtro por caja envolvente (bbox) para pintar y filtrar marcas en osmdroid
+-- Geolocalización: filtro por caja envolvente (bbox) para pintar y filtrar marcas en el mapa
 CREATE INDEX idx_transacciones_geo
     ON TRANSACCIONES (latitud, longitud)
     WHERE latitud IS NOT NULL AND longitud IS NOT NULL;
+
+-- Pines de lugar: filtro por caja envolvente y lista activa
+CREATE INDEX idx_lugares_geo
+    ON LUGARES (latitud, longitud);
+
+CREATE INDEX idx_lugares_estado
+    ON LUGARES (estado, id);
+
+-- Lista de cosas de un pin
+CREATE INDEX idx_items_lugar
+    ON ITEMS_LUGAR (lugar_id);
+
+-- Un movimiento genera a lo sumo un pin; los independientes tienen NULL
+CREATE UNIQUE INDEX ux_lugares_transaccion
+    ON LUGARES (transaccion_id) WHERE transaccion_id IS NOT NULL;
 
 -- Historial por cuenta, en orden cronológico inverso (sin ordenar en tiempo de consulta)
 CREATE INDEX idx_transacciones_cuenta_fecha
@@ -493,6 +583,8 @@ CREATE INDEX idx_categorias_tipo
 | `CONTACTOS` | `COMPRAS_GRUPALES` | 1:N opcional | Identifica al pagador de la compra; `NULL` = usuario principal. | `RESTRICT` (`SET NULL` reescribiría el pasado) |
 | `CONTACTOS` | `DEUDAS_PARTICIPANTES` | 1:N | Identifica al deudor de la deuda. | `RESTRICT` (identidad de una persona) |
 | `TRANSACCIONES` | `COMPRAS_GRUPALES` | 1:0..1 | Un movimiento origina a lo sumo una compra grupal. | `CASCADE` + `UNIQUE` (asiento y desglose son una realidad) |
+| `TRANSACCIONES` | `LUGARES` | 1:0..1 | Un movimiento puede originar a lo sumo un pin vinculado. | `SET NULL` + `UNIQUE` (borrar el movimiento no debe borrar la lista del usuario) |
+| `LUGARES` | `ITEMS_LUGAR` | 1:0..N | El pin contiene su lista de cosas. | `CASCADE` (un elemento sin pin no significa nada) |
 | `COMPRAS_GRUPALES` | `ITEMS_COMPRA` | 1:N (mín. 1) | La compra se desglosa en ítems. | `CASCADE` (un ítem sin cabecera no significa nada) |
 | `COMPRAS_GRUPALES` | `DEUDAS_PARTICIPANTES` | 1:0..N | La compra genera las deudas del reparto. | `CASCADE` (la deuda nace de la compra) |
 | `ITEMS_COMPRA` | `DEUDAS_PARTICIPANTES` | 1:0..N | Un ítem puede imputarse a deudas, y una deuda puede no imputarse. | `SET NULL` (la deuda sobrevive al ítem) |
@@ -565,6 +657,9 @@ obligatorios, así que las reglas siguientes se validan en la capa de dominio y 
 | I-6 | Toda `COMPRAS_GRUPALES` tiene ≥ 1 ítem; una compra `abierta` puede no tener deudas (compra propia) | DAO + test |
 | I-7 | Adeudado del usuario = `Σ (monto_asignado − monto_pagado)` de las deudas no liquidadas | Consulta de balance + test de la fórmula de reparto |
 | I-8 | `TRANSACCIONES.monto > 0` | `CHECK` del motor (§3.4) |
+| I-9 | Todo `LUGARES` tiene coordenadas completas y dentro de rango WGS84 | `CHECK` del motor + test de `LugarService` |
+| I-10 | Un movimiento tiene como máximo un pin vinculado | `UNIQUE` parcial `ux_lugares_transaccion` + test de DAO |
+| I-11 | `ITEMS_LUGAR.completado` solo vale 0 o 1 y todo elemento pertenece a un lugar existente | `CHECK` + `FK` + test de cascada |
 
 > **Límite explícito de las garantías del motor.** El `CHECK` de coherencia estado ↔ importe valida
 > la **fila**, no el **historial**: SQLite aceptaría escribir `estado = 'pendiente',
@@ -631,7 +726,7 @@ UPDATE DEUDAS_PARTICIPANTES
 
 2. **`REAL` conservado solo para `latitud` y `longitud`**
    - **Alternativas descartadas:** `INTEGER` con escala fija (micro-grados), `BLOB` de dos `double`, y `R-Tree`/`SpatiaLite` para índices espaciales reales.
-   - **Justificación:** `osmdroid` consume un `GeoPoint(double, double)`; guardar el mismo `double` que ve la librería evita una conversión por lectura. A 7 decimales la resolución es de ~1 cm, muy por debajo del error del GPS de consumo. `SpatiaLite` sería una dependencia nativa no registrada en `tech-stack.md`, y el `R-Tree` no está disponible de forma fiable en el SQLite embebido del rango de API soportado.
+   - **Justificación:** MapLibre consume un `LatLng(double, double)`; guardar el mismo `double` que ve la librería evita una conversión por lectura. A 7 decimales la resolución es de ~1 cm, muy por debajo del error del GPS de consumo. `SpatiaLite` sería una dependencia nativa no registrada en `tech-stack.md`, y el `R-Tree` no está disponible de forma fiable en el SQLite embebido del rango de API soportado.
    - **Consecuencia:** las coordenadas no admiten igualdad exacta; se comparan con margen (`diferencia < 0.000001`) y el rango se valida con `CHECK`.
 
 3. **Ids `INTEGER PRIMARY KEY AUTOINCREMENT` (surrogados, no naturales)**
@@ -683,7 +778,14 @@ UPDATE DEUDAS_PARTICIPANTES
 
 | `user_version` | Cambios | Estado |
 |---|---|---|
-| 1 | Versión inicial: las 8 tablas, sus `CHECK`, `FOREIGN KEY` e índices (§3.9) | Vigente |
+| 1 | Versión inicial: las 8 tablas, sus `CHECK`, `FOREIGN KEY` e índices (§3.11) | Vigente |
+| 2 | Geolocalización de movimientos (`TRANSACCIONES.latitud/longitud/direccion_lugar`) y nuevas tablas `LUGARES` e `ITEMS_LUGAR` con sus índices (§3.9-§3.11) | En preparación (Feature 009) |
+
+> **Nota de implementación (Room):** la base Android ya está en `version = 2` por la migración
+> 1 → 2 que agregó `CUENTAS.activa` en la Feature 007. Esa columna no forma parte del DDL canónico
+> de este documento, así que la Feature 009 se implementa con una migración Room **2 → 3** que
+> materializa la revisión **2** del esquema canónico. No son dos numeraciones equivalentes: una es la
+> ruta de migración del archivo y la otra la revisión del contrato de datos.
 
 - **Datos semilla (seed):** las 7 categorías base se insertan en el primer arranque, dentro de la misma transacción que crea el esquema, con `INSERT OR IGNORE` sobre el índice único `(nombre, tipo_transaccion)` para que reejecutar el arranque sea idempotente. Se usa `OR IGNORE` y no `ON CONFLICT DO NOTHING` porque la sintaxis de _upsert_ requiere SQLite 3.24 y el proyecto declara compatibilidad 3.8+ (`minSdk` 28). Las cuentas y los contactos los crea el usuario: no hay datos de prueba en producción. Para desarrollo y test se usa la base en memoria de Room, sembrada desde el mismo script de §A.1.
 
@@ -699,7 +801,9 @@ UPDATE DEUDAS_PARTICIPANTES
 | `CUENTAS` | `007-cuentas` (Feature 007, en desarrollo) | ambas | `saldo_actual` es proyección de `TRANSACCIONES` (invariante I-1). |
 | `CATEGORIAS` | `007-cuentas` (Feature 007, en desarrollo) | ambas | Semilla de 7 categorías en el primer arranque; se puebla por SQL, no por feature. |
 | `TRANSACCIONES` | `007-cuentas` (Feature 007, en desarrollo) | ambas | Libro mayor. También es la fuente del mapa en la Fase 2. |
-| `TRANSACCIONES` (geometría) | `NNN-mapa-osmdroid` (pendiente, Fase 2) | lectura | `idx_transacciones_geo` y el filtro de caja envolvente. |
+| `TRANSACCIONES` (geometría) | `009-geolocalizacion-map` (en preparación, Fase 2) | ambas | `idx_transacciones_geo` y la geolocalización opcional del movimiento. |
+| `LUGARES` | `009-geolocalizacion-map` (en preparación, Fase 2) | ambas | Pin referencial vinculado a un movimiento o independiente; `ux_lugares_transaccion` garantiza 1:0..1. |
+| `ITEMS_LUGAR` | `009-geolocalizacion-map` (en preparación, Fase 2) | ambas | Lista de cosas del pin; se borra en cascada con `LUGARES`. |
 | `COMPRAS_PLANIFICADAS` | `NNN-historial-agenda` (pendiente, Fase 2) | ambas | Agenda de compras futuras; al completarse materializa `TRANSACCIONES`. |
 | `COMPRAS_GRUPALES` | `NNN-gastos-compartidos` (pendiente, Fase 3) | ambas | Distingue pagador real de participantes (§4.1). |
 | `ITEMS_COMPRA` | `NNN-gastos-compartidos` (pendiente, Fase 3) | ambas | Base del reparto equitativo; `monto_subtotal` verificado por `CHECK`. |
@@ -718,6 +822,7 @@ Asignación de Deudas" depende de `COMPRAS_GRUPALES`, `ITEMS_COMPRA` y `DEUDAS_P
 |---|---|---|---|
 | 2026-09-28 | Definición inicial del esquema v1: 8 tablas, FK con `CASCADE`/`SET NULL`/`RESTRICT`, `CHECK` de integridad, dinero en pesos CLP `INTEGER` y coordenadas en `REAL`. | Cumplir el pilar de persistencia local offline y fijar el contrato de datos antes de escribir la Fase 1. | `doc/003-modelo-datos.md` |
 | 2026-10-05 | Adaptación de unidad monetaria: de centavos a pesos CLP (Decisión #2 en `spec/features/007-cuentas/plan.md`). Los pesos chilenos no tienen centavos en circulación desde 1984. | Alinear el modelo de datos con el contexto local de Chile y evitar conversiones innecesarias. | `spec/features/007-cuentas/plan.md` |
+| 2026-10-23 | Revisión v2: se agregan `LUGARES` e `ITEMS_LUGAR` para pines de mapa con tipo, emoji, estado y lista de cosas; `LUGARES.transaccion_id` vincula opcionalmente el pin con un movimiento. Se formalizan las coordenadas de `TRANSACCIONES` como parte de la Feature 009. | La feature se reescribe para cubrir pines independientes y vinculados a movimientos, con listas de recordatorio y cierre reversible. | `spec/features/009-geolocalizacion-map/plan.md` (registro final: `doc/009-geolocalizacion-map.md`) |
 
 ---
 
@@ -727,7 +832,7 @@ Fuente de verdad ejecutable. Debe reproducirse sin cambios en `SQLiteOpenHelper.
 1-2) o en las migraciones de Room (Fase 3). Si el código y este apéndice discrepan, es un bug.
 
 ```sql
--- LocalCash Database Schema v1
+-- LocalCash Database Schema v2
 -- Unidad monetaria: pesos CLP (INTEGER, no centavos)
 -- Coordenadas: grados WGS84 (REAL)
 -- Fechas: ISO-8601 UTC (TEXT)
@@ -855,10 +960,50 @@ CREATE TABLE DEUDAS_PARTICIPANTES (
         ON UPDATE CASCADE ON DELETE RESTRICT
 );
 
--- ────────────────────────────── ÍNDICES (§3.9) ───────────────────────────────
+-- ──────────────────────────────── LUGARES ───────────────────────────────────
+CREATE TABLE LUGARES (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    transaccion_id INTEGER,
+    nombre         TEXT    NOT NULL CHECK (length(trim(nombre)) > 0),
+    tipo_lugar     TEXT    NOT NULL
+                   CHECK (tipo_lugar IN ('supermercado', 'farmacia', 'restaurante',
+                                         'ferreteria', 'panaderia', 'cafeteria', 'banco', 'otro')),
+    emoji          TEXT    NOT NULL DEFAULT '📍' CHECK (length(trim(emoji)) > 0),
+    descripcion    TEXT,
+    latitud        REAL    NOT NULL CHECK (latitud  >=  -90.0 AND latitud  <=  90.0),
+    longitud       REAL    NOT NULL CHECK (longitud >= -180.0 AND longitud <= 180.0),
+    estado         TEXT    NOT NULL DEFAULT 'abierto'
+                   CHECK (estado IN ('abierto', 'cerrado')),
+    FOREIGN KEY (transaccion_id) REFERENCES TRANSACCIONES (id)
+        ON UPDATE CASCADE ON DELETE SET NULL
+);
+
+-- ────────────────────────────── ITEMS_LUGAR ─────────────────────────────────
+CREATE TABLE ITEMS_LUGAR (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    lugar_id    INTEGER NOT NULL,
+    descripcion TEXT    NOT NULL CHECK (length(trim(descripcion)) > 0),
+    completado  INTEGER NOT NULL DEFAULT 0 CHECK (completado IN (0, 1)),
+    FOREIGN KEY (lugar_id) REFERENCES LUGARES (id)
+        ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+-- ────────────────────────────── ÍNDICES (§3.11) ──────────────────────────────
 CREATE INDEX idx_transacciones_geo
     ON TRANSACCIONES (latitud, longitud)
     WHERE latitud IS NOT NULL AND longitud IS NOT NULL;
+
+CREATE INDEX idx_lugares_geo
+    ON LUGARES (latitud, longitud);
+
+CREATE INDEX idx_lugares_estado
+    ON LUGARES (estado, id);
+
+CREATE INDEX idx_items_lugar
+    ON ITEMS_LUGAR (lugar_id);
+
+CREATE UNIQUE INDEX ux_lugares_transaccion
+    ON LUGARES (transaccion_id) WHERE transaccion_id IS NOT NULL;
 
 CREATE INDEX idx_transacciones_cuenta_fecha
     ON TRANSACCIONES (cuenta_id, fecha_hora DESC, id DESC);
@@ -909,7 +1054,7 @@ CREATE UNIQUE INDEX ux_deudas_item
     ON DEUDAS_PARTICIPANTES (compra_grupal_id, item_id, contacto_id) WHERE item_id IS NOT NULL;
 
 -- ──────────────────────────────── VERSIONADO ─────────────────────────────────
-PRAGMA user_version = 1;
+PRAGMA user_version = 2;
 ```
 
 ### A.1 Semilla de `CATEGORIAS`

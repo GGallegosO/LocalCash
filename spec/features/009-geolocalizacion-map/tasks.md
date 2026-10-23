@@ -1,8 +1,7 @@
 # tasks.md — Checklist Secuencial de Ejecución
 
 > **Identificación:** 009-geolocalizacion-map | **Derivado de:** `spec.md` + `plan.md`
-> **Estado global:** Pendiente (sin implementar). La preparación previa (interruptor en el panel) proviene
-> de la Feature 008.
+> **Estado global:** Documentación redactada; implementación pendiente.
 >
 > **Propósito de este documento:** Descomponer la implementación en pasos ejecutables, ordenados y
 > verificables. Cada casilla marcada `[x]` debe corresponder a un cambio real comprobable (tests
@@ -17,70 +16,131 @@
 
 ---
 
-## Fase 1 — Fundaciones (dependencia, permisos, esquema y dominio)
+## Fase 0 — Contratos y documentación
 
-- [ ] **T1. Declarar la dependencia de osmdroid (6.1.x).**
-      Añadir la librería en `gradle/libs.versions.toml` e `app/build.gradle` (ya registrada en
-      `tech-stack.md` §2). *Criterio de salida:* compila con la dependencia sin advertencias nuevas.
-- [ ] **T2. Declarar los permisos de ubicación en `AndroidManifest.xml`.**
-      `ACCESS_FINE_LOCATION` y `ACCESS_COARSE_LOCATION` (denegación → best-effort).
-- [ ] **T3. Añadir las columnas de coordenadas a la entidad Room.**
-      `latitud` (`Double`), `longitud` (`Double`) y `direccionLugar` (`String`) nullable en
-      `data/entities/Transaccion.java`, según `data-model.md`.
-- [ ] **T4. Crear el value object `Ubicacion` y la validación de dominio.**
-      `domain/model/Ubicacion.java` + validación de rango (lat -90..90, lon -180..180) y de la regla
-      "ambas o ninguna" en `TransaccionService`. *Criterio de salida:* invocable y testeable sin Android.
-- [ ] **T5. Migración de base de datos 2 → 3 (no destructiva).**
-      `ALTER TABLE transacciones ADD COLUMN` para las tres columnas, subir `version` de Room a 3 y crear
-      el índice parcial `idx_transacciones_geo`. Prohibido `DROP TABLE`/migración destructiva.
+- [x] **T1. Re-escribir `spec.md` con el alcance completo.**
+      Mapa interactivo, pines vinculados/independientes, tipos de lugar, lista de cosas, cierre y
+      reapertura, "Mi ubicación" y lista de lugares. *Salida:* CA-1..CA-18 verificables.
+- [x] **T2. Re-escribir `plan.md` con las decisiones técnicas.**
+      MapLibre Native 13.4.0, OpenFreeMap, esquema `LUGARES`/`ITEMS_LUGAR`, migración 2 → 3 y
+      estrategia de pruebas. *Salida:* cada decisión tiene justificación y consecuencia.
+- [x] **T3. Re-escribir `tasks.md` como checklist secuencial.**
+      *Salida:* este archivo, alineado con `spec.md` y `plan.md`.
+- [x] **T4. Actualizar la constitución.**
+      `tech-stack.md` §2/§7 (MapLibre reemplaza a osmdroid), `.agent.md` §2 (stack vigente),
+      `roadmap.md` (hito y deuda técnica) y `data-model.md` (nuevas tablas, ERD, DDL, versión).
+- [x] **T5. Sincronizar la documentación del modelo.**
+      `doc/009-actualizacion-diagrama.md` y `README.md`: 10 tablas, MapLibre, pines y listas.
 
-## Fase 2 — Captura de pin e integración con el panel
+## Fase 1 — Fundaciones técnicas
 
-- [ ] **T6. Crear la Activity de selección de ubicación.**
-      `ui/mapa/SeleccionarUbicacionActivity.java` + `res/layout/activity_seleccionar_ubicacion.xml`:
-      `MapView` de osmdroid con un pin movible y acciones confirmar/cancelar; ciclo de vida del `MapView`
-      correctamente gestionado.
-- [ ] **T7. Centrar en la posición actual (best-effort) y gestionar el permiso.**
-      Con `LocationManager`; si el permiso falta o no hay señal, abrir en vista por defecto (CA-6/E-1/E-2).
-- [ ] **T8. Devolver el resultado al panel.**
-      La Activity retorna `latitud`/`longitud` por `setResult`; `CuentasActivity` la lanza desde el
-      interruptor "Geolocalizar" con un `ActivityResultLauncher` y conserva el estado del panel.
-- [ ] **T9. Persistir las coordenadas al registrar el movimiento.**
-      `TransaccionViewModel` propaga `Ubicacion`; ambas coordenadas o ninguna (CA-3/CA-4/CA-7).
+- [ ] **T6. Declarar MapLibre Native 13.4.0.**
+      Añadir `org.maplibre.gl:android-sdk:13.4.0` en `gradle/libs.versions.toml` y `app/build.gradle`.
+      Inicializar `MapLibre.getInstance(context)` antes de inflar el `MapView`.
+      *Salida:* compila con la dependencia y sin advertencias nuevas.
+- [ ] **T7. Declarar permisos y Activity en `AndroidManifest.xml`.**
+      `INTERNET`, `ACCESS_NETWORK_STATE`, `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION` y
+      `SeleccionarUbicacionActivity` (no exportada).
+      *Salida:* el mapa puede descargar teselas y la ubicación se solicita en runtime.
+- [ ] **T8. Crear las entidades y DAOs de lugares.**
+      `Lugar`, `ItemLugar`, `LugarDao` e `ItemLugarDao` según `data-model.md`; registrar las
+      entidades en `AppDatabase`. *Salida:* compila y las consultas observables están definidas.
+- [ ] **T9. Implementar la migración 2 → 3.**
+      Agregar `latitud`, `longitud` y `direccionLugar` a `TRANSACCIONES`; crear `LUGARES` e
+      `ITEMS_LUGAR` con sus índices; subir `version` a 3. Prohibido `DROP TABLE` o
+      `fallbackToDestructiveMigration()`.
+      *Salida:* migración compilada y cubierta por T29.
+- [ ] **T10. Crear el dominio del lugar.**
+      `Ubicacion`, `TipoLugar`, `EstadoLugar`, `Lugar`, `ItemLugar` y `LugarService`; agregar los
+      códigos de error nuevos. *Salida:* validaciones invocables sin Android y cubiertas por T27.
+- [ ] **T11. Centralizar el estilo y la atribución del mapa.**
+      Constante única con el estilo `https://tiles.openfreemap.org/styles/liberty` y vista de
+      atribución visible. *Salida:* no hay URLs de teselas dispersas en el código.
 
-## Fase 3 — Pestaña "Mapa" (modo lectura)
+## Fase 2 — Mapa de lectura y ubicación actual
 
-- [ ] **T10. Reemplazar el texto de relleno por el mapa de lectura.**
-      `res/layout/view_mapa.xml` aloja un `MapView`; `ui/mapa/MapaViewModel.java` expone los movimientos
-      geolocalizados.
-- [ ] **T11. Mostrar un pin por movimiento, con color por origen.**
-      Un pin por fila geolocalizada; el color de los movimientos se centraliza en un recurso único
-      (contrato que reutilizará 010 con otro color) (CA-5/CA-8).
-- [ ] **T12. Consulta geográfica en el DAO.**
-      `TransaccionDao`: movimientos con coordenada y consulta por caja envolvente sobre
-      `idx_transacciones_geo` (punto de extensión para 010).
+- [ ] **T12. Reemplazar el placeholder de `view_mapa.xml`.**
+      `MapView`, botón "Mi ubicación", botón "Mis lugares", estado vacío y control de atribución.
+      *Salida:* la pestaña "Mapa" muestra el mapa y los controles.
+- [ ] **T13. Implementar `MapaController`.**
+      Encapsular `MapView`/`MapLibreMap`, cámara, pines, pulsación larga y reenvío de ciclo de vida
+      desde `CuentasActivity`. *Salida:* rotación y cambio de tema no filtran ni rompen el mapa.
+- [ ] **T14. Implementar `MapaViewModel` y la consulta de lugares.**
+      Observar `LUGARES` e `ITEMS_LUGAR`, exponer lugares activos y mapear entidades a dominio.
+      *Salida:* un pin guardado aparece sin recargar la pantalla.
+- [ ] **T15. Implementar "Mi ubicación".**
+      Permiso en runtime y `LocationManager`; centrar cámara o mostrar aviso si falla (CA-13/CA-14).
+      *Salida:* no bloquea la app con permiso denegado o sin GPS.
+- [ ] **T16. Implementar la lista de lugares.**
+      BottomSheet con `LugaresAdapter`; al tocar un lugar, centrar el mapa y abrir su detalle
+      (CA-15). *Salida:* lista observable y navegación al pin.
 
-## Fase 4 — Tests
+## Fase 3 — CRUD de pines y lista de cosas
 
-- [ ] **T13. Test de dominio de `Ubicacion`.**
-      `UbicacionValidatorTest`: rango válido/ inválido y regla "ambas o ninguna".
-- [ ] **T14. Test de persistencia geográfica.**
-      `TransaccionDaoGeoTest`: coordenada válida se guarda; coordenada incompleta se rechaza.
-- [ ] **T15. Test de migración 2 → 3.**
-      `MigracionV2V3Test`: sembrar datos en v2, migrar y comprobar que no se perdió información ni se
-      corrompió el índice.
+- [ ] **T17. Crear el formulario de lugar.**
+      `bottom_sheet_lugar.xml` + `LugarFormSheet`: tipo, emoji, nombre, descripción y lista inicial.
+      Nombre por defecto = nombre del tipo (CA-6/CA-7).
+- [ ] **T18. Alta de pin por pulsación larga.**
+      `MapaController` captura la coordenada y abre el formulario; el pin solo se inserta al
+      confirmar (CA-5). *Salida:* cancelar no deja filas huérfanas.
+- [ ] **T19. Detalle del pin.**
+      BottomSheet con datos, acciones editar/cerrar/reabrir/eliminar y lista de cosas. Eliminar pide
+      confirmación (CA-9/CA-11/CA-12).
+- [ ] **T20. Edición de pin.**
+      Actualizar nombre, tipo, emoji y descripción; para pines independientes, también la posición.
+      Un pin vinculado no permite mover la coordenada (CA-10).
+- [ ] **T21. Gestión de la lista de cosas.**
+      `ItemsLugarAdapter`: agregar, editar, marcar completado y eliminar elementos; persistencia
+      observable (CA-8).
+- [ ] **T22. Cierre y reapertura.**
+      Cambiar `estado` sin borrar; el pin cerrado sale de la lista activa y se dibuja atenuado en el
+      mapa; reabrir lo devuelve a la lista (CA-12).
 
-## Fase 5 — Cierre y verificación
+## Fase 4 — Integración con la geolocalización de movimientos
 
-- [ ] **T16. Ejecutar la Definition of Done completa.**
+- [ ] **T23. Crear `SeleccionarUbicacionActivity`.**
+      Mapa MapLibre con pin seleccionable, confirmar/cancelar y devolución de `latitud`/`longitud`
+      por `setResult` (CA-1/CA-2).
+- [ ] **T24. Conectar el interruptor "Geolocalizar".**
+      `CuentasActivity` lanza la Activity con `ActivityResultLauncher` y conserva el estado del panel;
+      sin confirmación, el movimiento queda sin coordenadas (CA-4).
+- [ ] **T25. Persistir movimiento y pin vinculado de forma atómica.**
+      `TransaccionDao.insert` devuelve el id; `TransaccionViewModel` guarda coordenadas y crea el
+      lugar dentro de `AppDatabase.runInTransaction` (CA-3). *Salida:* un fallo no deja medio pin.
+- [ ] **T26. Mostrar pines vinculados e indicar su origen.**
+      El mapa incluye los lugares con `transaccionId`; el detalle indica "vinculado a un movimiento"
+      sin duplicar el marcador (CA-16).
+
+## Fase 5 — Pruebas
+
+- [ ] **T27. Tests de dominio (`LugarServiceTest`).**
+      Nombre vacío, tipo inválido, emoji vacío, coordenadas fuera de rango, transiciones de estado y
+      regla de posición inmutable en pin vinculado.
+- [ ] **T28. Tests de persistencia (`LugarDaoTest`, `ItemLugarDaoTest`).**
+      CRUD, consulta geográfica, cascada de elementos, unicidad del vínculo con movimiento y
+      `PRAGMA foreign_keys`.
+- [ ] **T29. Test de migración (`MigracionV2V3Test`).**
+      Sembrar datos en la versión 2, migrar, comprobar cuentas/movimientos intactos y
+      `PRAGMA foreign_key_check` limpio.
+- [ ] **T30. Pruebas manuales de casos borde.**
+      Permiso denegado, sin GPS, modo avión, rotación/cambio de tema, cientos de pines, emoji no
+      representable y eliminación del movimiento vinculado.
+
+## Fase 6 — Cierre y verificación
+
+- [ ] **T31. Ejecutar la Definition of Done completa.**
       `./gradlew lint` → `testDebugUnitTest` → `connectedCheck` → `assembleDebug`.
-- [ ] **T17. Verificación manual en emulador.**
-      Activar el interruptor → fijar pin → guardar → ver el pin en la pestaña "Mapa"; probar permiso
-      denegado y modo avión (CA-6/E-5).
-- [ ] **T18. Actualizar `data-model.md` si la implementación diverge del DDL (en el mismo cambio).**
-- [ ] **T19. Registro de memoria final.**
-      Crear `doc/009-geolocalizacion-map.md` y actualizar el hito del roadmap. **Resolver antes la nota
-      de numeración de `plan.md` §7** (renombrar `doc/009-actualizacion-diagrama.md`).
+- [ ] **T32. Verificación manual guiada por `spec.md`.**
+      Recorrer CA-1..CA-18 y registrar evidencia en el futuro `doc/009-geolocalizacion-map.md`.
+- [ ] **T33. Sincronizar el esquema si la implementación diverge.**
+      Actualizar `data-model.md` y `doc/009-actualizacion-diagrama.md` en el mismo cambio; validar el
+      DDL en `sqlite3` con `PRAGMA foreign_key_check`.
+- [ ] **T34. Actualizar roadmap y README.**
+      Estado del hito, stack de mapas y conteo de tablas.
+- [ ] **T35. Crear el registro de memoria y resolver la numeración.**
+      `doc/009-geolocalizacion-map.md` con decisiones, archivos, lecciones y próximos pasos. Antes,
+      mover `doc/009-actualizacion-diagrama.md` a un número libre o renumerar según decisión del
+      responsable (`plan.md` §7).
 
 ---
 
@@ -94,7 +154,8 @@ emulador activo**: si se ejecuta primero y falla, se pierde el ciclo de compilac
 - [ ] Tests de integración y UI en verde: `./gradlew connectedCheck`
 - [ ] Build válido: `./gradlew assembleDebug`
 - [ ] Registro de memoria creado: `doc/009-geolocalizacion-map.md`
-- [ ] `data-model.md` actualizado si la feature tocó el esquema (en el mismo cambio)
+- [ ] `data-model.md` y `doc/009-actualizacion-diagrama.md` actualizados si la feature tocó el esquema
+- [ ] Roadmap y README actualizados
 - [ ] Commits con formato de `.agent.md` §5.2, uno por unidad lógica
 
 **Notas de ejecución:** (pendiente de iniciar)
