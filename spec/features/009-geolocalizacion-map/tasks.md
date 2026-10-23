@@ -1,7 +1,7 @@
 # tasks.md — Checklist Secuencial de Ejecución
 
 > **Identificación:** 009-geolocalizacion-map | **Derivado de:** `spec.md` + `plan.md`
-> **Estado global:** Fases 0, 1 y 2 completadas y verificadas en emulador; Fase 3 en curso.
+> **Estado global:** Fases 0 a 3 completadas y verificadas en emulador; Fase 4 pendiente.
 >
 > **Propósito de este documento:** Descomponer la implementación en pasos ejecutables, ordenados y
 > verificables. Cada casilla marcada `[x]` debe corresponder a un cambio real comprobable (tests
@@ -78,22 +78,22 @@
 
 ## Fase 3 — CRUD de pines y lista de cosas
 
-- [ ] **T17. Crear el formulario de lugar.**
+- [x] **T17. Crear el formulario de lugar.**
       `bottom_sheet_lugar.xml` + `LugarFormSheet`: tipo, emoji, nombre, descripción y lista inicial.
       Nombre por defecto = nombre del tipo (CA-6/CA-7).
-- [ ] **T18. Alta de pin por pulsación larga.**
+- [x] **T18. Alta de pin por pulsación larga.**
       `MapaController` captura la coordenada y abre el formulario; el pin solo se inserta al
       confirmar (CA-5). *Salida:* cancelar no deja filas huérfanas.
-- [ ] **T19. Detalle del pin.**
+- [x] **T19. Detalle del pin.**
       BottomSheet con datos, acciones editar/cerrar/reabrir/eliminar y lista de cosas. Eliminar pide
       confirmación (CA-9/CA-11/CA-12).
-- [ ] **T20. Edición de pin.**
+- [x] **T20. Edición de pin.**
       Actualizar nombre, tipo, emoji y descripción; para pines independientes, también la posición.
       Un pin vinculado no permite mover la coordenada (CA-10).
-- [ ] **T21. Gestión de la lista de cosas.**
+- [x] **T21. Gestión de la lista de cosas.**
       `ItemsLugarAdapter`: agregar, editar, marcar completado y eliminar elementos; persistencia
       observable (CA-8).
-- [ ] **T22. Cierre y reapertura.**
+- [x] **T22. Cierre y reapertura.**
       Cambiar `estado` sin borrar; el pin cerrado sale de la lista activa y se dibuja atenuado en el
       mapa; reabrir lo devuelve a la lista (CA-12).
 

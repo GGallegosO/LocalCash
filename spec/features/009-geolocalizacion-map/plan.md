@@ -41,11 +41,13 @@
 | `ui/mapa/ItemsLugarAdapter.java` | Lista de cosas con casilla de completado y acciones | CREAR | MEDIA |
 | `ui/mapa/SeleccionarUbicacionActivity.java` | Activity de mapa que devuelve un punto al registro de movimientos | CREAR | ALTA |
 | `ui/mapa/LugarFormSheet.java` | Formulario de alta/edición de lugar y de su lista | CREAR | ALTA |
+| `ui/mapa/LugarDetalleSheet.java` | Detalle del pin: datos, origen, lista de cosas y acciones de gestión | CREAR | ALTA |
 | `ui/cuentas/CuentasActivity.java` | Sustituir el placeholder del mapa, cablear `MapaController` y el flujo "Geolocalizar" | MODIFICAR | ALTA |
 | `ui/cuentas/TransaccionViewModel.java` | Persistir coordenadas y crear el pin vinculado en una sola transacción | MODIFICAR | ALTA |
 | `res/layout/view_mapa.xml` | Mapa, botones "Mi ubicación"/"Mis lugares" y estado vacío | MODIFICAR | MEDIA |
 | `res/layout/activity_seleccionar_ubicacion.xml` | Mapa de selección + confirmar/cancelar | CREAR | MEDIA |
 | `res/layout/bottom_sheet_lugar.xml` | Formulario de lugar y lista de cosas | CREAR | MEDIA |
+| `res/layout/bottom_sheet_detalle_lugar.xml` | Detalle del pin y sus acciones de gestión | CREAR | MEDIA |
 | `res/layout/bottom_sheet_lugares.xml` | Lista de lugares registrados | CREAR | MEDIA |
 | `res/layout/item_lugar.xml` | Fila de la lista de lugares | CREAR | BAJA |
 | `res/layout/item_lista_lugar.xml` | Fila de la lista de cosas | CREAR | BAJA |
@@ -55,6 +57,13 @@
 | `test/.../LugarDaoTest.java` | CRUD, cascada de elementos y consulta geográfica | CREAR | MEDIA |
 | `test/.../ItemLugarDaoTest.java` | Alta, edición y completado de elementos | CREAR | MEDIA |
 | `androidTest/.../MigracionV2V3Test.java` | Migración 2 → 3 con datos sembrados y `PRAGMA foreign_key_check` | CREAR | ALTA |
+
+> **Ajuste durante la Fase 3 (justificado):** T19 exigía una hoja de detalle con acciones y lista de
+> cosas, pero la tabla original solo nombraba el formulario. Se añadieron
+> `ui/mapa/LugarDetalleSheet.java` y `res/layout/bottom_sheet_detalle_lugar.xml` para separar lectura
+> y edición: el formulario no se reutiliza como detalle porque en edición oculta la lista inicial
+> (su gestión vive en el detalle) y porque el detalle observa `ITEMS_LUGAR` en vivo. `item_lista_lugar.xml`
+> ya estaba previsto y se reutiliza en ambas hojas sin duplicar la fila.
 
 **Contrato de datos / interfaz expuesta:**
 

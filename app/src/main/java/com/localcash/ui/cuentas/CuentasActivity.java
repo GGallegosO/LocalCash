@@ -22,6 +22,7 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 import androidx.core.location.LocationManagerCompat;
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
@@ -48,6 +49,8 @@ import com.localcash.domain.model.TipoTransaccion;
 import com.localcash.domain.model.Transaccion;
 import com.localcash.domain.model.Ubicacion;
 import com.localcash.ui.BaseActivity;
+import com.localcash.ui.mapa.LugarDetalleSheet;
+import com.localcash.ui.mapa.LugarFormSheet;
 import com.localcash.ui.mapa.LugaresAdapter;
 import com.localcash.ui.mapa.MapaConfig;
 import com.localcash.ui.mapa.MapaController;
@@ -126,6 +129,12 @@ public class CuentasActivity extends BaseActivity
 
     /** Señal para cancelar la petición de ubicación en curso. */
     private CancellationSignal cancelacionUbicacion;
+
+    /**
+     * Pin pendiente de reubicación: la próxima pulsación larga sobre el mapa
+     * mueve este pin en vez de crear uno nuevo (T20).
+     */
+    private Lugar lugarEnMovimiento;
 
     /**
      * Solicita el permiso de ubicación solo cuando el usuario pulsa
@@ -395,7 +404,8 @@ public class CuentasActivity extends BaseActivity
 
         mapaController = new MapaController(vistaMapa.mapView);
         mapaController.crear(savedInstanceState);
-        mapaController.setOnLugarSeleccionadoListener(mapaController::mostrarInfoLugar);
+        mapaController.setOnLugarSeleccionadoListener(this::mostrarDetalleLugar);
+        mapaController.setOnPulsacionLargaListener(this::alPulsacionLarga);
 
         vistaMapa.fabMiUbicacion.setOnClickListener(v -> solicitarUbicacionActual());
         vistaMapa.fabMisLugares.setOnClickListener(v -> mostrarListaLugares());
@@ -407,8 +417,7 @@ public class CuentasActivity extends BaseActivity
             @Override
             @SuppressWarnings("unchecked")
             public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
-                AppDatabase db = AppDatabase.getInstance(getApplicationContext());
-                return (T) new MapaViewModel(db.lugarDao(), db.itemLugarDao());
+                return (T) new MapaViewModel(AppDatabase.getInstance(getApplicationContext()));
             }
         }).get(MapaViewModel.class);
 
@@ -452,6 +461,7 @@ public class CuentasActivity extends BaseActivity
             binding.viewFlipper.setDisplayedChild(2);
             binding.bottomNav.setSelectedItemId(R.id.nav_mapa);
             mapaController.mostrarLugar(lugar);
+            mostrarDetalleLugar(lugar);
         });
 
         refrescarEstadoListaLugares();
@@ -471,6 +481,66 @@ public class CuentasActivity extends BaseActivity
         boolean vacio = lugaresActivos.isEmpty();
         sheetLugaresBinding.recyclerLugares.setVisibility(vacio ? View.GONE : View.VISIBLE);
         sheetLugaresBinding.tvEmptyLugares.setVisibility(vacio ? View.VISIBLE : View.GONE);
+    }
+
+    /**
+     * Abre el detalle completo del pin (T19). Se llama al tocar un marcador del
+     * mapa o una fila de "Mis lugares".
+     *
+     * @param lugar pin seleccionado
+     */
+    private void mostrarDetalleLugar(@NonNull Lugar lugar) {
+        new LugarDetalleSheet(this, mapaViewModel, lugar, this::solicitarMoverLugar).mostrar();
+    }
+
+    /**
+     * Gestiona la pulsación larga sobre el mapa (T18/T20).
+     * <p>
+     * Si hay un pin pendiente de reubicación, lo mueve; en caso contrario abre
+     * el formulario de alta con la coordenada presionada. El pin solo se
+     * inserta al confirmar el formulario.
+     * </p>
+     *
+     * @param ubicacion coordenada donde el usuario mantuvo presionado
+     */
+    private void alPulsacionLarga(@NonNull Ubicacion ubicacion) {
+        if (lugarEnMovimiento != null) {
+            moverLugar(lugarEnMovimiento, ubicacion);
+            return;
+        }
+        new LugarFormSheet(this, mapaViewModel, null, ubicacion,
+                () -> mapaController.centrarEn(ubicacion)).mostrar();
+    }
+
+    /**
+     * Marca un pin independiente para que la próxima pulsación larga lo mueva.
+     *
+     * @param lugar pin a mover
+     */
+    private void solicitarMoverLugar(@NonNull Lugar lugar) {
+        lugarEnMovimiento = lugar;
+        mostrarAviso(R.string.aMapa_toast_mover_hint);
+    }
+
+    /**
+     * Mueve un pin independiente a la coordenada indicada y refresca el mapa.
+     *
+     * @param lugar     pin a mover
+     * @param ubicacion nueva coordenada
+     */
+    private void moverLugar(@NonNull Lugar lugar, @NonNull Ubicacion ubicacion) {
+        MutableLiveData<ErrorCode> resultado = new MutableLiveData<>();
+        resultado.observe(this, errorCode -> {
+            lugarEnMovimiento = null;
+            if (errorCode == null) {
+                mapaController.centrarEn(ubicacion);
+                Toast.makeText(this, R.string.aMapa_toast_lugar_movido,
+                        Toast.LENGTH_SHORT).show();
+            } else {
+                mostrarAviso(R.string.aMapa_toast_lugar_error);
+            }
+        });
+        mapaViewModel.moverLugar(lugar, ubicacion, resultado);
     }
 
     /**

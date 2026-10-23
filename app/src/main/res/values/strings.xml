@@ -195,4 +195,36 @@
     <string name="aMapa_tipo_cafeteria">Cafetería</string>
     <string name="aMapa_tipo_banco">Banco</string>
     <string name="aMapa_tipo_otro">Otro</string>
+
+    <!-- Formulario y detalle de lugar (Fase 3) -->
+    <string name="aMapa_titulo_nuevo_lugar">Nuevo lugar</string>
+    <string name="aMapa_titulo_editar_lugar">Editar lugar</string>
+    <string name="aMapa_campo_nombre">Nombre</string>
+    <string name="aMapa_campo_tipo">Tipo de lugar</string>
+    <string name="aMapa_campo_descripcion">Descripción (opcional)</string>
+    <string name="aMapa_campo_emoji">Emoji</string>
+    <string name="aMapa_btn_guardar">Guardar</string>
+    <string name="aMapa_btn_cancelar">Cancelar</string>
+    <string name="aMapa_error_nombre_vacio">Ingresa un nombre para el lugar</string>
+    <string name="aMapa_toast_lugar_guardado">Lugar guardado</string>
+    <string name="aMapa_toast_lugar_error">No se pudo guardar el lugar</string>
+    <string name="aMapa_emoji_picker_titulo">Elige un emoji</string>
+    <string name="aMapa_titulo_lista_cosas">Lista de cosas</string>
+    <string name="aMapa_hint_nueva_cosa">Agregar una cosa</string>
+    <string name="aMapa_btn_agregar">Agregar</string>
+    <string name="aMapa_sin_items">Sin cosas por recordar</string>
+    <string name="aMapa_item_eliminar_desc">Eliminar cosa</string>
+    <string name="aMapa_detalle_vinculado">Vinculado a un movimiento</string>
+    <string name="aMapa_detalle_independiente">Pin independiente</string>
+    <string name="aMapa_btn_editar">Editar</string>
+    <string name="aMapa_btn_mover">Mover en el mapa</string>
+    <string name="aMapa_btn_cerrar">Cerrar pin</string>
+    <string name="aMapa_btn_reabrir">Reabrir pin</string>
+    <string name="aMapa_btn_eliminar">Eliminar</string>
+    <string name="aMapa_dialog_eliminar_titulo">Eliminar lugar</string>
+    <string name="aMapa_dialog_eliminar_mensaje">Se eliminará el lugar y su lista de cosas. Esta acción no se puede deshacer.</string>
+    <string name="aMapa_dialog_eliminar_confirmar">Eliminar</string>
+    <string name="aMapa_toast_lugar_eliminado">Lugar eliminado</string>
+    <string name="aMapa_toast_mover_hint">Mantén presionado el mapa para mover el pin</string>
+    <string name="aMapa_toast_lugar_movido">Pin movido</string>
 </resources>
