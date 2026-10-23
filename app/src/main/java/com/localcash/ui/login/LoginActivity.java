@@ -298,21 +298,17 @@ public class LoginActivity extends BaseActivity {
     /**
      * Maneja login exitoso (tanto PIN como biometría):
      * - Resetea contador de intentos fallidos
-     * - Muestra Toast de bienvenida
-     * - Navega a CuentasActivity
+     * - Navega a CuentasActivity (el cambio de pantalla es la confirmación)
      * - Finaliza LoginActivity (no retorno con botón atrás)
+     * <p>
+     * No se muestra un mensaje de bienvenida duplicado: la navegación a la
+     * pantalla principal ya confirma el éxito. Un Snackbar breve en el destino
+     * es la alternativa recomendada si se quiere feedback adicional.
+     * </p>
      */
     private void handleSuccessfulLogin() {
         // Resetear contador de intentos fallidos
         resetFailedAttempts();
-
-        // Mostrar mensaje de éxito en UI
-        binding.tvMessage.setText(getString(R.string.aLogin_success_welcome));
-        binding.tvMessage.setTextColor(getColor(android.R.color.holo_green_dark));
-        binding.tvMessage.setVisibility(View.VISIBLE);
-
-        // Toast de bienvenida
-        Toast.makeText(this, getString(R.string.aLogin_success_welcome), Toast.LENGTH_SHORT).show();
 
         // Navegar a CuentasActivity
         Intent intent = new Intent(this, CuentasActivity.class);
