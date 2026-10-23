@@ -1,8 +1,91 @@
 <?xml version="1.0" encoding="utf-8"?>
-<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+    Vista 2 (Mapa): mapa vectorial MapLibre con controles flotantes.
+
+    - El MapView ocupa todo el contenedor del ViewFlipper.
+    - "Mis lugares" abre la lista de pines activos.
+    - "Mi ubicación" centra la cámara en la posición actual (permiso en runtime).
+    - La tarjeta de estado vacío solo se muestra cuando no hay lugares guardados.
+    - La atribución del mapa se muestra siempre, como exigen OpenStreetMap y OpenFreeMap.
+-->
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:gravity="center"
-    android:text="@string/aCuentas_titulo_mapa"
-    android:textColor="?attr/colorOnSurface"
-    android:textSize="18sp" />
+    android:layout_height="match_parent">
+
+    <org.maplibre.android.maps.MapView
+        android:id="@+id/mapView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Estado vacío: el mapa sigue navegable aunque no haya pines -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardEmptyLugares"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        app:cardBackgroundColor="?attr/colorSurface"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/tvEmptyLugares"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:padding="16dp"
+            android:text="@string/aMapa_sin_lugares"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Atribución obligatoria de datos y teselas -->
+    <TextView
+        android:id="@+id/tvAtribucion"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/bg_mapa_atribucion"
+        android:contentDescription="@string/aMapa_atribucion_desc"
+        android:textColor="@android:color/white"
+        android:textSize="11sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabMiUbicacion"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        android:contentDescription="@string/aMapa_mi_ubicacion"
+        android:src="@drawable/ic_my_location"
+        app:backgroundTint="?attr/colorPrimary"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:tint="?attr/colorOnPrimary" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabMisLugares"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="12dp"
+        android:contentDescription="@string/aMapa_mis_lugares"
+        android:src="@drawable/ic_place_list"
+        app:backgroundTint="?attr/colorPrimary"
+        app:layout_constraintBottom_toTopOf="@id/fabMiUbicacion"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:tint="?attr/colorOnPrimary" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

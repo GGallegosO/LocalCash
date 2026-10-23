@@ -174,4 +174,25 @@
     <string name="aCuentas_toast_error_saldo_insuficiente">Saldo insuficiente para realizar el egreso</string>
     <string name="aCuentas_toast_error_cuenta_no_encontrada">La cuenta seleccionada no existe</string>
     <string name="aCuentas_toast_error_monto_invalido">Ingresa un monto mayor a 0</string>
+
+    <!-- Strings de la Vista 3 - Mapa (Feature 009, prefijo aMapa_) -->
+    <string name="aMapa_mi_ubicacion">Mi ubicación</string>
+    <string name="aMapa_mis_lugares">Mis lugares</string>
+    <string name="aMapa_atribucion_desc">Atribución de OpenStreetMap y OpenFreeMap</string>
+    <string name="aMapa_sin_lugares">Aún no tienes lugares guardados</string>
+    <string name="aMapa_titulo_lugares">Mis lugares</string>
+    <string name="aMapa_sin_lugares_activos">No hay lugares activos</string>
+    <string name="aMapa_error_ubicacion_denegada">Permiso de ubicación denegado. Actívalo en Ajustes para usar esta función</string>
+    <string name="aMapa_error_sin_ubicacion">No se pudo obtener tu ubicación. Inténtalo de nuevo</string>
+    <string name="aMapa_error_sin_proveedor">La ubicación del dispositivo está desactivada</string>
+
+    <!-- Nombres legibles de los tipos de lugar -->
+    <string name="aMapa_tipo_supermercado">Supermercado</string>
+    <string name="aMapa_tipo_farmacia">Farmacia</string>
+    <string name="aMapa_tipo_restaurante">Restaurante</string>
+    <string name="aMapa_tipo_ferreteria">Ferretería</string>
+    <string name="aMapa_tipo_panaderia">Panadería</string>
+    <string name="aMapa_tipo_cafeteria">Cafetería</string>
+    <string name="aMapa_tipo_banco">Banco</string>
+    <string name="aMapa_tipo_otro">Otro</string>
 </resources>

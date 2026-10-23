@@ -42,6 +42,11 @@
     <color name="error">#FF5252</color>
     <color name="success">#00E676</color>
 
+    <!-- Mapa (Feature 009): pines abiertos/cerrados y atribución -->
+    <color name="mapa_pin_abierto">#00C853</color>
+    <color name="mapa_pin_cerrado">#9E9E9E</color>
+    <color name="mapa_atribucion_fondo">#99000000</color>
+
     <!-- Legacy colors -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>

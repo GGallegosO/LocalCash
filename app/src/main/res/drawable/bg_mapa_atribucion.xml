@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fondo translúcido de la atribución del mapa: legible sobre teselas claras y oscuras. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/mapa_atribucion_fondo" />
+    <corners android:radius="4dp" />
+    <padding
+        android:bottom="2dp"
+        android:left="6dp"
+        android:right="6dp"
+        android:top="2dp" />
+</shape>

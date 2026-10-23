@@ -1,15 +1,26 @@
 package com.localcash.ui.cuentas;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.CancellationSignal;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
+import androidx.core.location.LocationManagerCompat;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModel;
@@ -25,15 +36,22 @@ import com.localcash.R;
 import com.localcash.data.db.AppDatabase;
 import com.localcash.data.entities.Cuenta;
 import com.localcash.databinding.ActivityCuentasBinding;
+import com.localcash.databinding.BottomSheetLugaresBinding;
 import com.localcash.databinding.BottomSheetTransaccionBinding;
 import com.localcash.databinding.ViewCuentasBinding;
 import com.localcash.databinding.ViewHistorialBinding;
+import com.localcash.databinding.ViewMapaBinding;
 import com.localcash.domain.error.ErrorCode;
+import com.localcash.domain.model.Lugar;
 import com.localcash.domain.model.TipoCuenta;
 import com.localcash.domain.model.TipoTransaccion;
 import com.localcash.domain.model.Transaccion;
+import com.localcash.domain.model.Ubicacion;
 import com.localcash.ui.BaseActivity;
+import com.localcash.ui.mapa.LugaresAdapter;
 import com.localcash.ui.mapa.MapaConfig;
+import com.localcash.ui.mapa.MapaController;
+import com.localcash.ui.mapa.MapaViewModel;
 import com.localcash.ui.theme.ThemeManager;
 import com.localcash.ui.util.CurrencyFormatter;
 
@@ -84,6 +102,44 @@ public class CuentasActivity extends BaseActivity
 
     /** Id de la cuenta seleccionada en el spinner ({@code -1} si no hay selección). */
     private long cuentaSeleccionadaId = -1L;
+
+    /** Tiempo máximo de espera para una fijación de ubicación (ms). */
+    private static final long TIEMPO_MAXIMO_UBICACION_MS = 15_000L;
+
+    /** Binding de la Vista 3 (Mapa), inflado dentro del ViewFlipper. */
+    private ViewMapaBinding vistaMapa;
+
+    /** Controlador del mapa: cámara, pines y ciclo de vida. */
+    private MapaController mapaController;
+
+    /** ViewModel del mapa: lugares observables desde Room. */
+    private MapaViewModel mapaViewModel;
+
+    /** Adapter de "Mis lugares". */
+    private LugaresAdapter lugaresAdapter;
+
+    /** Binding del BottomSheet de lugares mientras está abierto. */
+    private BottomSheetLugaresBinding sheetLugaresBinding;
+
+    /** Lugares activos actuales, para refrescar el BottomSheet abierto. */
+    private final List<Lugar> lugaresActivos = new ArrayList<>();
+
+    /** Señal para cancelar la petición de ubicación en curso. */
+    private CancellationSignal cancelacionUbicacion;
+
+    /**
+     * Solicita el permiso de ubicación solo cuando el usuario pulsa
+     * "Mi ubicación". Si lo concede, centra el mapa; si lo niega, avisa sin
+     * bloquear la app (CA-13/CA-14).
+     */
+    private final ActivityResultLauncher<String> permisoUbicacion =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), concedido -> {
+                if (Boolean.TRUE.equals(concedido)) {
+                    centrarEnUbicacionActual();
+                } else {
+                    mostrarAviso(R.string.aMapa_error_ubicacion_denegada);
+                }
+            });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -138,8 +194,8 @@ public class CuentasActivity extends BaseActivity
         // Vista 1: Historial/Movimientos
         vistaHistorial = ViewHistorialBinding.inflate(
                 getLayoutInflater(), binding.viewFlipper, true);
-        // Vista 2: Mapa
-        getLayoutInflater().inflate(R.layout.view_mapa, binding.viewFlipper);
+        // Vista 2: Mapa (binding propio para conectar MapLibre y sus controles)
+        vistaMapa = ViewMapaBinding.inflate(getLayoutInflater(), binding.viewFlipper, true);
         // Vista 3: Contactos
         getLayoutInflater().inflate(R.layout.view_contactos, binding.viewFlipper);
 
@@ -183,6 +239,9 @@ public class CuentasActivity extends BaseActivity
         // Conectar la Vista 2 (Historial/Movimientos) con Room (ViewModel + Adapter)
         configurarVistaHistorial();
 
+        // Conectar la Vista 3 (Mapa) con MapLibre y Room
+        configurarVistaMapa(savedInstanceState);
+
         // Preparar el ViewModel de transacciones (alimenta el BottomSheet del FAB)
         configurarTransaccionViewModel();
     }
@@ -192,6 +251,63 @@ public class CuentasActivity extends BaseActivity
         super.onSaveInstanceState(outState);
         // Guardar el índice actual del ViewFlipper para preservar la vista seleccionada
         outState.putInt("viewFlipperIndex", binding.viewFlipper.getDisplayedChild());
+        // Guardar cámara y estado del mapa para rotación/cambio de tema
+        if (mapaController != null) {
+            mapaController.guardarEstado(outState);
+        }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (mapaController != null) {
+            mapaController.onStart();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (mapaController != null) {
+            mapaController.onResume();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        if (mapaController != null) {
+            mapaController.onPause();
+        }
+        super.onPause();
+    }
+
+    @Override
+    protected void onStop() {
+        if (mapaController != null) {
+            mapaController.onStop();
+        }
+        super.onStop();
+    }
+
+    @Override
+    public void onLowMemory() {
+        super.onLowMemory();
+        if (mapaController != null) {
+            mapaController.onLowMemory();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (cancelacionUbicacion != null) {
+            cancelacionUbicacion.cancel();
+            cancelacionUbicacion = null;
+        }
+        if (mapaController != null) {
+            mapaController.destruir();
+            mapaController = null;
+        }
+        super.onDestroy();
     }
 
     /**
@@ -261,6 +377,251 @@ public class CuentasActivity extends BaseActivity
 
         // FAB: abrir el BottomSheet para registrar un movimiento nuevo.
         vistaHistorial.fabNuevaTransaccion.setOnClickListener(v -> mostrarBottomSheetTransaccion());
+    }
+
+    /**
+     * Conecta la Vista 3 (Mapa) con MapLibre y Room.
+     * <p>
+     * Crea el {@link MapaController} (que reenvía el ciclo de vida al
+     * {@code MapView}), observa los lugares de la base de datos y cablea los
+     * controles "Mi ubicación" y "Mis lugares". El mapa vive dentro del
+     * {@code ViewFlipper}: no se crea una Activity adicional (plan §2.2).
+     * </p>
+     *
+     * @param savedInstanceState estado de la Activity (para restaurar la cámara)
+     */
+    private void configurarVistaMapa(Bundle savedInstanceState) {
+        vistaMapa.tvAtribucion.setText(MapaConfig.ATRIBUCION);
+
+        mapaController = new MapaController(vistaMapa.mapView);
+        mapaController.crear(savedInstanceState);
+        mapaController.setOnLugarSeleccionadoListener(mapaController::mostrarInfoLugar);
+
+        vistaMapa.fabMiUbicacion.setOnClickListener(v -> solicitarUbicacionActual());
+        vistaMapa.fabMisLugares.setOnClickListener(v -> mostrarListaLugares());
+
+        lugaresAdapter = new LugaresAdapter();
+
+        mapaViewModel = new ViewModelProvider(this, new ViewModelProvider.Factory() {
+            @NonNull
+            @Override
+            @SuppressWarnings("unchecked")
+            public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
+                AppDatabase db = AppDatabase.getInstance(getApplicationContext());
+                return (T) new MapaViewModel(db.lugarDao(), db.itemLugarDao());
+            }
+        }).get(MapaViewModel.class);
+
+        // Todos los lugares (abiertos y cerrados) se dibujan en el mapa.
+        mapaViewModel.getLugares().observe(this, lugares -> {
+            mapaController.setLugares(lugares);
+            boolean vacio = lugares == null || lugares.isEmpty();
+            vistaMapa.cardEmptyLugares.setVisibility(vacio ? View.VISIBLE : View.GONE);
+        });
+
+        // Solo los lugares abiertos aparecen en "Mis lugares".
+        mapaViewModel.getLugaresAbiertos().observe(this, abiertos -> {
+            lugaresActivos.clear();
+            if (abiertos != null) {
+                lugaresActivos.addAll(abiertos);
+            }
+            lugaresAdapter.setLugares(lugaresActivos);
+            refrescarEstadoListaLugares();
+        });
+    }
+
+    /**
+     * Abre el BottomSheet con la lista de lugares activos. Al tocar uno, el
+     * mapa se centra en su pin y muestra la ventana de información (CA-15).
+     * <p>
+     * El detalle completo en BottomSheet llega en la Fase 3 (T19); en esta fase
+     * el detalle ligero es la ventana del marcador.
+     * </p>
+     */
+    private void mostrarListaLugares() {
+        BottomSheetLugaresBinding sheet = BottomSheetLugaresBinding.inflate(getLayoutInflater());
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        dialog.setContentView(sheet.getRoot());
+
+        sheetLugaresBinding = sheet;
+        sheet.recyclerLugares.setLayoutManager(new LinearLayoutManager(this));
+        sheet.recyclerLugares.setAdapter(lugaresAdapter);
+
+        lugaresAdapter.setOnLugarClickListener(lugar -> {
+            dialog.dismiss();
+            binding.viewFlipper.setDisplayedChild(2);
+            binding.bottomNav.setSelectedItemId(R.id.nav_mapa);
+            mapaController.mostrarLugar(lugar);
+        });
+
+        refrescarEstadoListaLugares();
+        dialog.setOnDismissListener(d -> sheetLugaresBinding = null);
+        dialog.show();
+    }
+
+    /**
+     * Sincroniza el estado vacío del BottomSheet con la lista actual. Se llama
+     * al abrir el panel y cada vez que Room emite un cambio (un lugar cerrado
+     * desaparece de la lista sin recargar la pantalla).
+     */
+    private void refrescarEstadoListaLugares() {
+        if (sheetLugaresBinding == null) {
+            return;
+        }
+        boolean vacio = lugaresActivos.isEmpty();
+        sheetLugaresBinding.recyclerLugares.setVisibility(vacio ? View.GONE : View.VISIBLE);
+        sheetLugaresBinding.tvEmptyLugares.setVisibility(vacio ? View.VISIBLE : View.GONE);
+    }
+
+    /**
+     * Punto de entrada de "Mi ubicación": comprueba el permiso y lo solicita
+     * solo si hace falta. Denegarlo no bloquea ninguna otra función.
+     */
+    private void solicitarUbicacionActual() {
+        boolean fina = ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+        boolean gruesa = ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+        if (fina || gruesa) {
+            centrarEnUbicacionActual();
+        } else {
+            permisoUbicacion.launch(Manifest.permission.ACCESS_FINE_LOCATION);
+        }
+    }
+
+    /**
+     * Centra el mapa en la ubicación actual. Usa la última posición conocida si
+     * es reciente y, si no hay, pide una fijación única con un límite de tiempo.
+     * Cualquier fallo se informa y el mapa queda operativo (CA-14).
+     */
+    private void centrarEnUbicacionActual() {
+        LocationManager locationManager =
+                (LocationManager) getSystemService(LOCATION_SERVICE);
+        if (locationManager == null) {
+            mostrarAviso(R.string.aMapa_error_sin_ubicacion);
+            return;
+        }
+
+        Location ultima = obtenerUltimaUbicacion(locationManager);
+        if (ultima != null) {
+            centrarEn(ultima);
+            return;
+        }
+
+        boolean fina = ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+        String proveedor = null;
+        try {
+            if (fina && locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                proveedor = LocationManager.GPS_PROVIDER;
+            } else if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                proveedor = LocationManager.NETWORK_PROVIDER;
+            }
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "Proveedor de ubicación no disponible", e);
+        }
+
+        if (proveedor == null) {
+            mostrarAviso(R.string.aMapa_error_sin_proveedor);
+            return;
+        }
+        solicitarUbicacionUnica(locationManager, proveedor);
+    }
+
+    /**
+     * Busca la última posición conocida entre los proveedores disponibles.
+     *
+     * @param locationManager servicio de ubicación
+     * @return la posición más reciente o {@code null} si no hay ninguna
+     */
+    private Location obtenerUltimaUbicacion(@NonNull LocationManager locationManager) {
+        Location mejor = null;
+        String[] proveedores = {
+                LocationManager.GPS_PROVIDER,
+                LocationManager.NETWORK_PROVIDER,
+                LocationManager.PASSIVE_PROVIDER
+        };
+        for (String proveedor : proveedores) {
+            try {
+                if (!locationManager.isProviderEnabled(proveedor)) {
+                    continue;
+                }
+                Location candidata = locationManager.getLastKnownLocation(proveedor);
+                if (candidata != null && (mejor == null || candidata.getTime() > mejor.getTime())) {
+                    mejor = candidata;
+                }
+            } catch (SecurityException | IllegalArgumentException e) {
+                Log.w(TAG, "No se pudo leer la última ubicación de " + proveedor, e);
+            }
+        }
+        return mejor;
+    }
+
+    /**
+     * Pide una fijación de ubicación única y la entrega en el hilo principal.
+     * Si en {@link #TIEMPO_MAXIMO_UBICACION_MS} no hay respuesta, cancela y
+     * avisa al usuario.
+     *
+     * @param locationManager servicio de ubicación
+     * @param proveedor       proveedor habilitado a consultar
+     */
+    private void solicitarUbicacionUnica(@NonNull LocationManager locationManager,
+                                         @NonNull String proveedor) {
+        if (cancelacionUbicacion != null) {
+            cancelacionUbicacion.cancel();
+        }
+        CancellationSignal senal = new CancellationSignal();
+        cancelacionUbicacion = senal;
+
+        Handler handler = new Handler(Looper.getMainLooper());
+        Runnable tiempoAgotado = () -> {
+            if (cancelacionUbicacion == senal) {
+                senal.cancel();
+                cancelacionUbicacion = null;
+                mostrarAviso(R.string.aMapa_error_sin_ubicacion);
+            }
+        };
+        handler.postDelayed(tiempoAgotado, TIEMPO_MAXIMO_UBICACION_MS);
+
+        try {
+            LocationManagerCompat.getCurrentLocation(locationManager, proveedor, senal,
+                    getMainExecutor(), location -> {
+                        handler.removeCallbacks(tiempoAgotado);
+                        if (senal.isCanceled()) {
+                            return;
+                        }
+                        cancelacionUbicacion = null;
+                        if (location != null) {
+                            centrarEn(location);
+                        } else {
+                            mostrarAviso(R.string.aMapa_error_sin_ubicacion);
+                        }
+                    });
+        } catch (SecurityException | IllegalArgumentException e) {
+            handler.removeCallbacks(tiempoAgotado);
+            cancelacionUbicacion = null;
+            Log.w(TAG, "No se pudo obtener la ubicación actual", e);
+            mostrarAviso(R.string.aMapa_error_sin_ubicacion);
+        }
+    }
+
+    /**
+     * Centra el mapa en una posición del framework.
+     *
+     * @param location posición obtenida de {@code LocationManager}
+     */
+    private void centrarEn(@NonNull Location location) {
+        mapaController.centrarEn(
+                new Ubicacion(location.getLatitude(), location.getLongitude()));
+    }
+
+    /**
+     * Muestra un aviso breve al usuario.
+     *
+     * @param mensaje recurso de texto
+     */
+    private void mostrarAviso(int mensaje) {
+        Toast.makeText(this, mensaje, Toast.LENGTH_LONG).show();
     }
 
     /**

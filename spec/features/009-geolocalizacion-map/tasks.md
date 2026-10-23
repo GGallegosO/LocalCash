@@ -1,7 +1,7 @@
 # tasks.md — Checklist Secuencial de Ejecución
 
 > **Identificación:** 009-geolocalizacion-map | **Derivado de:** `spec.md` + `plan.md`
-> **Estado global:** Documentación redactada; implementación pendiente.
+> **Estado global:** Fases 0, 1 y 2 completadas y verificadas en emulador; Fase 3 en curso.
 >
 > **Propósito de este documento:** Descomponer la implementación en pasos ejecutables, ordenados y
 > verificables. Cada casilla marcada `[x]` debe corresponder a un cambio real comprobable (tests
@@ -60,19 +60,19 @@
 
 ## Fase 2 — Mapa de lectura y ubicación actual
 
-- [ ] **T12. Reemplazar el placeholder de `view_mapa.xml`.**
+- [x] **T12. Reemplazar el placeholder de `view_mapa.xml`.**
       `MapView`, botón "Mi ubicación", botón "Mis lugares", estado vacío y control de atribución.
       *Salida:* la pestaña "Mapa" muestra el mapa y los controles.
-- [ ] **T13. Implementar `MapaController`.**
+- [x] **T13. Implementar `MapaController`.**
       Encapsular `MapView`/`MapLibreMap`, cámara, pines, pulsación larga y reenvío de ciclo de vida
       desde `CuentasActivity`. *Salida:* rotación y cambio de tema no filtran ni rompen el mapa.
-- [ ] **T14. Implementar `MapaViewModel` y la consulta de lugares.**
+- [x] **T14. Implementar `MapaViewModel` y la consulta de lugares.**
       Observar `LUGARES` e `ITEMS_LUGAR`, exponer lugares activos y mapear entidades a dominio.
       *Salida:* un pin guardado aparece sin recargar la pantalla.
-- [ ] **T15. Implementar "Mi ubicación".**
+- [x] **T15. Implementar "Mi ubicación".**
       Permiso en runtime y `LocationManager`; centrar cámara o mostrar aviso si falla (CA-13/CA-14).
       *Salida:* no bloquea la app con permiso denegado o sin GPS.
-- [ ] **T16. Implementar la lista de lugares.**
+- [x] **T16. Implementar la lista de lugares.**
       BottomSheet con `LugaresAdapter`; al tocar un lugar, centrar el mapa y abrir su detalle
       (CA-15). *Salida:* lista observable y navegación al pin.
 
