@@ -129,8 +129,7 @@ public final class MapaController {
 
         UiSettings ui = map.getUiSettings();
         ui.setCompassEnabled(true);
-        ui.setAttributionEnabled(true);
-        ui.setLogoEnabled(true);
+        configurarCredenciales(map);
 
         map.setCameraPosition(new CameraPosition.Builder()
                 .target(CENTRO_INICIAL)
@@ -157,8 +156,26 @@ public final class MapaController {
 
         map.setStyle(new Style.Builder().fromUri(MapaConfig.ESTILO_LIBERTY), style -> {
             estiloListo = true;
+            // El logo y el botón de atribución nativos se crean junto con la
+            // superficie GL, después del callback del mapa. Se desactivan aquí
+            // para garantizar que ya existan: la Activity pinta la atribución
+            // textual exigida por OpenStreetMap y OpenFreeMap.
+            configurarCredenciales(map);
             sincronizarMarcadores();
         });
+    }
+
+    /**
+     * Desactiva los controles de crédito nativos de MapLibre. La atribución
+     * visible la pinta la Activity ({@code tvAtribucion}); mantener ambos
+     * duplicaría el texto y superpondría el logotipo de MapLibre sobre él.
+     *
+     * @param map mapa nativo
+     */
+    private void configurarCredenciales(@NonNull MapLibreMap map) {
+        UiSettings ui = map.getUiSettings();
+        ui.setAttributionEnabled(false);
+        ui.setLogoEnabled(false);
     }
 
     /**
