@@ -1,7 +1,7 @@
 # tasks.md — Checklist Secuencial de Ejecución
 
 > **Identificación:** 009-geolocalizacion-map | **Derivado de:** `spec.md` + `plan.md`
-> **Estado global:** Fases 0 a 4 completadas y verificadas en emulador; Fase 5 pendiente.
+> **Estado global:** Fases 0 a 5 completadas; Fase 6 (cierre y verificación final) en curso.
 >
 > **Propósito de este documento:** Descomponer la implementación en pasos ejecutables, ordenados y
 > verificables. Cada casilla marcada `[x]` debe corresponder a un cambio real comprobable (tests
@@ -114,16 +114,16 @@
 
 ## Fase 5 — Pruebas
 
-- [ ] **T27. Tests de dominio (`LugarServiceTest`).**
+- [x] **T27. Tests de dominio (`LugarServiceTest`).**
       Nombre vacío, tipo inválido, emoji vacío, coordenadas fuera de rango, transiciones de estado y
       regla de posición inmutable en pin vinculado.
-- [ ] **T28. Tests de persistencia (`LugarDaoTest`, `ItemLugarDaoTest`).**
+- [x] **T28. Tests de persistencia (`LugarDaoTest`, `ItemLugarDaoTest`).**
       CRUD, consulta geográfica, cascada de elementos, unicidad del vínculo con movimiento y
       `PRAGMA foreign_keys`.
-- [ ] **T29. Test de migración (`MigracionV2V3Test`).**
+- [x] **T29. Test de migración (`MigracionV2V3Test`).**
       Sembrar datos en la versión 2, migrar, comprobar cuentas/movimientos intactos y
       `PRAGMA foreign_key_check` limpio.
-- [ ] **T30. Pruebas manuales de casos borde.**
+- [x] **T30. Pruebas manuales de casos borde.**
       Permiso denegado, sin GPS, modo avión, rotación/cambio de tema, cientos de pines, emoji no
       representable y eliminación del movimiento vinculado.
 

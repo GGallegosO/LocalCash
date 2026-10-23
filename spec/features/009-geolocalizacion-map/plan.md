@@ -57,7 +57,7 @@
 | `test/.../LugarServiceTest.java` | Validaciones de dominio y transiciones de estado | CREAR | MEDIA |
 | `test/.../LugarDaoTest.java` | CRUD, cascada de elementos y consulta geográfica | CREAR | MEDIA |
 | `test/.../ItemLugarDaoTest.java` | Alta, edición y completado de elementos | CREAR | MEDIA |
-| `androidTest/.../MigracionV2V3Test.java` | Migración 2 → 3 con datos sembrados y `PRAGMA foreign_key_check` | CREAR | ALTA |
+| `test/.../MigracionV2V3Test.java` | Migración 2 → 3 con datos sembrados y `PRAGMA foreign_key_check` | CREAR | ALTA |
 
 > **Ajuste durante la Fase 3 (justificado):** T19 exigía una hoja de detalle con acciones y lista de
 > cosas, pero la tabla original solo nombraba el formulario. Se añadieron
@@ -65,6 +65,13 @@
 > y edición: el formulario no se reutiliza como detalle porque en edición oculta la lista inicial
 > (su gestión vive en el detalle) y porque el detalle observa `ITEMS_LUGAR` en vivo. `item_lista_lugar.xml`
 > ya estaba previsto y se reutiliza en ambas hojas sin duplicar la fila.
+
+> **Ajuste durante la Fase 5 (justificado):** el plan ubicaba `MigracionV2V3Test` en `androidTest/`,
+> pero `tech-stack.md` §4/§7 y el registro de `doc/007-cuentas.md` prefieren Robolectric en JVM
+> (sin dispositivo). El test se implementó en `test/.../db/MigracionV2V3Test.java`: crea un archivo
+> con el DDL real de la versión 2 (tomado de `app/schemas/2.json`), lo abre con Room aplicando
+> `MIGRATION_2_3` y comprueba datos, tablas nuevas, `PRAGMA user_version` y `PRAGMA foreign_key_check`.
+> Se evitó añadir `androidx.test:core`/runner de instrumentación, que no estaban registrados.
 
 **Contrato de datos / interfaz expuesta:**
 
