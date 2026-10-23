@@ -95,8 +95,8 @@ se gestionan con las mismas acciones, pero el detalle indica su origen.
 | CA-12 | **Dado** un pin abierto, **cuando** el usuario lo cierra, **entonces** deja de listarse entre los lugares activos, permanece visible con estilo atenuado y puede reabrirse. | ✅ Verificado |
 | CA-13 | **Dado** el botón "Mi ubicación", **cuando** el usuario lo pulsa y concede el permiso, **entonces** el mapa se centra en su posición actual. | ✅ Verificado |
 | CA-14 | **Dado** el permiso de ubicación denegado o sin señal, **cuando** el usuario pulsa "Mi ubicación", **entonces** el sistema informa la situación y el mapa sigue operativo sin bloquearse. | ✅ Verificado |
-| CA-15 | **Dado** la lista de lugares, **cuando** el usuario toca un lugar, **entonces** el mapa se centra en su pin y abre su detalle. | ✅ Verificado |
-| CA-16 | **Dado** un pin vinculado a un movimiento, **cuando** el usuario abre su detalle, **entonces** el sistema indica que proviene de un movimiento y muestra la información del lugar sin duplicar el pin. | ✅ Verificado |
+| CA-15 | **Dado** la lista de lugares, **cuando** el usuario toca un lugar, **entonces** el mapa se centra en su pin y muestra su ventana de información, sin abrir el editor ni alterar el estado del lugar. | ✅ Verificado |
+| CA-16 | **Dado** un pin vinculado a un movimiento, **cuando** el usuario abre su detalle, **entonces** el sistema indica que proviene de un movimiento, muestra la fecha y hora de ese movimiento y la información del lugar sin duplicar el pin. | ✅ Verificado |
 | CA-17 | **Dado** el mapa sin conexión, **cuando** el usuario lo abre, **entonces** los pines y las listas siguen disponibles y el sistema no se bloquea si las teselas base no pueden descargarse. | ✅ Verificado |
 | CA-18 | **Dado** una base con datos de la versión anterior, **cuando** la app se actualiza, **entonces** la migración conserva cuentas y movimientos y crea la estructura de lugares sin pérdida de información. | ✅ Verificado |
 

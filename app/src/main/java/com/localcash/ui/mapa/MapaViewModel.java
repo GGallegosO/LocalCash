@@ -90,6 +90,20 @@ public class MapaViewModel extends ViewModel {
     }
 
     /**
+     * Observa el movimiento vinculado a un pin, para mostrar su fecha y hora
+     * en el detalle (Feature 009).
+     *
+     * @param transaccionId id del movimiento vinculado
+     * @return LiveData con el movimiento de dominio, o {@code null} si ya no existe
+     */
+    public LiveData<com.localcash.domain.model.Transaccion> getTransaccion(long transaccionId) {
+        return Transformations.map(db.transaccionDao().getById(transaccionId),
+                entidad -> entidad != null
+                        ? com.localcash.domain.model.Transaccion.fromEntity(entidad)
+                        : null);
+    }
+
+    /**
      * Crea un lugar y, en la misma transacción, sus cosas iniciales.
      * <p>
      * Cancelar el formulario no llama a este método: no se inserta nada hasta

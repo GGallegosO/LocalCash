@@ -18,9 +18,10 @@
   **en dos momentos** (arranque y después de cargar el estilo) para evitar el artefacto de la marca
   de agua reapareciendo tras el estilo.
 - **CRUD de pines**: pulsación larga abre el formulario (tipo → emoji y nombre por defecto), detalle
-  con origen ("Pin independiente" / "Vinculado a un movimiento"), edición, "Mover en el mapa",
-  cerrar/reabrir y eliminar con confirmación. Lista de cosas por pin (agregar, marcar, editar,
-  eliminar, tachado de completados).
+  con origen ("Pin independiente" / "Vinculado a un movimiento") y, en los pines vinculados, la
+  fecha y hora del movimiento que los originó (`dd/MM/yyyy HH:mm`, observada desde Room), edición,
+  "Mover en el mapa", cerrar/reabrir y eliminar con confirmación. Lista de cosas por pin (agregar,
+  marcar, editar, eliminar, tachado de completados).
 - **"Mis lugares"**: lista de pines activos (los cerrados salen de la lista, quedan atenuados en el
   mapa y se reabren desde el detalle).
 - **"Mi ubicación"**: `LocationManagerCompat.getCurrentLocation` (15 s de timeout), sin Play

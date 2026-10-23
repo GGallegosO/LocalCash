@@ -67,6 +67,21 @@ public interface TransaccionDao {
     LiveData<List<Transaccion>> getAll();
 
     /**
+     * Observa un movimiento por su id.
+     * <p>
+     * Lo usa el detalle de un pin vinculado para mostrar la fecha y hora del
+     * movimiento que lo originó (Feature 009). Emite {@code null} si la fila
+     * ya no existe (por ejemplo, si el movimiento se eliminó y la FK dejó el
+     * pin independiente).
+     * </p>
+     *
+     * @param id Id del movimiento
+     * @return LiveData con el movimiento o {@code null}
+     */
+    @Query("SELECT * FROM transacciones WHERE id = :id")
+    LiveData<Transaccion> getById(long id);
+
+    /**
      * Observa los movimientos con coordenadas completas. La regla de negocio
      * {@code ambas o ninguna} se valida antes de persistir; la consulta filtra
      * filas históricas incompletas por seguridad.

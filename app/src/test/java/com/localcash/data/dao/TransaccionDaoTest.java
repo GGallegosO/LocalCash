@@ -89,6 +89,19 @@ public class TransaccionDaoTest {
         assertEquals("Primero", todas.get(2).getConcepto());
     }
 
+    @Test
+    public void testGetByIdDevuelveElMovimientoVinculado() {
+        long cuentaId = insertarCuenta();
+        long id = transaccionDao.insert(new Transaccion(
+                cuentaId, "EGRESO", 25_000L, "Compra con ubicacion", 1_750_000_000_000L));
+
+        Transaccion movimiento = LiveDataTestUtil.awaitValue(transaccionDao.getById(id));
+
+        assertEquals(id, movimiento.getId());
+        assertEquals("Compra con ubicacion", movimiento.getConcepto());
+        assertEquals(1_750_000_000_000L, movimiento.getFecha());
+    }
+
     /**
      * Inserta una cuenta de prueba y retorna su id generado.
      */

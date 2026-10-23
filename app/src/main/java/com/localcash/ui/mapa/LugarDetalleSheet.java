@@ -6,6 +6,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.google.android.material.bottomsheet.BottomSheetDialog;
@@ -16,8 +17,11 @@ import com.localcash.domain.error.ErrorCode;
 import com.localcash.domain.model.EstadoLugar;
 import com.localcash.domain.model.ItemLugar;
 import com.localcash.domain.model.Lugar;
+import com.localcash.domain.model.Transaccion;
 
+import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Detalle de un pin (Feature 009, T19/T21/T22).
@@ -29,6 +33,10 @@ import java.util.List;
  * </p>
  */
 public final class LugarDetalleSheet {
+
+    /** Formato de la fecha del movimiento vinculado, igual que el historial. */
+    private static final SimpleDateFormat FORMATO_FECHA =
+            new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
 
     private final Context context;
 
@@ -89,6 +97,8 @@ public final class LugarDetalleSheet {
                 ? R.string.aMapa_detalle_vinculado
                 : R.string.aMapa_detalle_independiente);
 
+        configurarFechaMovimiento();
+
         boolean tieneDescripcion = lugar.getDescripcion() != null
                 && !lugar.getDescripcion().trim().isEmpty();
         binding.tvDescripcionDetalle.setText(lugar.getDescripcion());
@@ -106,6 +116,39 @@ public final class LugarDetalleSheet {
         configurarAcciones();
 
         dialog.show();
+    }
+
+    /**
+     * Muestra la fecha y hora del movimiento que originó el pin, si lo hay.
+     * <p>
+     * La fecha se observa desde Room con el ciclo de vida del diálogo: si el
+     * movimiento se elimina, la fila deja de existir y el texto se oculta (la
+     * FK convierte el pin en independiente).
+     * </p>
+     */
+    private void configurarFechaMovimiento() {
+        if (!lugar.estaVinculadoAMovimiento()) {
+            binding.tvFechaMovimiento.setVisibility(View.GONE);
+            return;
+        }
+
+        viewModel.getTransaccion(lugar.getTransaccionId()).observe(dialog, this::mostrarFechaMovimiento);
+    }
+
+    /**
+     * Pinta la fecha del movimiento vinculado.
+     *
+     * @param transaccion movimiento emitido por Room, o {@code null}
+     */
+    private void mostrarFechaMovimiento(@Nullable Transaccion transaccion) {
+        if (transaccion == null) {
+            binding.tvFechaMovimiento.setVisibility(View.GONE);
+            return;
+        }
+        binding.tvFechaMovimiento.setText(context.getString(
+                R.string.aMapa_detalle_fecha_movimiento,
+                FORMATO_FECHA.format(transaccion.getFecha())));
+        binding.tvFechaMovimiento.setVisibility(View.VISIBLE);
     }
 
     /**
