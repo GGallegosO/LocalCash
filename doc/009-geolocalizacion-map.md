@@ -59,6 +59,10 @@
 6. **Numeración de `doc/`**: el registro de mantenimiento que ocupaba `009`
    (era `009-actualizacion-diagrama.md`) se movió a `doc/010-actualizacion-diagrama.md` para liberar
    el número y respetar `doc/NNN` ↔ `spec/features/NNN` (`.agent.md`).
+7. **Etiqueta fija "Cerrar pin"**: a pedido del responsable, el botón de estado conserva siempre el
+   texto "Cerrar pin", aun cuando el pin ya está cerrado. La acción sigue alternando el estado
+   (cerrar ↔ reabrir) y el pin cerrado permanece atenuado y fuera de "Mis lugares" (CA-12); solo
+   cambia la etiqueta, que no dependía del estado.
 
 ## Verificación (criterios de aceptación)
 

@@ -44,8 +44,8 @@ se gestionan con las mismas acciones, pero el detalle indica su origen.
    agrega elementos a la lista de cosas. El pin solo se crea al confirmar.
 8. Al tocar un pin, el sistema abre su detalle con las acciones editar, cerrar/reabrir y eliminar,
    además de la lista de cosas.
-9. La lista de lugares muestra los pines creados; al tocar uno, el mapa se centra en él y abre su
-   detalle.
+9. La lista de lugares muestra los pines creados; al tocar uno, el mapa se centra en él y muestra su
+   ventana de información, sin abrir el editor ni alterar el estado del lugar.
 10. Los pines cerrados dejan de aparecer en la lista activa, pero siguen visibles en el mapa con un
     tratamiento atenuado y pueden reabrirse.
 

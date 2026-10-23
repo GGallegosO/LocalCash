@@ -14,7 +14,6 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.localcash.R;
 import com.localcash.databinding.BottomSheetDetalleLugarBinding;
 import com.localcash.domain.error.ErrorCode;
-import com.localcash.domain.model.EstadoLugar;
 import com.localcash.domain.model.ItemLugar;
 import com.localcash.domain.model.Lugar;
 import com.localcash.domain.model.Transaccion;
@@ -107,10 +106,9 @@ public final class LugarDetalleSheet {
 
         binding.btnMover.setVisibility(
                 lugar.estaVinculadoAMovimiento() ? View.GONE : View.VISIBLE);
-        binding.btnAlternarEstado.setText(
-                lugar.getEstado() == EstadoLugar.ABIERTO
-                        ? R.string.aMapa_btn_cerrar
-                        : R.string.aMapa_btn_reabrir);
+        // La etiqueta se mantiene fija aunque el pin esté cerrado: el botón
+        // siempre muestra "Cerrar pin" y su acción sigue alternando el estado.
+        binding.btnAlternarEstado.setText(R.string.aMapa_btn_cerrar);
 
         configurarItems();
         configurarAcciones();
