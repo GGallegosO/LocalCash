@@ -36,5 +36,17 @@ public enum ErrorCode {
     UBICACION_INVALIDA,
 
     /** El usuario denegó el permiso necesario para obtener su ubicación. */
-    PERMISO_UBICACION_DENEGADO
+    PERMISO_UBICACION_DENEGADO,
+
+    /** Nombre de contacto vacío o en blanco (solo espacios). */
+    CONTACTO_NOMBRE_VACIO,
+
+    /** Ya existe otro contacto con el mismo teléfono (ignorando mayúsculas/minúsculas). */
+    CONTACTO_TELEFONO_DUPLICADO,
+
+    /** Ya existe otro contacto con el mismo email (ignorando mayúsculas/minúsculas). */
+    CONTACTO_EMAIL_DUPLICADO,
+
+    /** El contacto tiene compras asociadas o deudas pendientes/parciales; no se puede eliminar. */
+    CONTACTO_EN_USO
 }

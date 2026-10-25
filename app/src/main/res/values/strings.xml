@@ -28,6 +28,38 @@
     <string name="aLogin_biometric_negative_button">Usar PIN</string>
     <string name="aLogin_biometric_error_failed">Huella/Rostro no reconocido</string>
     <string name="aLogin_biometric_error_generic">Error de autenticación biométrica</string>
+
+    <!-- Strings de Contactos (Feature 011, prefijo aContacto_) -->
+    <string name="aContacto_titulo">Contactos</string>
+    <string name="aContacto_subtitle">Agenda local de terceros</string>
+    <string name="aContacto_btn_agregar">Agregar contacto</string>
+    <string name="aContacto_sin_contactos">Sin contactos</string>
+    <string name="aContacto_agrega_uno">Agrega tu primer contacto para empezar a compartir gastos.</string>
+    <string name="aContacto_dialog_titulo">Contacto</string>
+    <string name="aContacto_dialog_editar_titulo">Editar contacto</string>
+    <string name="aContacto_campo_nombre">Nombre</string>
+    <string name="aContacto_campo_telefono">Teléfono</string>
+    <string name="aContacto_campo_email">Email</string>
+    <string name="aContacto_campo_notas">Notas</string>
+    <string name="aContacto_btn_guardar">Guardar</string>
+    <string name="aContacto_btn_cancelar">Cancelar</string>
+    <string name="aContacto_btn_eliminar">Eliminar</string>
+    <string name="aContacto_btn_editar">Editar</string>
+    <string name="aContacto_btn_historial">Ver historial</string>
+    <string name="aContacto_error_nombre_vacio">Ingresa un nombre para el contacto</string>
+    <string name="aContacto_error_telefono_duplicado">Ya existe un contacto con ese teléfono</string>
+    <string name="aContacto_error_email_duplicado">Ya existe un contacto con ese email</string>
+    <string name="aContacto_error_en_uso">No se puede eliminar: el contacto tiene compromisos pendientes</string>
+    <string name="aContacto_toast_guardado">Contacto guardado</string>
+    <string name="aContacto_toast_actualizado">Contacto actualizado</string>
+    <string name="aContacto_toast_eliminado">Contacto eliminado</string>
+    <string name="aContacto_detalle_titulo">Detalle de contacto</string>
+    <string name="aContacto_detalle_historial">Historial de compras compartidas</string>
+    <string name="aContacto_detalle_sin_historial">Sin compras compartidas</string>
+    <string name="aContacto_detalle_compra">Compra</string>
+    <string name="aContacto_detalle_monto_asignado">Monto asignado</string>
+    <string name="aContacto_detalle_monto_pagado">Monto pagado</string>
+    <string name="aContacto_detalle_estado">Estado</string>
     <string name="aLogin_link_text">¿No tienes cuenta? Regístrate aquí</string>
 
     <!-- Strings de Registro de Usuarios (prefijo aRegister_) -->

@@ -103,7 +103,7 @@ public class MigracionV2V3Test {
 
         assertTrue(existeTabla(sqlite, LugarDao.TABLA));
         assertTrue(existeTabla(sqlite, ItemLugarDao.TABLA));
-        assertEquals(3, versionUsuario(sqlite));
+        assertEquals(4, versionUsuario(sqlite));
     }
 
     @Test
@@ -202,7 +202,8 @@ public class MigracionV2V3Test {
      */
     private AppDatabase abrirConMigracion() {
         return Room.databaseBuilder(context, AppDatabase.class, NOMBRE_DB)
-                .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3)
+                .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3,
+                        AppDatabase.MIGRATION_3_4)
                 .allowMainThreadQueries()
                 .build();
     }
