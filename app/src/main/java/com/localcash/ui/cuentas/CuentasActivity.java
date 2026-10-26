@@ -1598,7 +1598,8 @@ public class CuentasActivity extends BaseActivity
 
         // Monto: no vacío y > 0
         CharSequence montoTexto = sheetBinding.inputMonto.getText();
-        String montoStr = montoTexto != null ? montoTexto.toString().trim() : "";
+        // El campo muestra "$20.000": se valida y envía el valor limpio.
+        String montoStr = montoTexto == null ? "" : montoTexto.toString().replaceAll("[^0-9]", "");
         long monto = 0L;
         if (!montoStr.isEmpty()) {
             try {
