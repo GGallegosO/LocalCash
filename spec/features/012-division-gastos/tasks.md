@@ -296,7 +296,7 @@
       advertencias baseline** (la primera versión del string de suma activaba `PluralsCandidate`; se
       reescribió), `testDebugUnitTest` en verde (113 tests, 2 nuevos de estado de reparto).
 
-- [ ] **T13. Resumen de deudas + detalle de contacto con historial de partes en `ui/contactos`.**
+- [x] **T13. Resumen de deudas + detalle de contacto con historial de partes en `ui/contactos`.**
       Sección "Resumen de deudas" (Σ pendientes por contacto, orden descendente, layout
       `item_resumen_deuda.xml`, CA-9); detalle del contacto con historial de partes compartidas
       (layout `dialog_detalle_contacto.xml`, CA-12, cierra CA-9/CA-10 heredados de 011) usando
@@ -306,6 +306,19 @@
       Responsable: Agente SDD | Estimación: 90 min
       *Dependencias:* requiere T3/T4 (DAO `resumenDeudasPorContacto` / `getPendientesPorContacto`) y
       T11/T12 (ya cerradas: existen partes que mostrar). **Bloquea a T14**, que vive en este detalle.*
+      *Cierre (2026-10-26):* el resumen va **en la propia fila** de la lista existente (sin sección
+      aparte ni `item_resumen_deuda.xml`): se eliminó la flecha placeholder de `item_contacto.xml` y en
+      su lugar `tvDeuda` muestra "Debe: $X" en `?attr/colorError` o "Al día" con
+      `colorOnSurfaceVariant`, alimentado por `resumenDeudasPorContactoLive()` observado en
+      `CuentasActivity` y un mapa en `ContactoAdapter`. El detalle es un `MaterialAlertDialog` (sin
+      Activity nueva) con el nombre como título, filas dinámicas (`LinearLayout`) desde
+      `getDeudasPendientesLive(contactoId)` —JOIN con `transacciones` para concepto y fecha— en formato
+      "concepto / dd/MM/yyyy · $monto", el texto "Sin deudas pendientes" cuando no hay filas, y los
+      botones existentes de editar/eliminar. Sin "A favor": la entidad no tiene dirección (ver
+      `spec.md` §7). Verificación: `assembleDebug` OK, `lint` **120 baseline** (se corrigieron
+      `NotifyDataSetChanged`, un `SetTextI18n` y se retiró el string `aContacto_btn_historial` que
+      quedó huérfano), `testDebugUnitTest` verde. Falta la revisión visual en emulador (a cargo del
+      dueño) y el botón de cobro que llega en T14.
 
 - [ ] **T14. Botón "Marcar pagada" + verificación en emulador.**
       Desde el detalle del contacto invoca el cobro atómico de T6 (`marcarPagada()`); recarga resumen

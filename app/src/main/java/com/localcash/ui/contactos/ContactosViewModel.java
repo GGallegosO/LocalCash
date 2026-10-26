@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModel;
 
 import com.localcash.data.db.AppDatabase;
 import com.localcash.domain.error.BusinessRuleException;
+import com.localcash.data.model.DeudaContacto;
+import com.localcash.data.model.ResumenDeuda;
 import com.localcash.domain.error.ErrorCode;
 import com.localcash.domain.model.Contacto;
 import com.localcash.domain.service.ContactoService;
@@ -35,6 +37,16 @@ public class ContactosViewModel extends ViewModel {
     /** Lista de contactos observada desde Room. */
     public LiveData<List<com.localcash.data.entities.Contacto>> getContactos() {
         return contactos;
+    }
+
+    /** Deuda pendiente por contacto para pintar la lista (Feature 012, T13). */
+    public LiveData<java.util.List<ResumenDeuda>> getResumenDeudas() {
+        return db.gastoCompartidoDao().resumenDeudasPorContactoLive();
+    }
+
+    /** Deudas pendientes de un contacto con concepto y fecha (T13). */
+    public LiveData<java.util.List<DeudaContacto>> getDeudasPendientes(long contactoId) {
+        return db.gastoCompartidoDao().getDeudasPendientesLive(contactoId);
     }
 
     /** Resultado de la última operación de escritura ({@code null} = éxito). */

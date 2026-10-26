@@ -45,7 +45,6 @@
     <string name="aContacto_btn_cancelar">Cancelar</string>
     <string name="aContacto_btn_eliminar">Eliminar</string>
     <string name="aContacto_btn_editar">Editar</string>
-    <string name="aContacto_btn_historial">Ver historial</string>
     <string name="aContacto_error_nombre_vacio">Ingresa un nombre para el contacto</string>
     <string name="aContacto_error_telefono_duplicado">Ya existe un contacto con ese teléfono</string>
     <string name="aContacto_error_email_duplicado">Ya existe un contacto con ese email</string>
@@ -282,4 +281,9 @@
     <string name="aGastoCompartido_toast_contacto_duplicado">Un contacto no puede tener dos partes en el mismo egreso</string>
     <string name="aGastoCompartido_toast_monto_invalido">Ingresa un monto válido antes de compartir el egreso</string>
     <string name="aGastoCompartido_toast_reparto_error">No se pudo compartir el egreso</string>
+    <string name="aGastoCompartido_debe">Debe: %1$s</string>
+    <string name="aGastoCompartido_al_dia">Al día</string>
+    <string name="aGastoCompartido_sin_deudas">Sin deudas pendientes</string>
+    <string name="aGastoCompartido_detalle_titulo">Deudas pendientes</string>
+    <string name="aGastoCompartido_detalle_fila">%1$s\n%2$s · %3$s</string>
 </resources>

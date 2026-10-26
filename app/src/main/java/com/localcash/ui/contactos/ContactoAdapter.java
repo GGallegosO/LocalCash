@@ -10,6 +10,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.localcash.R;
 import com.localcash.databinding.ItemContactoBinding;
 import com.localcash.domain.model.Contacto;
+import com.localcash.ui.util.CurrencyFormatter;
+import com.google.android.material.color.MaterialColors;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +32,9 @@ public class ContactoAdapter extends RecyclerView.Adapter<ContactoAdapter.Contac
 
     private OnContactoClickListener onContactoClickListener;
 
+    /** Total pendiente por contacto (id → pesos CLP). Vacío = todos al día. */
+    private final Map<Long, Long> deudaPorContacto = new HashMap<>();
+
     /**
      * Reemplaza la lista completa con DiffUtil.
      */
@@ -40,6 +48,21 @@ public class ContactoAdapter extends RecyclerView.Adapter<ContactoAdapter.Contac
         contactos.clear();
         contactos.addAll(siguiente);
         diff.dispatchUpdatesTo(this);
+    }
+
+    /**
+     * Actualiza el estado de deuda mostrado en cada fila (Feature 012, T13).
+     *
+     * @param resumen filas {@code (contactoId, totalPendiente)}
+     */
+    public void setResumenDeudas(List<com.localcash.data.model.ResumenDeuda> resumen) {
+        deudaPorContacto.clear();
+        if (resumen != null) {
+            for (com.localcash.data.model.ResumenDeuda fila : resumen) {
+                deudaPorContacto.put(fila.getContactoId(), fila.getTotalPendiente());
+            }
+        }
+        notifyItemRangeChanged(0, contactos.size());
     }
 
     /**
@@ -59,7 +82,8 @@ public class ContactoAdapter extends RecyclerView.Adapter<ContactoAdapter.Contac
 
     @Override
     public void onBindViewHolder(@NonNull ContactoViewHolder holder, int position) {
-        holder.bind(contactos.get(position));
+        Long deuda = deudaPorContacto.get(contactos.get(position).getId());
+        holder.bind(contactos.get(position), deuda == null ? 0L : deuda.longValue());
     }
 
     @Override
@@ -81,7 +105,7 @@ public class ContactoAdapter extends RecyclerView.Adapter<ContactoAdapter.Contac
             this.listener = listener;
         }
 
-        void bind(Contacto contacto) {
+        void bind(Contacto contacto, long deudaPendiente) {
             binding.tvNombre.setText(contacto.getNombre());
 
             StringBuilder detalle = new StringBuilder();
@@ -99,6 +123,18 @@ public class ContactoAdapter extends RecyclerView.Adapter<ContactoAdapter.Contac
             // Iniciales: primera letra del nombre y del apellido (si hay)
             String iniciales = inicialesDe(contacto.getNombre());
             binding.tvIniciales.setText(iniciales);
+
+            if (deudaPendiente > 0L) {
+                binding.tvDeuda.setText(itemView.getContext().getString(
+                        R.string.aGastoCompartido_debe,
+                        CurrencyFormatter.format(deudaPendiente)));
+                binding.tvDeuda.setTextColor(MaterialColors.getColor(
+                        binding.tvDeuda, androidx.appcompat.R.attr.colorError));
+            } else {
+                binding.tvDeuda.setText(R.string.aGastoCompartido_al_dia);
+                binding.tvDeuda.setTextColor(MaterialColors.getColor(
+                        binding.tvDeuda, com.google.android.material.R.attr.colorOnSurfaceVariant));
+            }
 
             itemView.setOnClickListener(v -> {
                 if (listener != null) {

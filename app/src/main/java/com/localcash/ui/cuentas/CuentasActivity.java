@@ -17,6 +17,7 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -43,6 +44,7 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.localcash.R;
 import com.localcash.data.db.AppDatabase;
+import com.localcash.data.model.DeudaContacto;
 import com.localcash.data.entities.Cuenta;
 import com.localcash.databinding.ActivityCuentasBinding;
 import com.localcash.databinding.BottomSheetLugaresBinding;
@@ -76,8 +78,11 @@ import com.localcash.ui.mapa.SeleccionarUbicacionActivity;
 import com.localcash.ui.theme.ThemeManager;
 import com.localcash.ui.util.CurrencyFormatter;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Activity principal de LocalCash (Módulo 1): 4 vistas en un {@code ViewFlipper}
@@ -541,6 +546,10 @@ public class CuentasActivity extends BaseActivity
             vistaContactos.layoutEmpty.setVisibility(hayContactos ? View.GONE : View.VISIBLE);
         });
 
+        // Deuda pendiente por contacto: pinta "Debe: $X" o "Al día" (T13).
+        contactosViewModel.getResumenDeudas().observe(this,
+                resumen -> adapter.setResumenDeudas(resumen));
+
         // FAB: abrir el diálogo de alta de contacto.
         vistaContactos.fabAgregar.setOnClickListener(v -> mostrarDialogoContacto(null));
 
@@ -593,15 +602,63 @@ public class CuentasActivity extends BaseActivity
 
     /** Muestra el diálogo de detalle de un contacto (editar/eliminar). */
     private void mostrarDialogoDetalleContacto(Contacto contacto) {
+        LinearLayout contenedor = new LinearLayout(this);
+        contenedor.setOrientation(LinearLayout.VERTICAL);
+        int pad = (int) (16 * getResources().getDisplayMetrics().density);
+        contenedor.setPadding(pad, pad / 2, pad, 0);
+
         new MaterialAlertDialogBuilder(this)
                 .setTitle(contacto.getNombre())
-                .setMessage(contacto.getTelefono() != null ? contacto.getTelefono() : "")
+                .setView(contenedor)
                 .setPositiveButton(R.string.aContacto_btn_editar, (d, w) ->
                         mostrarDialogoContacto(contacto))
                 .setNegativeButton(R.string.aContacto_btn_eliminar, (d, w) ->
                         confirmarEliminacionContacto(contacto))
                 .setNeutralButton(android.R.string.cancel, null)
                 .show();
+
+        final Observer<List<DeudaContacto>> observador = new Observer<List<DeudaContacto>>() {
+            @Override
+            public void onChanged(List<DeudaContacto> deudas) {
+                contactosViewModel.getDeudasPendientes(contacto.getId()).removeObserver(this);
+                pintarDeudasDetalle(contenedor, deudas);
+            }
+        };
+        contactosViewModel.getDeudasPendientes(contacto.getId()).observe(this, observador);
+    }
+
+    /**
+     * Pinta las deudas pendientes del contacto en el diálogo de detalle (T13).
+     *
+     * @param contenedor contenedor vertical del diálogo
+     * @param deudas     filas {@code (concepto, fecha, monto)}
+     */
+    private void pintarDeudasDetalle(@NonNull LinearLayout contenedor,
+                                     @Nullable List<DeudaContacto> deudas) {
+        contenedor.removeAllViews();
+        if (deudas == null || deudas.isEmpty()) {
+            TextView vacio = new TextView(this);
+            vacio.setText(R.string.aGastoCompartido_sin_deudas);
+            vacio.setTextColor(MaterialColors.getColor(
+                    vacio, com.google.android.material.R.attr.colorOnSurfaceVariant));
+            contenedor.addView(vacio);
+            return;
+        }
+
+        SimpleDateFormat formato = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+        int pad = (int) (4 * getResources().getDisplayMetrics().density);
+        for (DeudaContacto deuda : deudas) {
+            TextView fila = new TextView(this);
+            String concepto = deuda.getDescripcion() == null || deuda.getDescripcion().isEmpty()
+                    ? getString(R.string.aGastoCompartido_detalle_titulo)
+                    : deuda.getDescripcion();
+            fila.setText(getString(R.string.aGastoCompartido_detalle_fila,
+                    concepto,
+                    formato.format(new Date(deuda.getFechaMillis())),
+                    CurrencyFormatter.format(deuda.getMontoAsignado())));
+            fila.setPadding(0, pad, 0, pad);
+            contenedor.addView(fila);
+        }
     }
 
     /** Pide confirmación antes de eliminar un contacto. */

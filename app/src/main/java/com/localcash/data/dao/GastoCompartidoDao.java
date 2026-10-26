@@ -1,11 +1,13 @@
 package com.localcash.data.dao;
 
+import androidx.lifecycle.LiveData;
 import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 
 import com.localcash.data.entities.GastoCompartido;
+import com.localcash.data.model.DeudaContacto;
 import com.localcash.data.model.ResumenDeuda;
 
 import java.util.List;
@@ -104,6 +106,38 @@ public interface GastoCompartidoDao {
             + " GROUP BY gc.contacto_id, c.nombre"
             + " ORDER BY totalPendiente DESC, c.nombre ASC")
     List<ResumenDeuda> resumenDeudasPorContacto();
+
+    /**
+     * Resumen de deuda de todos los contactos, observable para la lista.
+     *
+     * @return LiveData con las proyecciones {@code (contacto, nombre, total)}
+     */
+    @Query("SELECT gc.contacto_id AS contactoId,"
+            + "       c.nombre AS nombreContacto,"
+            + "       SUM(gc.monto_asignado) AS totalPendiente"
+            + " FROM " + TABLE_NAME + " gc"
+            + " JOIN CONTACTOS c ON c.id = gc.contacto_id"
+            + " WHERE gc.estado = '" + GastoCompartido.ESTADO_PENDIENTE + "'"
+            + " GROUP BY gc.contacto_id, c.nombre"
+            + " ORDER BY totalPendiente DESC, c.nombre ASC")
+    LiveData<List<ResumenDeuda>> resumenDeudasPorContactoLive();
+
+    /**
+     * Deudas pendientes de un contacto con el concepto y la fecha del egreso
+     * que las originó (Feature 012, T13).
+     *
+     * @param contactoId id del contacto deudor
+     * @return LiveData con las filas {@code (descripcion, fechaMillis, monto)}
+     */
+    @Query("SELECT t.concepto AS descripcion,"
+            + "       t.fecha AS fechaMillis,"
+            + "       gc.monto_asignado AS montoAsignado"
+            + " FROM " + TABLE_NAME + " gc"
+            + " JOIN transacciones t ON t.id = gc.transaccion_id"
+            + " WHERE gc.contacto_id = :contactoId"
+            + "   AND gc.estado = '" + GastoCompartido.ESTADO_PENDIENTE + "'"
+            + " ORDER BY t.fecha DESC, gc.id DESC")
+    LiveData<List<DeudaContacto>> getDeudasPendientesLive(long contactoId);
 
     /**
      * Resumen de deuda de un contacto concreto (fila única).
