@@ -19,13 +19,20 @@
 
 ## Fase 1 — Contratos y constitución
 
-- [ ] **T1. Confirmar contrato público y códigos de error.**
+- [x] **T1. Confirmar contrato público y códigos de error.**
       Verificar que `plan.md` §1 lista entrada/salida/códigos (`GASTO_SIN_CONTACTOS`,
       `REPARTO_NO_CUADRA`, `REPARTO_IGUAL_INSUFICIENTE`, `MONTO_PARTE_INVALIDO`,
       `CONTACTO_DUPLICADO`, `PARTE_INEXISTENTE`, `PARTE_YA_PAGADA`, `CONTACTO_EN_USO`) y que
       invariantes INV-1..INV-5 de `spec.md` §5 tienen dueño de capa (dominio/repositorio).
       *Criterio de salida:* el contrato permite escribir tests antes de implementar nada.
       Responsable: Agente SDD | Estimación: 15 min
+      *Cierre (2026-10-25):* `plan.md` §1 publica la tabla del contrato invocable de
+      `GastoCompartidoService` (`validarReparto`, `dividirIgual`, `repartoPersonalizado`, tipos
+      `ModoDivision`/`PartePropuesta`, semántica `ErrorCode` vs `BusinessRuleException`) y `plan.md` §2
+      agrega la matriz de propiedad de INV-1..INV-5 (dominio para 1–2; repositorio/DAO con respaldo de
+      FK para 3–5) con su test asignado. Hallazgo: `ContactoDao` **no** tiene
+      `getComprasComoPagador`/`getDeudasComoDeudor` aunque `doc/011` lo afirmaba; el historial por
+      contacto se resolverá solo con `GASTOS_COMPARTIDOS` (T13).
 
 - [ ] **T2. Sincronizar `spec/constitution/data-model.md` con la entidad `GASTOS_COMPARTIDOS`.**
       Agregar al ERD Mermaid la entidad y sus relaciones (`TRANSACCIONES ||--o{ GASTOS_COMPARTIDOS :
