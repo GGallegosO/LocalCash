@@ -147,6 +147,58 @@ public class GastoCompartidoServiceTest {
     }
 
     // ---------------------------------------------------------------
+    // Regresión (T14): validar partes ya calculadas con el usuario implícito
+    // ---------------------------------------------------------------
+
+    @Test
+    public void testValidarPartesPropuestasIgnoraLaParteDelUsuarioImplicito() {
+        // El bug: la parte del usuario trae contactoId = 0 y validarReparto la
+        // leía como contacto de la agenda → GASTO_SIN_CONTACTOS al guardar.
+        List<PartePropuesta> partes = GastoCompartidoService.dividirConUsuario(
+                90_000L, Arrays.asList(11L, 12L));
+        assertEquals(true, partes.get(0).isDelUsuario());
+
+        GastoCompartidoService.validarPartesPropuestas(90_000L, partes);
+    }
+
+    @Test
+    public void testValidarPartesPropuestasRechazaSoloLaParteDelUsuario() {
+        BusinessRuleException excepcion = assertThrows(
+                BusinessRuleException.class,
+                () -> GastoCompartidoService.validarPartesPropuestas(
+                        90_000L, Collections.singletonList(new PartePropuesta(0L, 90_000L, true))));
+
+        assertEquals(ErrorCode.GASTO_SIN_CONTACTOS, excepcion.getErrorCode());
+    }
+
+    @Test
+    public void testValidarPartesPropuestasRechazaListaNula() {
+        BusinessRuleException excepcion = assertThrows(
+                BusinessRuleException.class,
+                () -> GastoCompartidoService.validarPartesPropuestas(90_000L, null));
+
+        assertEquals(ErrorCode.GASTO_SIN_CONTACTOS, excepcion.getErrorCode());
+    }
+
+    @Test
+    public void testValidarPartesPropuestasDetectaContactoRepetidoYNulo() {
+        BusinessRuleException repetidas = assertThrows(
+                BusinessRuleException.class,
+                () -> GastoCompartidoService.validarPartesPropuestas(90_000L, Arrays.asList(
+                        new PartePropuesta(0L, 30_000L, true),
+                        new PartePropuesta(5L, 30_000L),
+                        new PartePropuesta(5L, 30_000L))));
+        assertEquals(ErrorCode.CONTACTO_DUPLICADO, repetidas.getErrorCode());
+
+        BusinessRuleException cero = assertThrows(
+                BusinessRuleException.class,
+                () -> GastoCompartidoService.validarPartesPropuestas(90_000L, Arrays.asList(
+                        new PartePropuesta(0L, 30_000L, true),
+                        new PartePropuesta(0L, 60_000L))));
+        assertEquals(ErrorCode.GASTO_SIN_CONTACTOS, cero.getErrorCode());
+    }
+
+    // ---------------------------------------------------------------
     // CA-4 — monto insuficiente para un peso por contacto
     // ---------------------------------------------------------------
 

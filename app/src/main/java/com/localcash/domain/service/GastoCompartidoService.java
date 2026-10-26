@@ -155,6 +155,44 @@ public final class GastoCompartidoService {
     }
 
     /**
+     * Valida las partes que van a persistirse junto con un egreso compartido.
+     * <p>
+     * Excluye la parte del <b>usuario principal</b>
+     * ({@link PartePropuesta#isDelUsuario()}) antes de aplicar INV-1 e INV-2:
+     * ese actor no es un contacto de la agenda ni tiene fila en
+     * {@code CONTACTOS} ({@code data-model.md} §4.1), así que tratar su parte
+     * como la de un contacto la rechazaría como "contacto sin identificar".
+     * El importe del usuario sí cuenta en la suma, porque la parte implícita es
+     * {@code total − Σ partes de contactos} y nunca puede superar el total.
+     * </p>
+     *
+     * @param montoTotal importe del egreso en pesos CLP
+     * @param partes     partes propuestas, con o sin la del usuario
+     * @throws BusinessRuleException con el código del rechazo correspondiente
+     */
+    public static void validarPartesPropuestas(long montoTotal,
+                                               List<PartePropuesta> partes) {
+        if (partes == null) {
+            throw new BusinessRuleException(
+                    ErrorCode.GASTO_SIN_CONTACTOS,
+                    "Un egreso compartido necesita al menos un contacto");
+        }
+        List<PartePropuesta> deContactos = new ArrayList<>(partes.size());
+        List<Long> contactosIds = new ArrayList<>(partes.size());
+        for (PartePropuesta parte : partes) {
+            if (parte == null) {
+                deContactos.add(null);
+                contactosIds.add(null);
+            } else if (!parte.isDelUsuario()) {
+                deContactos.add(parte);
+                contactosIds.add(parte.getContactoId());
+            }
+        }
+        validarReparto(montoTotal, contactosIds);
+        validarPersonalizado(montoTotal, deContactos);
+    }
+
+    /**
      * Valida una división personalizada: montos positivos, un contacto a lo
      * sumo una vez y suma que **no supere** el total. Si suma menos, el resto
      * queda como parte implícita del usuario (N+1).

@@ -8,6 +8,7 @@ import static org.junit.Assert.assertTrue;
 import com.localcash.domain.error.ErrorCode;
 import com.localcash.domain.model.EstadoReparto;
 import com.localcash.domain.model.ModoDivision;
+import com.localcash.domain.model.PartePropuesta;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -15,6 +16,7 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Tests JVM (Robolectric, sin dispositivo) del estado de reparto compartido
@@ -74,6 +76,51 @@ public class TransaccionViewModelDivisionTest {
         assertTrue(conResto.isValido());
         assertEquals(55_000L, conResto.getSumaParcial());
         assertEquals(45_000L, conResto.getParteUsuario());
+    }
+
+    @Test
+    public void lasPartesParaRegistrarIncluyenUnaUnicaParteDelUsuarioImplicito() {
+        // Regresión: la parte del usuario (contactoId = 0) no es un contacto de la
+        // agenda. Si se tratara como tal, el guardado la rechazaría con
+        // GASTO_SIN_CONTACTOS pese a haber chips seleccionados.
+        TransaccionViewModel vm = new TransaccionViewModel(RuntimeEnvironment.getApplication());
+        vm.setMontoTotal(90_000L);
+        vm.setCompartido(true);
+        vm.setContactosSeleccionados(Arrays.asList(11L, 12L));
+
+        List<PartePropuesta> partes = vm.partesParaRegistrar();
+        assertNotNull(partes);
+        assertEquals(3, partes.size());
+
+        int deUsuario = 0;
+        for (PartePropuesta parte : partes) {
+            if (parte.isDelUsuario()) {
+                deUsuario++;
+                assertEquals(0L, parte.getContactoId());
+            } else {
+                assertTrue(parte.getContactoId() > 0L);
+            }
+        }
+        assertEquals("debe haber exactamente una parte del usuario", 1, deUsuario);
+        assertNull(vm.validarReparto());
+    }
+
+    @Test
+    public void desmarcarCompartidoLimpiaLaSeleccionCapturada() {
+        TransaccionViewModel vm = new TransaccionViewModel(RuntimeEnvironment.getApplication());
+        vm.setMontoTotal(50_000L);
+        vm.setCompartido(true);
+        vm.setContactosSeleccionados(Arrays.asList(7L, 8L));
+        assertEquals(2, vm.getContactosSeleccionados().size());
+
+        vm.setCompartido(false);
+
+        assertTrue(vm.getContactosSeleccionados().isEmpty());
+        assertNull(vm.partesParaRegistrar());
+        EstadoReparto estado = vm.getEstadoReparto().getValue();
+        assertNotNull(estado);
+        assertEquals(false, estado.isCompartido());
+        assertTrue(estado.isValido());
     }
 
     @Test

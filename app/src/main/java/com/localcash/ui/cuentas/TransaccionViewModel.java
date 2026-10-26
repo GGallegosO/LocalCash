@@ -145,6 +145,11 @@ public class TransaccionViewModel extends AndroidViewModel {
      */
     public void setCompartido(boolean activo) {
         this.compartido = activo;
+        if (!activo) {
+            // Sin reparto no queda selección capturada: al reactivarlo se elige de cero.
+            this.contactosSeleccionados.clear();
+            this.montosPersonalizados.clear();
+        }
         notificarEstado();
     }
 
@@ -395,9 +400,10 @@ public class TransaccionViewModel extends AndroidViewModel {
      * sus partes, todo en una sola transacción de base de datos.
      * <p>
      * Las partes se validan <b>antes</b> de abrir la transacción con
-     * {@link GastoCompartidoService#validarReparto} (INV-1, contactos sin
-     * repetir) y {@link GastoCompartidoService#validarPersonalizado} (INV-2,
-     * suma exacta y montos positivos). Si la validación o cualquier escritura
+     * {@link GastoCompartidoService#validarPartesPropuestas}, que excluye la
+     * parte del usuario implícito y aplica INV-1 (contactos identificables y sin
+     * repetir) e INV-2 (suma no superior al total, montos positivos). Si la
+     * validación o cualquier escritura
      * falla, Room revierte el bloque completo: no queda ni el egreso, ni las
      * partes, ni el saldo modificado (todo o nada).
      * </p>
@@ -469,9 +475,8 @@ public class TransaccionViewModel extends AndroidViewModel {
                     return;
                 }
                 try {
-                    GastoCompartidoService.validarReparto(
-                            monto, contactosDe(partesCompartidas));
-                    GastoCompartidoService.validarPersonalizado(monto, partesCompartidas);
+                    GastoCompartidoService.validarPartesPropuestas(
+                            monto, partesCompartidas);
                 } catch (BusinessRuleException e) {
                     resultado.postValue(e.getErrorCode());
                     return;
@@ -533,21 +538,6 @@ public class TransaccionViewModel extends AndroidViewModel {
         });
 
         return resultado;
-    }
-
-    /**
-     * Extrae los ids de contacto de las partes para la validación común de
-     * INV-1 (los nulos se dejan pasar para que el servicio los rechace).
-     *
-     * @param partes partes del reparto
-     * @return ids en el mismo orden, con {@code null} donde la parte no lo trae
-     */
-    private static List<Long> contactosDe(List<PartePropuesta> partes) {
-        List<Long> ids = new ArrayList<>(partes.size());
-        for (PartePropuesta parte : partes) {
-            ids.add(parte == null ? null : parte.getContactoId());
-        }
-        return ids;
     }
 
     /**

@@ -1155,11 +1155,17 @@ public class CuentasActivity extends BaseActivity
         observadorEstadoReparto = estado -> aplicarEstadoReparto(sheetBinding, estado);
         transaccionViewModel.getEstadoReparto().observe(this, observadorEstadoReparto);
         transaccionViewModel.getDivisionVisible().observe(this, visible -> {
-            sheetBinding.layoutDivision.setVisibility(
-                    Boolean.TRUE.equals(visible) ? View.VISIBLE : View.GONE);
-            if (Boolean.TRUE.equals(visible)) {
+            boolean compartido = Boolean.TRUE.equals(visible);
+            sheetBinding.layoutDivision.setVisibility(compartido ? View.VISIBLE : View.GONE);
+            if (compartido) {
                 poblarSelectorContactos(sheetBinding);
                 reconstruirFilasParte(sheetBinding);
+            } else {
+                // Al desmarcar "Compartido" se descartan los chips capturados.
+                sheetBinding.chipGroupContactos.removeAllViews();
+                sheetBinding.contenedorPartes.removeAllViews();
+                sheetBinding.searchContactos.setText("", false);
+                firmaFilasParte = "";
             }
         });
     }
