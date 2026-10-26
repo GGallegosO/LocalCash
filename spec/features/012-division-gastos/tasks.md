@@ -377,7 +377,7 @@ emulador activo**: si se ejecuta primero y falla, se pierde el ciclo de compilac
 - **UX Issue #1 (T11, 2026-10-26):** el selector de contactos con CheckBox verticales no escala a más
   de ~20 contactos: obliga a hacer scroll largo dentro de la hoja inferior y vuelve difícil ver cuántos
   se eligieron. **Resuelto el 2026-10-26 (commit d258da4):** el selector pasó a `ChipGroup` +
-  `SearchView`, y se agregaron cierre (X) y "Cancelar". Queda pendiente el contador visible de chips
+  `AutoCompleteTextView` tipo Gmail (chips vacíos al abrir, búsqueda con desplegable y "X" por chip), y se agregaron cierre (X) y "Cancelar". Queda pendiente el contador visible de chips
   seleccionados.
 - **UX Issue #2 (T13/T14, 2026-10-26):** la pantalla de Contactos todavía **no muestra deudas ni ofrece
   el botón de pago**: el resumen de deudas y el cobro atómico ya existen en datos (`GastoCompartidoDao`,

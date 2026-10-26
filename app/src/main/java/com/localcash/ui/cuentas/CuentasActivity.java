@@ -14,9 +14,9 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
-import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -1133,18 +1133,11 @@ public class CuentasActivity extends BaseActivity
             }
         });
 
-        sheetBinding.searchContactos.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                return false;
-            }
-
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                aplicarFiltroContactos(sheetBinding, newText);
-                return true;
-            }
-        });
+        sheetBinding.searchContactos.setOnItemClickListener(
+                (AdapterView<?> parent, View vista, int position, long id) -> {
+                    String nombre = (String) parent.getItemAtPosition(position);
+                    agregarContactoSeleccionado(sheetBinding, nombre);
+                });
 
         observadorEstadoReparto = estado -> aplicarEstadoReparto(sheetBinding, estado);
         transaccionViewModel.getEstadoReparto().observe(this, observadorEstadoReparto);
@@ -1177,28 +1170,63 @@ public class CuentasActivity extends BaseActivity
      * @param sheetBinding Binding del BottomSheet abierto
      */
     private void poblarSelectorContactos(@NonNull BottomSheetTransaccionBinding sheetBinding) {
-        ChipGroup grupo = sheetBinding.chipGroupContactos;
-        List<Long> seleccionActual = transaccionViewModel.getContactosSeleccionados();
-        grupo.removeAllViews();
-
+        // Sugerencias del buscador (se filtran solas al escribir).
+        List<String> nombres = new ArrayList<>();
         for (Contacto contacto : contactosAgenda) {
-            Chip chip = new Chip(grupo.getContext());
-            chip.setText(contacto.getNombre());
-            chip.setCheckable(true);
-            chip.setTag(Long.valueOf(contacto.getId()));
-            chip.setChecked(seleccionActual.contains(contacto.getId()));
-            chip.setOnCheckedChangeListener((boton, marcado) ->
-                    actualizarSeleccionContactos(sheetBinding));
-            grupo.addView(chip);
+            nombres.add(contacto.getNombre());
         }
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                sheetBinding.getRoot().getContext(),
+                android.R.layout.simple_dropdown_item_1line, nombres);
+        sheetBinding.searchContactos.setAdapter(adapter);
+        sheetBinding.searchContactos.setText("", false);
 
         sheetBinding.tvSinContactos.setVisibility(
                 contactosAgenda.isEmpty() ? View.VISIBLE : View.GONE);
-        aplicarFiltroContactos(sheetBinding, sheetBinding.searchContactos.getQuery().toString());
+
+        // Chips: solo los ya elegidos, cada uno con su "X" para quitarlo.
+        ChipGroup grupo = sheetBinding.chipGroupContactos;
+        List<Long> seleccionActual = transaccionViewModel.getContactosSeleccionados();
+        grupo.removeAllViews();
+        for (Long contactoId : seleccionActual) {
+            Chip chip = new Chip(grupo.getContext());
+            chip.setText(nombreContacto(contactoId.longValue()));
+            chip.setTag(contactoId);
+            chip.setCheckable(false);
+            chip.setCloseIconVisible(true);
+            chip.setOnCloseIconClickListener(v -> {
+                grupo.removeView(chip);
+                actualizarSeleccionContactos(sheetBinding);
+            });
+            grupo.addView(chip);
+        }
     }
 
     /**
-     * Vuelca la selección de casillas al ViewModel en el orden de la agenda.
+     * Agrega un contacto al reparto desde el desplegable y limpia el buscador.
+     *
+     * @param sheetBinding Binding del BottomSheet abierto
+     * @param nombre       nombre elegido en el desplegable
+     */
+    private void agregarContactoSeleccionado(
+            @NonNull BottomSheetTransaccionBinding sheetBinding, String nombre) {
+        for (Contacto contacto : contactosAgenda) {
+            if (contacto.getNombre().equals(nombre)) {
+                List<Long> seleccion = transaccionViewModel.getContactosSeleccionados();
+                if (!seleccion.contains(contacto.getId())) {
+                    seleccion.add(contacto.getId());
+                }
+                transaccionViewModel.setContactosSeleccionados(seleccion);
+                break;
+            }
+        }
+        sheetBinding.searchContactos.setText("", false);
+        poblarSelectorContactos(sheetBinding);
+        reconstruirFilasParte(sheetBinding);
+    }
+
+    /**
+     * Vuelca la selección de chips al ViewModel en el orden de la agenda.
      *
      * @param sheetBinding Binding del BottomSheet abierto
      */
@@ -1208,34 +1236,12 @@ public class CuentasActivity extends BaseActivity
         ChipGroup grupo = sheetBinding.chipGroupContactos;
         for (int i = 0; i < grupo.getChildCount(); i++) {
             View hijo = grupo.getChildAt(i);
-            if (hijo instanceof Chip && ((Chip) hijo).isChecked()
-                    && hijo.getTag() instanceof Long) {
+            if (hijo instanceof Chip && hijo.getTag() instanceof Long) {
                 seleccion.add((Long) hijo.getTag());
             }
         }
         transaccionViewModel.setContactosSeleccionados(seleccion);
         reconstruirFilasParte(sheetBinding);
-    }
-
-    /**
-     * Oculta los chips que no coinciden con el texto del buscador.
-     *
-     * @param sheetBinding Binding del BottomSheet abierto
-     * @param texto        consulta del {@code SearchView}
-     */
-    private void aplicarFiltroContactos(@NonNull BottomSheetTransaccionBinding sheetBinding,
-                                        @Nullable String texto) {
-        String consulta = texto == null ? "" : texto.trim().toLowerCase(Locale.getDefault());
-        ChipGroup grupo = sheetBinding.chipGroupContactos;
-        for (int i = 0; i < grupo.getChildCount(); i++) {
-            View hijo = grupo.getChildAt(i);
-            if (!(hijo instanceof Chip)) {
-                continue;
-            }
-            String nombre = ((Chip) hijo).getText().toString().toLowerCase(Locale.getDefault());
-            hijo.setVisibility(consulta.isEmpty() || nombre.contains(consulta)
-                    ? View.VISIBLE : View.GONE);
-        }
     }
 
     /**
@@ -1703,6 +1709,7 @@ public class CuentasActivity extends BaseActivity
         sheetBinding.rgModoDivision.setOnCheckedChangeListener(null);
         sheetBinding.rbIgual.setChecked(true);
         sheetBinding.chipGroupContactos.removeAllViews();
+        sheetBinding.searchContactos.setText("", false);
         sheetBinding.contenedorPartes.removeAllViews();
         sheetBinding.tvSumaEnVivo.setText("");
         firmaFilasParte = "";

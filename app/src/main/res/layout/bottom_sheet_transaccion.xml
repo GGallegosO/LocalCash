@@ -152,15 +152,25 @@
                 android:textAppearance="?attr/textAppearanceBodyMedium"
                 android:textColor="?attr/colorOnSurfaceVariant" />
 
-            <SearchView
-                android:id="@+id/searchContactos"
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/inputLayoutBuscarContacto"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:iconifiedByDefault="false"
-                android:queryHint="@string/aGastoCompartido_buscar" />
+                android:hint="@string/aGastoCompartido_buscar">
 
-            <!-- Chips seleccionables, uno por contacto de la agenda -->
+                <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                    android:id="@+id/searchContactos"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:completionThreshold="1"
+                    android:inputType="text"
+                    android:imeOptions="actionDone" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Chips de los contactos elegidos (vacío al abrir) -->
             <com.google.android.material.chip.ChipGroup
                 android:id="@+id/chipGroupContactos"
                 android:layout_width="match_parent"
