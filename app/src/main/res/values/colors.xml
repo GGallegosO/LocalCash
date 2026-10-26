@@ -44,6 +44,8 @@
 
     <!-- Mapa (Feature 009): pines abiertos/cerrados y atribución -->
     <color name="mapa_pin_abierto">#00C853</color>
+    <!-- Fondo neutro del marcador: el emoji del lugar debe ser legible sobre el mapa -->
+    <color name="mapa_pin_fondo">#FFFFFFFF</color>
     <color name="mapa_pin_cerrado">#9E9E9E</color>
     <color name="mapa_atribucion_fondo">#99000000</color>
 

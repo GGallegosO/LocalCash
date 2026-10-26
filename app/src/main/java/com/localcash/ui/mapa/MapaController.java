@@ -2,7 +2,6 @@ package com.localcash.ui.mapa;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.os.Bundle;
@@ -334,7 +333,7 @@ public final class MapaController {
      * Dibuja el pin: círculo de color con borde blanco y el emoji centrado.
      *
      * @param emoji     emoji del lugar
-     * @param abierto   {@code true} para color activo; {@code false} para gris
+     * @param abierto   {@code true} para contorno activo; {@code false} para gris
      * @return bitmap cuadrado listo para MapLibre
      */
     @NonNull
@@ -346,15 +345,18 @@ public final class MapaController {
         Bitmap bitmap = Bitmap.createBitmap(tamano, tamano, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
 
+        // Fondo blanco: el emoji del tipo de lugar es el protagonista y conserva
+        // contraste sobre cualquier tono del mapa. El estado abierto/cerrado se
+        // sigue leyendo en el contorno (verde activo / gris atenuado).
         Paint relleno = new Paint(Paint.ANTI_ALIAS_FLAG);
-        relleno.setColor(ContextCompat.getColor(mapView.getContext(),
-                abierto ? R.color.mapa_pin_abierto : R.color.mapa_pin_cerrado));
+        relleno.setColor(ContextCompat.getColor(mapView.getContext(), R.color.mapa_pin_fondo));
         canvas.drawCircle(tamano / 2f, tamano / 2f, tamano / 2f - borde, relleno);
 
         Paint contorno = new Paint(Paint.ANTI_ALIAS_FLAG);
         contorno.setStyle(Paint.Style.STROKE);
         contorno.setStrokeWidth(borde);
-        contorno.setColor(Color.WHITE);
+        contorno.setColor(ContextCompat.getColor(mapView.getContext(),
+                abierto ? R.color.mapa_pin_abierto : R.color.mapa_pin_cerrado));
         canvas.drawCircle(tamano / 2f, tamano / 2f, tamano / 2f - borde / 2f, contorno);
 
         Paint texto = new Paint(Paint.ANTI_ALIAS_FLAG);
