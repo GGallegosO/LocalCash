@@ -286,4 +286,7 @@
     <string name="aGastoCompartido_sin_deudas">Sin deudas pendientes</string>
     <string name="aGastoCompartido_detalle_titulo">Deudas pendientes</string>
     <string name="aGastoCompartido_detalle_fila">%1$s\n%2$s · %3$s</string>
+    <string name="aGastoCompartido_cerrar">Cerrar</string>
+    <string name="aGastoCompartido_cancelar">Cancelar</string>
+    <string name="aGastoCompartido_buscar">Buscar contacto</string>
 </resources>

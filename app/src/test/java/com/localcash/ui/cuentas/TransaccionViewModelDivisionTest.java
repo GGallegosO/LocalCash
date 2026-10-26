@@ -40,10 +40,12 @@ public class TransaccionViewModelDivisionTest {
         EstadoReparto igual = vm.getEstadoReparto().getValue();
         assertNotNull(igual);
         assertTrue(igual.isValido());
-        assertEquals(3, igual.getNumeroPartes());
+        // N+1: usuario implícito + 3 contactos = 4 partes de 25.000.
+        assertEquals(4, igual.getNumeroPartes());
         assertEquals(100_000L, igual.getSumaParcial());
         assertEquals(ModoDivision.IGUAL, igual.getModo());
-        assertEquals(33_334L, igual.getPartes().get(0).getMontoAsignado());
+        assertEquals(25_000L, igual.getPartes().get(0).getMontoAsignado());
+        assertEquals(true, igual.getPartes().get(0).isDelUsuario());
 
         vm.setModoDivision(ModoDivision.PERSONALIZADA);
         vm.setMontoPersonalizado(1L, 30_000L);
@@ -62,6 +64,7 @@ public class TransaccionViewModelDivisionTest {
         assertTrue(cuadrado.isValido());
         assertEquals(100_000L, cuadrado.getSumaParcial());
         assertNull(cuadrado.getError());
+        // La personalizada no reparte con el usuario: 3 partes suman el total.
         assertEquals(3, vm.partesParaRegistrar().size());
     }
 

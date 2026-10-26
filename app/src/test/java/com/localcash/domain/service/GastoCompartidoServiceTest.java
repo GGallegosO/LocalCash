@@ -118,6 +118,35 @@ public class GastoCompartidoServiceTest {
     }
 
     // ---------------------------------------------------------------
+    // N+1 — usuario implícito + contactos
+    // ---------------------------------------------------------------
+
+    @Test
+    public void testRepartoConUsuarioDivideEntreNyMasUno() {
+        List<PartePropuesta> partes = GastoCompartidoService.dividirConUsuario(
+                100_000L, Arrays.asList(10L, 20L, 30L));
+
+        assertEquals(4, partes.size());
+        assertTrue(partes.get(0).isDelUsuario());
+        assertEquals(0L, partes.get(0).getContactoId());
+        assertEquals(25_000L, partes.get(0).getMontoAsignado());
+        for (int i = 1; i < partes.size(); i++) {
+            assertEquals(false, partes.get(i).isDelUsuario());
+            assertEquals(25_000L, partes.get(i).getMontoAsignado());
+        }
+        assertEquals(100_000L, sumar(partes));
+    }
+
+    @Test
+    public void testRepartoConUsuarioRechazaMontoMenorQueNyMasUno() {
+        BusinessRuleException excepcion = assertThrows(
+                BusinessRuleException.class,
+                () -> GastoCompartidoService.dividirConUsuario(3L, Arrays.asList(1L, 2L, 3L)));
+
+        assertEquals(ErrorCode.REPARTO_IGUAL_INSUFICIENTE, excepcion.getErrorCode());
+    }
+
+    // ---------------------------------------------------------------
     // CA-4 — monto insuficiente para un peso por contacto
     // ---------------------------------------------------------------
 

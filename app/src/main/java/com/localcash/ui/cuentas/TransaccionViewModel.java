@@ -284,7 +284,8 @@ public class TransaccionViewModel extends AndroidViewModel {
 
         if (modoDivision == ModoDivision.IGUAL) {
             try {
-                List<PartePropuesta> partes = GastoCompartidoService.dividirIgual(
+                // N+1: el usuario es un actor implícito y su parte nace pagada.
+                List<PartePropuesta> partes = GastoCompartidoService.dividirConUsuario(
                         montoTotal, contactosSeleccionados);
                 return EstadoReparto.validoCon(montoTotal, ModoDivision.IGUAL, partes);
             } catch (BusinessRuleException e) {

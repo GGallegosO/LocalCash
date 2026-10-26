@@ -18,15 +18,31 @@
         android:paddingEnd="24dp"
         android:paddingBottom="32dp">
 
-        <!-- Título del BottomSheet -->
-        <TextView
-            android:id="@+id/tvTituloTransaccion"
-            android:layout_width="wrap_content"
+        <!-- Título del BottomSheet + cierre -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            android:text="@string/aCuentas_transaccion_titulo"
-            android:textAppearance="?attr/textAppearanceTitleLarge"
-            android:textColor="?attr/colorOnSurface" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tvTituloTransaccion"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/aCuentas_transaccion_titulo"
+                android:textAppearance="?attr/textAppearanceTitleLarge"
+                android:textColor="?attr/colorOnSurface" />
+
+            <ImageButton
+                android:id="@+id/btnCerrar"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/aGastoCompartido_cerrar"
+                android:src="@drawable/ic_close" />
+        </LinearLayout>
 
         <!-- Toggle segmentado Ingreso / Egreso -->
         <com.google.android.material.button.MaterialButtonToggleGroup
@@ -136,13 +152,22 @@
                 android:textAppearance="?attr/textAppearanceBodyMedium"
                 android:textColor="?attr/colorOnSurfaceVariant" />
 
-            <!-- CheckBox por contacto de la agenda, añadido en código -->
-            <LinearLayout
-                android:id="@+id/contenedorContactos"
+            <SearchView
+                android:id="@+id/searchContactos"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:orientation="vertical" />
+                android:iconifiedByDefault="false"
+                android:queryHint="@string/aGastoCompartido_buscar" />
+
+            <!-- Chips seleccionables, uno por contacto de la agenda -->
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroupContactos"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                app:singleLine="false"
+                app:singleSelection="false" />
 
             <TextView
                 android:id="@+id/tvSinContactos"
@@ -215,13 +240,29 @@
             tools:text="Ubicación: -33.44890, -70.66930"
             tools:visibility="visible" />
 
-        <!-- Guardar movimiento -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnGuardarMovimiento"
+        <!-- Cancelar / Guardar movimiento -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:text="@string/aCuentas_transaccion_guardar" />
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCancelar"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/aGastoCompartido_cancelar" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnGuardarMovimiento"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:text="@string/aCuentas_transaccion_guardar" />
+        </LinearLayout>
 
     </LinearLayout>
 

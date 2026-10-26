@@ -107,11 +107,18 @@ public final class GastoCompartidoRepository {
 
         List<GastoCompartido> entidades = new ArrayList<>(partes.size());
         for (PartePropuesta parte : partes) {
-            entidades.add(new GastoCompartido(
+            if (parte.isDelUsuario()) {
+                // Actor implícito: no existe fila "Yo" en CONTACTOS
+                // (data-model.md §4.1), así que su parte no se persiste: el
+                // egreso completo ya es su gasto.
+                continue;
+            }
+            GastoCompartido entidad = new GastoCompartido(
                     transaccionId,
                     parte.getContactoId(),
                     parte.getMontoAsignado(),
-                    fechaCreacionIso));
+                    fechaCreacionIso);
+            entidades.add(entidad);
         }
         db.gastoCompartidoDao().insertTodas(entidades);
     }

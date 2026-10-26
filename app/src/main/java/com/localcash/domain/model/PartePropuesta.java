@@ -18,6 +18,9 @@ public final class PartePropuesta {
 
     private final long montoAsignado;
 
+    /** {@code true} si es la parte del usuario principal (actor implícito, N+1). */
+    private final boolean delUsuario;
+
     /**
      * Crea una parte propuesta.
      *
@@ -25,8 +28,20 @@ public final class PartePropuesta {
      * @param montoAsignado parte del egreso en pesos CLP (positiva)
      */
     public PartePropuesta(long contactoId, long montoAsignado) {
+        this(contactoId, montoAsignado, false);
+    }
+
+    /**
+     * Crea una parte propuesta.
+     *
+     * @param contactoId    id del contacto deudor ({@code 0} para el usuario)
+     * @param montoAsignado parte del egreso en pesos CLP (positiva)
+     * @param delUsuario    {@code true} si la paga el usuario principal
+     */
+    public PartePropuesta(long contactoId, long montoAsignado, boolean delUsuario) {
         this.contactoId = contactoId;
         this.montoAsignado = montoAsignado;
+        this.delUsuario = delUsuario;
     }
 
     public long getContactoId() {
@@ -37,10 +52,16 @@ public final class PartePropuesta {
         return montoAsignado;
     }
 
+    /** @return {@code true} si la parte corresponde al usuario principal */
+    public boolean isDelUsuario() {
+        return delUsuario;
+    }
+
     @Override
     public String toString() {
         return "PartePropuesta{contactoId=" + contactoId
                 + ", montoAsignado=" + montoAsignado
+                + ", delUsuario=" + delUsuario
                 + '}';
     }
 }

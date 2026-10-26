@@ -15,8 +15,8 @@ import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ArrayAdapter;
-import android.widget.CheckBox;
 import android.widget.LinearLayout;
+import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -37,6 +37,8 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.color.MaterialColors;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -1131,6 +1133,19 @@ public class CuentasActivity extends BaseActivity
             }
         });
 
+        sheetBinding.searchContactos.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                aplicarFiltroContactos(sheetBinding, newText);
+                return true;
+            }
+        });
+
         observadorEstadoReparto = estado -> aplicarEstadoReparto(sheetBinding, estado);
         transaccionViewModel.getEstadoReparto().observe(this, observadorEstadoReparto);
         transaccionViewModel.getDivisionVisible().observe(this, visible -> {
@@ -1162,24 +1177,24 @@ public class CuentasActivity extends BaseActivity
      * @param sheetBinding Binding del BottomSheet abierto
      */
     private void poblarSelectorContactos(@NonNull BottomSheetTransaccionBinding sheetBinding) {
-        LinearLayout contenedor = sheetBinding.contenedorContactos;
+        ChipGroup grupo = sheetBinding.chipGroupContactos;
         List<Long> seleccionActual = transaccionViewModel.getContactosSeleccionados();
-        contenedor.removeAllViews();
+        grupo.removeAllViews();
 
-        LayoutInflater inflater = LayoutInflater.from(contenedor.getContext());
         for (Contacto contacto : contactosAgenda) {
-            CheckBox casilla = (CheckBox) inflater.inflate(
-                    R.layout.item_contacto_seleccion, contenedor, false);
-            casilla.setText(contacto.getNombre());
-            casilla.setTag(Long.valueOf(contacto.getId()));
-            casilla.setChecked(seleccionActual.contains(contacto.getId()));
-            casilla.setOnCheckedChangeListener((boton, marcado) ->
+            Chip chip = new Chip(grupo.getContext());
+            chip.setText(contacto.getNombre());
+            chip.setCheckable(true);
+            chip.setTag(Long.valueOf(contacto.getId()));
+            chip.setChecked(seleccionActual.contains(contacto.getId()));
+            chip.setOnCheckedChangeListener((boton, marcado) ->
                     actualizarSeleccionContactos(sheetBinding));
-            contenedor.addView(casilla);
+            grupo.addView(chip);
         }
 
         sheetBinding.tvSinContactos.setVisibility(
                 contactosAgenda.isEmpty() ? View.VISIBLE : View.GONE);
+        aplicarFiltroContactos(sheetBinding, sheetBinding.searchContactos.getQuery().toString());
     }
 
     /**
@@ -1190,16 +1205,37 @@ public class CuentasActivity extends BaseActivity
     private void actualizarSeleccionContactos(
             @NonNull BottomSheetTransaccionBinding sheetBinding) {
         List<Long> seleccion = new ArrayList<>();
-        LinearLayout contenedor = sheetBinding.contenedorContactos;
-        for (int i = 0; i < contenedor.getChildCount(); i++) {
-            View hijo = contenedor.getChildAt(i);
-            if (hijo instanceof CheckBox && ((CheckBox) hijo).isChecked()
+        ChipGroup grupo = sheetBinding.chipGroupContactos;
+        for (int i = 0; i < grupo.getChildCount(); i++) {
+            View hijo = grupo.getChildAt(i);
+            if (hijo instanceof Chip && ((Chip) hijo).isChecked()
                     && hijo.getTag() instanceof Long) {
                 seleccion.add((Long) hijo.getTag());
             }
         }
         transaccionViewModel.setContactosSeleccionados(seleccion);
         reconstruirFilasParte(sheetBinding);
+    }
+
+    /**
+     * Oculta los chips que no coinciden con el texto del buscador.
+     *
+     * @param sheetBinding Binding del BottomSheet abierto
+     * @param texto        consulta del {@code SearchView}
+     */
+    private void aplicarFiltroContactos(@NonNull BottomSheetTransaccionBinding sheetBinding,
+                                        @Nullable String texto) {
+        String consulta = texto == null ? "" : texto.trim().toLowerCase(Locale.getDefault());
+        ChipGroup grupo = sheetBinding.chipGroupContactos;
+        for (int i = 0; i < grupo.getChildCount(); i++) {
+            View hijo = grupo.getChildAt(i);
+            if (!(hijo instanceof Chip)) {
+                continue;
+            }
+            String nombre = ((Chip) hijo).getText().toString().toLowerCase(Locale.getDefault());
+            hijo.setVisibility(consulta.isEmpty() || nombre.contains(consulta)
+                    ? View.VISIBLE : View.GONE);
+        }
     }
 
     /**
@@ -1430,6 +1466,8 @@ public class CuentasActivity extends BaseActivity
         poblarSpinnerCuentas(sheetBinding);
         configurarConceptosPredefinidos(sheetBinding);
         configurarDivision(sheetBinding);
+        sheetBinding.btnCerrar.setOnClickListener(v -> sheetDialog.dismiss());
+        sheetBinding.btnCancelar.setOnClickListener(v -> sheetDialog.dismiss());
 
         sheetBinding.spinnerCuentas.setOnItemClickListener((parent, view, position, id) -> {
             if (position >= 0 && position < cuentasSpinner.size()) {
@@ -1664,7 +1702,7 @@ public class CuentasActivity extends BaseActivity
         actualizandoCheckCompartido = false;
         sheetBinding.rgModoDivision.setOnCheckedChangeListener(null);
         sheetBinding.rbIgual.setChecked(true);
-        sheetBinding.contenedorContactos.removeAllViews();
+        sheetBinding.chipGroupContactos.removeAllViews();
         sheetBinding.contenedorPartes.removeAllViews();
         sheetBinding.tvSumaEnVivo.setText("");
         firmaFilasParte = "";

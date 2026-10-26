@@ -113,6 +113,48 @@ public final class GastoCompartidoService {
     }
 
     /**
+     * Divide el egreso entre el <b>usuario principal y sus N contactos</b>
+     * (N+1 partes), sin que el usuario exista como fila en la agenda.
+     * <p>
+     * La primera parte del resultado es la del usuario ({@code contactoId = 0},
+     * {@link PartePropuesta#isDelUsuario()} = {@code true}) y se persiste como
+     * {@code pagado}; el resto son los contactos, {@code pendientes}. Las
+     * primeras partes de la lista reciben el residuo de a 1 CLP, igual que
+     * {@link #dividirIgual}.
+     * </p>
+     *
+     * @param montoTotal   importe del egreso en pesos CLP
+     * @param contactosIds contactos que participan
+     * @return partes del usuario + contactos, en ese orden
+     * @throws BusinessRuleException con los códigos de {@link #validarReparto},
+     *                               o {@link ErrorCode#REPARTO_IGUAL_INSUFICIENTE}
+     *                               si el monto no alcanza para N+1 partes
+     */
+    public static List<PartePropuesta> dividirConUsuario(long montoTotal,
+                                                         List<Long> contactosIds) {
+        validarReparto(montoTotal, contactosIds);
+
+        int partes = contactosIds.size() + 1;
+        if (montoTotal < partes) {
+            throw new BusinessRuleException(
+                    ErrorCode.REPARTO_IGUAL_INSUFICIENTE,
+                    "El monto " + montoTotal + " no alcanza para " + partes + " partes");
+        }
+
+        long base = montoTotal / partes;
+        long residuo = montoTotal % partes;
+
+        List<PartePropuesta> resultado = new ArrayList<>(partes);
+        resultado.add(new PartePropuesta(0L,
+                base + (residuo > 0 ? 1L : 0L), true));
+        for (int i = 0; i < contactosIds.size(); i++) {
+            long monto = base + (i + 1 < residuo ? 1L : 0L);
+            resultado.add(new PartePropuesta(contactosIds.get(i), monto));
+        }
+        return resultado;
+    }
+
+    /**
      * Valida una división personalizada: montos positivos, un contacto a lo
      * sumo una vez y suma exacta del total (INV-2).
      *
