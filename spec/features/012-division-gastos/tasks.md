@@ -243,22 +243,44 @@
 
 ## Fase 4 — Interfaz
 
-- [ ] **T11. Checkbox "Compartido" + selector de contactos en el formulario de egreso.**
+- [x] **T11. Checkbox "Compartido" + selector de contactos en el formulario de egreso.**
       En `ui/cuentas` (formulario de `CuentasActivity`/`TransaccionViewModel`): marcar el egreso como
       compartido y elegir uno o más contactos de la agenda (Feature 011). Sin selector de contactos el
       registro compartido se rechaza con `GASTO_SIN_CONTACTOS` (dominio, no UI).
       *Criterio de salida:* en emulador se eligen contactos para un egreso; cancelar la selección no
       registra nada.
       Responsable: Agente SDD | Estimación: 60 min
+      *Cierre (2026-10-26):* el bloque vive dentro de `bottom_sheet_transaccion.xml` (el formulario real
+      de la app es un BottomSheet, no un `dialog_transaccion.xml`): `chkCompartido`,
+      `layoutDivision` oculto por defecto, `contenedorContactos` con un `CheckBox` por contacto de la
+      agenda (`item_contacto_seleccion.xml`, selección múltiple), `tvSinContactos` cuando la agenda está
+      vacía, y observadores de `getDivisionVisible()`/`getEstadoReparto()` del ViewModel que muestran u
+      ocultan el bloque. El checkbox se **deshabilita y desmarca** cuando el tipo elegido es Ingreso.
+      `registrarMovimiento` pregunta al ViewModel (`isCompartido`/`validarReparto`/
+      `partesParaRegistrar`) y solo entonces llama al registro con las partes. Sin adb disponible en
+      este entorno: la verificación en emulador queda pendiente y se marca en T16; lo que sí está
+      cubierto por tests es el estado del reparto (`TransaccionViewModelDivisionTest`, 2 tests JVM con
+      Robolectric).
 
-- [ ] **T12. Radios "Partes iguales" / "Montos personalizados" con suma en vivo.**
+- [x] **T12. Radios "Partes iguales" / "Montos personalizados" con suma en vivo.**
       Layouts `dialog_division_gastos.xml`, `item_parte_gasto.xml`: modo de división, fila por contacto
       (monto editable solo en personalizada), suma de partes vs total visible en vivo; "Registrar"
       solo se habilita cuando `GastoCompartidoService` (T5) aprueba el reparto. La UI solo orquesta:
       ningún cálculo de reparto ni regla en la Activity.
       *Criterio de salida:* CA-3 y CA-5 verificables a mano: residuo repartido de a 1 CLP; botón
-      bloqueado mientras la suma no cuadre.
+      bloqueado mientras la suma no cuadra.
       Responsable: Agente SDD | Estimación: 60 min
+      *Cierre (2026-10-26):* `rgModoDivision` con `rbIgual`/`rbPersonalizado`; `contenedorPartes` se
+      reconstruye solo cuando cambia la firma (modo + contactos) para no robar el foco del teclado, con
+      `item_parte_gasto.xml` (EditText con `TextWatcher` en personalizada; monto de solo lectura en
+      iguales, donde se ve el residuo de a 1 CLP). `tvSumaEnVivo` muestra "Suma de las partes: X de Y ·
+      N partes" en verde (`?attr/colorPrimary`) o rojo (`?attr/colorError`) más el motivo del rechazo, y
+      `btnGuardarMovimiento` se deshabilita mientras el dominio no aprueba. La suma y la validez salen de
+      `EstadoReparto`, calculado por el ViewModel con `GastoCompartidoService` — la Activity no hace
+      aritmética. Nuevos archivos de dominio de apoyo: `ModoDivision` y `EstadoReparto`. Strings en
+      español `aGastoCompartido_*`. Verificación: `assembleDebug` OK, `lint` con **las mismas 120
+      advertencias baseline** (la primera versión del string de suma activaba `PluralsCandidate`; se
+      reescribió), `testDebugUnitTest` en verde (113 tests, 2 nuevos de estado de reparto).
 
 - [ ] **T13. Resumen de deudas + detalle de contacto con historial de partes en `ui/contactos`.**
       Sección "Resumen de deudas" (Σ pendientes por contacto, orden descendente, layout

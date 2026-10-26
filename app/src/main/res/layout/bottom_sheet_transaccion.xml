@@ -108,10 +108,98 @@
 
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- Gasto compartido (Feature 012): solo aplica a egresos. El bloque de
+             división permanece oculto hasta que el usuario marca el checkbox.
+             Todos los cálculos de reparto los hace el ViewModel con
+             GastoCompartidoService; esta vista solo orquesta. -->
+        <CheckBox
+            android:id="@+id/chkCompartido"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/aGastoCompartido_compartido" />
+
+        <LinearLayout
+            android:id="@+id/layoutDivision"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="vertical"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <TextView
+                android:id="@+id/tvTituloContactos"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/aGastoCompartido_contactos_titulo"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
+                android:textColor="?attr/colorOnSurfaceVariant" />
+
+            <!-- CheckBox por contacto de la agenda, añadido en código -->
+            <LinearLayout
+                android:id="@+id/contenedorContactos"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:orientation="vertical" />
+
+            <TextView
+                android:id="@+id/tvSinContactos"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/aGastoCompartido_sin_contactos"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <RadioGroup
+                android:id="@+id/rgModoDivision"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="vertical">
+
+                <RadioButton
+                    android:id="@+id/rbIgual"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:text="@string/aGastoCompartido_modo_igual" />
+
+                <RadioButton
+                    android:id="@+id/rbPersonalizado"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/aGastoCompartido_modo_personalizado" />
+
+            </RadioGroup>
+
+            <!-- Fila por contacto con monto editable (modo personalizado) -->
+            <LinearLayout
+                android:id="@+id/contenedorPartes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="vertical"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <TextView
+                android:id="@+id/tvSumaEnVivo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
+                tools:text="Suma de las partes: 100.000 de 100.000" />
+
+        </LinearLayout>
+
         <!-- Geolocalización: el interruptor abre el mapa de selección (Feature 009) -->
         <com.google.android.material.materialswitch.MaterialSwitch
-            android:id="@+id/switchGeolocalizacion"
-            android:layout_width="match_parent"
+            android:id="@+id/switchGeolocalizacion"            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:text="@string/aCuentas_transaccion_geolocalizacion" />

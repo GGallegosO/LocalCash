@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fila de selección de un contacto para el reparto (Feature 012, T11).
+     La raíz es el propio CheckBox: la Activity la infla y le pone el nombre. -->
+<CheckBox xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/chkContacto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:textAppearance="?attr/textAppearanceBodyMedium"
+    tools:text="Juan Pérez" />

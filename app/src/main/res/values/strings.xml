@@ -266,4 +266,20 @@
     <string name="aMapa_toast_lugar_eliminado">Lugar eliminado</string>
     <string name="aMapa_toast_mover_hint">Mantén presionado el mapa para mover el pin</string>
     <string name="aMapa_toast_lugar_movido">Pin movido</string>
+
+    <!-- Feature 012: división de gastos compartidos -->
+    <string name="aGastoCompartido_compartido">Compartido</string>
+    <string name="aGastoCompartido_contactos_titulo">¿Con quién lo compartes?</string>
+    <string name="aGastoCompartido_sin_contactos">No hay contactos en tu agenda. Agrégalos primero en Contactos.</string>
+    <string name="aGastoCompartido_modo_igual">Partes iguales</string>
+    <string name="aGastoCompartido_modo_personalizado">Montos personalizados</string>
+    <string name="aGastoCompartido_monto_parte_hint">Monto</string>
+    <string name="aGastoCompartido_suma_en_vivo">Suma de las partes: %1$s de %2$s</string>
+    <string name="aGastoCompartido_toast_sin_contactos">Debes elegir al menos un contacto</string>
+    <string name="aGastoCompartido_toast_reparto_no_cuadra">La suma de las partes debe igualar el monto del egreso</string>
+    <string name="aGastoCompartido_toast_reparto_insuficiente">El monto no alcanza para dar al menos 1 peso a cada contacto</string>
+    <string name="aGastoCompartido_toast_monto_parte_invalido">Cada parte debe ser un monto positivo</string>
+    <string name="aGastoCompartido_toast_contacto_duplicado">Un contacto no puede tener dos partes en el mismo egreso</string>
+    <string name="aGastoCompartido_toast_monto_invalido">Ingresa un monto válido antes de compartir el egreso</string>
+    <string name="aGastoCompartido_toast_reparto_error">No se pudo compartir el egreso</string>
 </resources>

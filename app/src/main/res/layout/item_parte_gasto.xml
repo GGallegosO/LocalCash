@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fila de monto por contacto en la división personalizada (Feature 012, T12).
+     La suma y la validez las calcula el ViewModel con GastoCompartidoService;
+     este layout solo captura el importe en pesos CLP. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <TextView
+        android:id="@+id/tvNombreContacto"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textAppearance="?attr/textAppearanceBodyMedium"
+        android:textColor="?attr/colorOnSurface"
+        tools:text="Juan Pérez" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/inputLayoutMontoParte"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:hint="@string/aGastoCompartido_monto_parte_hint">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/inputMontoParte"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            tools:text="30000" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+</LinearLayout>

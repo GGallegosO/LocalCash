@@ -25,8 +25,12 @@
 | `domain/error/ErrorCode.java` | Nuevos códigos de error de negocio | MODIFICAR | BAJA |
 | `ui/cuentas/TransaccionViewModel.java` | Extender `registrarTransaccion` con partes compartidas y cobro atómico | MODIFICAR | ALTA |
 | `ui/cuentas/CuentasActivity.java` | Formulario de egreso: checkbox "Compartido", selector de contactos, modo de división, suma en vivo | MODIFICAR | ALTA |
-| `res/layout/dialog_division_gastos.xml` | Layout del bloque de división (modo + filas de partes) | CREAR | BAJA |
-| `res/layout/item_parte_gasto.xml` | Fila: contacto + monto asignado editable/etiqueta de estado | CREAR | BAJA |
+| `res/layout/bottom_sheet_transaccion.xml` | Formulario existente del egreso: checkbox "Compartido" + bloque `layoutDivision` (selector de contactos, radios, filas de monto, suma en vivo) | MODIFICAR (corregido en T9: el bloque vive dentro de la hoja existente en lugar de un `dialog_division_gastos.xml` aparte) | MEDIA |
+| `res/layout/item_contacto_seleccion.xml` | Fila `CheckBox` de un contacto para la selección múltiple del reparto | CREAR | BAJA |
+| `res/layout/item_parte_gasto.xml` | Fila: contacto + monto asignado editable (personalizada) o de solo lectura (iguales) | CREAR | BAJA |
+| `domain/model/ModoDivision.java` | Enum de modo de división (estado de pantalla, no columna) | CREAR | BAJA |
+| `domain/model/EstadoReparto.java` | Valor inmutable del reparto en vivo: total, suma, partes, validez y `ErrorCode` | CREAR | BAJA |
+| `test/ui/cuentas/TransaccionViewModelDivisionTest.java` | Tests JVM del estado de reparto del ViewModel (suma en vivo, modos, reinicio) | CREAR | MEDIA |
 | `ui/contactos/ContactosViewModel.java` | Resumen de deudas (Σ pendientes por contacto) + marcar parte pagada | MODIFICAR | MEDIA |
 | `ui/contactos/ContactosActivity.java` | Sección "Resumen de deudas" en la lista; detalle/historial por contacto con acción "Marcar pagada" (cierra CA-9/CA-10 heredados de 011) | MODIFICAR | ALTA |
 | `res/layout/item_resumen_deuda.xml` | Fila del resumen: contacto + total que debe | CREAR | BAJA |
