@@ -43,60 +43,55 @@ public class ContactosViewModel extends ViewModel {
     }
 
     /**
-     * Agrega un contacto. Valida antes de persistir.
+     * Agrega un contacto. Valida nombre y duplicados en el hilo de escritura
+     * (Room no permite consultas síncronas en el hilo principal).
      */
     public void agregarContacto(Contacto contactoDominio) {
         resultado.postValue(null);
-
-        boolean telefonoDuplicado = db.contactoDao().existeTelefono(
-                contactoDominio.getTelefono() != null ? contactoDominio.getTelefono() : "") > 0;
-        boolean emailDuplicado = db.contactoDao().existeEmail(
-                contactoDominio.getEmail() != null ? contactoDominio.getEmail() : "") > 0;
-
-        try {
-            ContactoService.validarContacto(contactoDominio, telefonoDuplicado, emailDuplicado);
-        } catch (BusinessRuleException e) {
-            resultado.postValue(e.getErrorCode());
-            return;
-        }
-
         db.getExecutor().execute(() -> {
-            long id = db.contactoDao().insert(contactoDominio.toEntity());
-            if (id > 0) {
-                resultado.postValue(null);
-            } else {
-                resultado.postValue(ErrorCode.CONTACTO_NOMBRE_VACIO);
+            try {
+                boolean telefonoDuplicado = db.contactoDao().existeTelefono(
+                        contactoDominio.getTelefono() != null
+                                ? contactoDominio.getTelefono() : "") > 0;
+                boolean emailDuplicado = db.contactoDao().existeEmail(
+                        contactoDominio.getEmail() != null
+                                ? contactoDominio.getEmail() : "") > 0;
+                ContactoService.validarContacto(
+                        contactoDominio, telefonoDuplicado, emailDuplicado);
+
+                long id = db.contactoDao().insert(contactoDominio.toEntity());
+                if (id > 0) {
+                    resultado.postValue(null);
+                } else {
+                    resultado.postValue(ErrorCode.CONTACTO_NOMBRE_VACIO);
+                }
+            } catch (BusinessRuleException e) {
+                resultado.postValue(e.getErrorCode());
             }
         });
     }
 
     /**
-     * Actualiza un contacto existente.
+     * Actualiza un contacto existente. Valida en el hilo de escritura.
      */
     public void actualizarContacto(Contacto contactoDominio) {
         resultado.postValue(null);
-
-        boolean telefonoDuplicado = false;
-        boolean emailDuplicado = false;
-        if (contactoDominio.getTelefono() != null) {
-            telefonoDuplicado = db.contactoDao().existeTelefono(
-                    contactoDominio.getTelefono()) > 0;
-        }
-        if (contactoDominio.getEmail() != null) {
-            emailDuplicado = db.contactoDao().existeEmail(
-                    contactoDominio.getEmail()) > 0;
-        }
-
-        try {
-            ContactoService.validarContacto(contactoDominio, telefonoDuplicado, emailDuplicado);
-        } catch (BusinessRuleException e) {
-            resultado.postValue(e.getErrorCode());
-            return;
-        }
-
         db.getExecutor().execute(() -> {
-            db.contactoDao().update(contactoDominio.toEntity());
-            resultado.postValue(null);
+            try {
+                boolean telefonoDuplicado = db.contactoDao().existeTelefono(
+                        contactoDominio.getTelefono() != null
+                                ? contactoDominio.getTelefono() : "") > 0;
+                boolean emailDuplicado = db.contactoDao().existeEmail(
+                        contactoDominio.getEmail() != null
+                                ? contactoDominio.getEmail() : "") > 0;
+                ContactoService.validarContacto(
+                        contactoDominio, telefonoDuplicado, emailDuplicado);
+
+                db.contactoDao().update(contactoDominio.toEntity());
+                resultado.postValue(null);
+            } catch (BusinessRuleException e) {
+                resultado.postValue(e.getErrorCode());
+            }
         });
     }
 

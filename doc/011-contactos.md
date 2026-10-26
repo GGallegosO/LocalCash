@@ -29,6 +29,7 @@
 3. **Unicidad case-insensitive**: índices `COLLATE NOCASE` + verificación en DAO con `lower(trim())` para devolver error de negocio amigable.
 4. **Borrado con RESTRICT**: SQLite rechaza eliminar contacto con compras asociadas; la UI muestra `CONTACTO_EN_USO`.
 5. **Room 2.6.1 sin `ColumnInfo.Collate.NOCASE`**: se maneja el collation en la migración SQL directa de `MIGRATION_3_4`.
+6. **Bug del hilo principal (corregido)**: `ContactosViewModel.agregarContacto`/`actualizarContacto` consultaban `existeTelefono`/`existeEmail` en el hilo principal de la UI, y Room lanza `IllegalStateException: Cannot access database on the main thread` en producción. Se movió toda la validación (incluida la unicidad) dentro del executor de escritura de `AppDatabase`; se verificó en emulador que el insert ahora persiste.
 
 ## Verificación
 
