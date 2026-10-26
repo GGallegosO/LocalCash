@@ -1346,7 +1346,8 @@ public class CuentasActivity extends BaseActivity
                 CurrencyFormatter.format(estado.getSumaParcial()),
                 CurrencyFormatter.format(estado.getMontoTotal()));
         if (estado.getNumeroPartes() > 0) {
-            texto = texto + " · " + estado.getNumeroPartes() + " partes";
+            texto = texto + " · " + getString(
+                    R.string.aGastoCompartido_partes, estado.getNumeroPartes());
         }
         if (estado.getParteUsuario() > 0L) {
             texto = texto + " · " + getString(R.string.aGastoCompartido_tu_parte,
