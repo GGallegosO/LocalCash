@@ -79,8 +79,8 @@ public interface GastoCompartidoDao {
     GastoCompartido getByIdSync(long parteId);
 
     /**
-     * Obtiene las partes que un contacto todavía debe, de la más reciente a la
-     * más antigua. Alimenta el detalle del contacto (Feature 012).
+     * Obtiene las partes que un contacto todavía debe, de mayor a menor monto
+     * (Feature 012).
      *
      * @param contactoId id del contacto deudor
      * @return lista de partes pendientes; vacía si no debe nada
@@ -88,7 +88,7 @@ public interface GastoCompartidoDao {
     @Query("SELECT * FROM " + TABLE_NAME
             + " WHERE contacto_id = :contactoId AND estado = '"
             + GastoCompartido.ESTADO_PENDIENTE + "'"
-            + " ORDER BY fecha_creacion DESC, id DESC")
+            + " ORDER BY monto_asignado DESC, id DESC")
     List<GastoCompartido> getPendientesPorContacto(long contactoId);
 
     /**
