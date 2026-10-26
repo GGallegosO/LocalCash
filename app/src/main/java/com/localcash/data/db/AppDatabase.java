@@ -11,11 +11,13 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
 
 import com.localcash.data.dao.ContactoDao;
 import com.localcash.data.dao.CuentaDao;
+import com.localcash.data.dao.GastoCompartidoDao;
 import com.localcash.data.dao.ItemLugarDao;
 import com.localcash.data.dao.LugarDao;
 import com.localcash.data.dao.TransaccionDao;
 import com.localcash.data.entities.Contacto;
 import com.localcash.data.entities.Cuenta;
+import com.localcash.data.entities.GastoCompartido;
 import com.localcash.data.entities.ItemLugar;
 import com.localcash.data.entities.Lugar;
 import com.localcash.data.entities.Transaccion;
@@ -40,8 +42,9 @@ import java.util.concurrent.Executors;
  * </p>
  */
 @Database(
-        entities = {Cuenta.class, Transaccion.class, Lugar.class, ItemLugar.class, Contacto.class},
-        version = 4,
+        entities = {Cuenta.class, Transaccion.class, Lugar.class, ItemLugar.class, Contacto.class,
+                GastoCompartido.class},
+        version = 5,
         exportSchema = true
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -152,6 +155,49 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    /**
+     * Migración no destructiva 4 → 5 (Feature 012 - División de gastos):
+     * <ul>
+     *   <li>crea {@code GASTOS_COMPARTIDOS}: la parte de un egreso que debe
+     *       cada contacto, con estado {@code pendiente}/{@code pagado} y
+     *       fechas ISO-8601 ({@code data-model.md} §3.11);</li>
+     *   <li>índice único {@code (transaccion_id, contacto_id)} —un contacto a
+     *       lo sumo una vez por egreso, y columna izquierda para las consultas
+     *       por egreso— e índice {@code (contacto_id, estado)} para el resumen
+     *       "me deben".</li>
+     * </ul>
+     * No se usa {@code DROP TABLE} ni {@code fallbackToDestructiveMigration()}
+     * ({@code .agent.md} §6.11). La tabla nueva nace vacía; ninguna fila
+     * existente se toca. Las claves foráneas replican el DDL canónico
+     * ({@code CASCADE} con el egreso, {@code RESTRICT} con el contacto).
+     */
+    public static final Migration MIGRATION_4_5 = new Migration(4, 5) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `GASTOS_COMPARTIDOS` ("
+                            + "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, "
+                            + "`transaccion_id` INTEGER NOT NULL, "
+                            + "`contacto_id` INTEGER NOT NULL, "
+                            + "`monto_asignado` INTEGER NOT NULL, "
+                            + "`estado` TEXT NOT NULL, "
+                            + "`fecha_creacion` TEXT NOT NULL, "
+                            + "`fecha_pago` TEXT, "
+                            + "FOREIGN KEY(`transaccion_id`) REFERENCES `transacciones`(`id`) "
+                            + "ON UPDATE CASCADE ON DELETE CASCADE, "
+                            + "FOREIGN KEY(`contacto_id`) REFERENCES `CONTACTOS`(`id`) "
+                            + "ON UPDATE CASCADE ON DELETE RESTRICT)");
+
+            database.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS "
+                            + "`ux_gastos_compartidos_transaccion_contacto` "
+                            + "ON `GASTOS_COMPARTIDOS` (`transaccion_id`, `contacto_id`)");
+            database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `idx_gastos_compartidos_contacto_estado` "
+                            + "ON `GASTOS_COMPARTIDOS` (`contacto_id`, `estado`)");
+        }
+    };
+
     /** Instante única (double-checked locking). volatile: publicación segura entre hilos. */
     private static volatile AppDatabase instance;
 
@@ -179,7 +225,8 @@ public abstract class AppDatabase extends RoomDatabase {
                                     DATABASE_NAME
                             )
                             // fallbackToDestructiveMigration() PROHIBIDO (.agent.md §6.11)
-                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4,
+                                    MIGRATION_4_5)
                             .addCallback(new SeedDataInitializer())
                             .build();
                 }
@@ -211,5 +258,8 @@ public abstract class AppDatabase extends RoomDatabase {
 
     /** Expone el DAO de contactos. */
     public abstract ContactoDao contactoDao();
+
+    /** Expone el DAO de las partes de egresos compartidos (Feature 012). */
+    public abstract GastoCompartidoDao gastoCompartidoDao();
 
 }

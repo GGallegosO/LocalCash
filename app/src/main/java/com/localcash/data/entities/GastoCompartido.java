@@ -43,12 +43,14 @@ import androidx.room.PrimaryKey;
                         entity = Transaccion.class,
                         parentColumns = "id",
                         childColumns = "transaccion_id",
+                        onUpdate = ForeignKey.CASCADE,
                         onDelete = ForeignKey.CASCADE
                 ),
                 @ForeignKey(
                         entity = Contacto.class,
                         parentColumns = "id",
                         childColumns = "contacto_id",
+                        onUpdate = ForeignKey.CASCADE,
                         onDelete = ForeignKey.RESTRICT
                 )
         },

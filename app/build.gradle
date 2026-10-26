@@ -51,6 +51,14 @@ android {
             }
         }
     }
+    sourceSets {
+        // Schemas exportados de Room como assets del build de desarrollo:
+        // MigrationTestHelper los lee desde <db.class.canonicalName>/<version>.json.
+        // Solo aplica a debug (APK de desarrollo); release no los empaqueta.
+        debug {
+            assets.srcDirs += files("$projectDir/schemas".toString())
+        }
+    }
 }
 
 dependencies {

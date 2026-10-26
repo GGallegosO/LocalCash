@@ -540,14 +540,16 @@ persona y un importe, no es un dato derivable que se pueda recalcular sin contex
   registrarse). Cobrar una parte inserta un ingreso "Devolución gasto compartido" y suma el monto con
   aritmética atómica, todo en una transacción (I-16 y §4.2).
 
-> **Estado previsto (Feature 012, Room v5).** Room no expresa `CHECK` en `@Entity`, así que el esquema
-> real no los incluirá: la coherencia `estado` ↔ `fecha_pago`, el monto positivo y la unicidad del
-> contacto por egreso se validan en `GastoCompartidoService`/repositorio con tests propios. **Los dos
-> índices llevan nombre explícito en la anotación `@Index(name = ...)`**, idéntico al de este
-> documento (`ux_gastos_compartidos_transaccion_contacto` e
-> `idx_gastos_compartidos_contacto_estado`), para que la migración los reproduzca sin traducción de
-> nombres. El DDL de este documento sigue siendo la referencia ejecutable para `sqlite3`. La migración
-> Room `4 → 5` materializa esta revisión y el archivo queda en `user_version = 5`.
+> **Estado previsto (Feature 012, Room v5).** Room no expresa `CHECK` **ni `DEFAULT`** en `@Entity`, así
+> que el esquema real del archivo no los incluirá: la coherencia `estado` ↔ `fecha_pago`, el monto
+> positivo y la unicidad del contacto por egreso se validan en `GastoCompartidoService`/repositorio con
+> tests propios (el estado siempre se escribe explícito al insertar). **Los dos índices llevan nombre
+> explícito en la anotación `@Index(name = ...)`**, idéntico al de este documento
+> (`ux_gastos_compartidos_transaccion_contacto` e `idx_gastos_compartidos_contacto_estado`), para que la
+> migración los reproduzca sin traducción de nombres. Las claves foráneas del archivo conservan
+> `ON UPDATE CASCADE` y `ON DELETE CASCADE`/`RESTRICT` del DDL canónico. El DDL de este documento sigue
+> siendo la referencia ejecutable para `sqlite3`. La migración Room `4 → 5` materializa esta revisión y
+> el archivo queda en `user_version = 5`.
 
 ### 3.12 Índices y plan de consultas
 

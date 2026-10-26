@@ -89,13 +89,32 @@
       ajustado: los índices se declaran con nombre explícito en `@Index`, no con el nombre automático
       de Room.
 
-- [ ] **T4. Agregar migración Room 4 → 5 en `AppDatabase`.**
+- [x] **T4. Agregar migración Room 4 → 5 en `AppDatabase`.**
       Entidad + DAO en la base, `version = 5`, `MIGRATION_4_5` que replica el DDL sincronizado de T2
       (`CREATE TABLE IF NOT EXISTS` + `CREATE INDEX`; sin `DROP TABLE` ni
       `fallbackToDestructiveMigration()`), `gastoCompartidoDao()`.
       *Criterio de salida:* `MigrationTestHelper` siembra v4, migra a v5, verifica `user_version = 5`
       y `PRAGMA foreign_key_check` limpio.
       Responsable: Agente SDD | Estimación: 60 min
+      *Cierre (2026-10-26):* `AppDatabase` en **versión 5** con `GastoCompartido.class` en `entities`,
+      `gastoCompartidoDao()` y `MIGRATION_4_5` (tabla + 2 índices, sin `DROP TABLE` ni
+      `fallbackToDestructiveMigration()`; añadida a `addMigrations`). Room exporta
+      `app/schemas/com.localcash.data.db.AppDatabase/5.json`, cuyo `createSql` coincide con el DDL
+      canónico (columnas, `ON UPDATE CASCADE` y `ON DELETE CASCADE`/`RESTRICT`; se agregó
+      `onUpdate = CASCADE` a los `@ForeignKey` de la entidad para no divergir). Nuevo test
+      `MigracionV4V5Test` con **`MigrationTestHelper`**: crea v4 desde `4.json`, siembra cuenta/egreso/
+      2 contactos, migra y valida contra `5.json`, y comprueba tabla+índices, **`user_version = 5`**,
+      datos intactos, único `(transaccion_id, contacto_id)` que rechaza repetir contacto, `RESTRICT` al
+      borrar contacto con parte, `CASCADE` al borrar el egreso y `PRAGMA foreign_key_check` limpio.
+      **Decisión de andamiaje:** los schemas se exponen como assets **solo del build debug**
+      (`sourceSets.debug.assets` en `app/build.gradle`), porque en tests JVM Robolectric solo lee los
+      assets fusionados de la app y `sourceSets.test.assets` no llega a `android_merged_assets`
+      (verificado: `FileNotFoundException`); la alternativa era empaquetar los JSON en `main`, lo que
+      los metería en release. **Impacto colateral corregido:** `MigracionV2V3Test` apuntaba al builder
+      sin `MIGRATION_4_5` y esperaba `user_version = 4`; se actualizó al tramo completo y a la versión
+      5 (sin cambiar lo que prueba del 2 → 3). Verificación: `compileDebugJavaWithJavac` OK,
+      `testDebugUnitTest` **90 tests en verde**, `lint` sin advertencias nuevas (120 baseline) y
+      `assembleDebug` OK.
 
 ## Fase 3 — Dominio (núcleo de negocio)
 
