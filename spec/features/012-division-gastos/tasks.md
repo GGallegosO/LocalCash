@@ -60,7 +60,7 @@
 
 ## Fase 2 — Persistencia
 
-- [ ] **T3. Crear entidad Room `GastoCompartido` y DAO `GastoCompartidoDao`.**
+- [x] **T3. Crear entidad Room `GastoCompartido` y DAO `GastoCompartidoDao`.**
       `data/entities/GastoCompartido.java` (tabla `GASTOS_COMPARTIDOS`, índices
       `ux..._transaccion_contacto` único y `idx..._contacto_estado`; sin índice aislado sobre
       `transaccion_id`, cubierto por el único — ver `plan.md` Decisión 6 corregida en T2).
@@ -71,6 +71,23 @@
       *Criterio de salida:* compila; cero advertencias de linter; el DAO no expone write de `estado`
       distinto de `marcarPagada` (INV-3).
       Responsable: Agente SDD | Estimación: 60 min
+      *Cierre (2026-10-26):* creados `data/entities/GastoCompartido.java` (7 campos, FK
+      `CASCADE` a `transacciones` / `RESTRICT` a `CONTACTOS`, constantes `ESTADO_PENDIENTE`/
+      `ESTADO_PAGADO`, **solo 2 índices** con nombre explícito igual al DDL canónico),
+      `data/dao/GastoCompartidoDao.java` (`TABLE_NAME`, `insertTodas`, `getByTransaccion`,
+      `getPendientesPorContacto`, `resumenDeudasPorContacto()` global y por contacto,
+      `marcarPagada`, `deleteByTransaccion` documentado como interno) y `data/model/ResumenDeuda.java`
+      (`contactoId`, `nombreContacto`, `totalPendiente`). **INV-3 verificado por superficie:** el DAO
+      no tiene `@Update` ni `@Delete`; la única escritura de estado es `marcarPagada` con
+      `WHERE estado='pendiente'` (devuelve filas afectadas). **SQL validado en `sqlite3`** (Room aún
+      no valida el DAO hasta registrarlo en T4): las 6 sentencias ejecutan, `marcarPagada` da 1 → 0 en
+      el segundo intento conservando la `fecha_pago` del primero, y `EXPLAIN QUERY PLAN` usa
+      `ux_gastos_compartidos_transaccion_contacto` para partes-por-egreso e
+      `idx_gastos_compartidos_contacto_estado` para pendientes-por-contacto. `compileDebugJavaWithJavac`
+      OK; `./gradlew lint` BUILD SUCCESSFUL sin advertencias en los archivos nuevos (las 120 del
+      reporte son baseline previo: Timber/version catalog, fuera de scope). `data-model.md` §3.11
+      ajustado: los índices se declaran con nombre explícito en `@Index`, no con el nombre automático
+      de Room.
 
 - [ ] **T4. Agregar migración Room 4 → 5 en `AppDatabase`.**
       Entidad + DAO en la base, `version = 5`, `MIGRATION_4_5` que replica el DDL sincronizado de T2
