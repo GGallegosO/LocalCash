@@ -17,6 +17,7 @@ import com.localcash.domain.error.ErrorCode;
 import com.localcash.domain.model.ItemLugar;
 import com.localcash.domain.model.Lugar;
 import com.localcash.domain.model.Transaccion;
+import com.localcash.ui.util.CurrencyFormatter;
 
 import java.text.SimpleDateFormat;
 import java.util.List;
@@ -127,6 +128,7 @@ public final class LugarDetalleSheet {
     private void configurarFechaMovimiento() {
         if (!lugar.estaVinculadoAMovimiento()) {
             binding.tvFechaMovimiento.setVisibility(View.GONE);
+            binding.tvMontoMovimiento.setVisibility(View.GONE);
             return;
         }
 
@@ -141,12 +143,18 @@ public final class LugarDetalleSheet {
     private void mostrarFechaMovimiento(@Nullable Transaccion transaccion) {
         if (transaccion == null) {
             binding.tvFechaMovimiento.setVisibility(View.GONE);
+            binding.tvMontoMovimiento.setText(R.string.aMapa_detalle_movimiento_no_disponible);
+            binding.tvMontoMovimiento.setVisibility(View.VISIBLE);
             return;
         }
         binding.tvFechaMovimiento.setText(context.getString(
                 R.string.aMapa_detalle_fecha_movimiento,
                 FORMATO_FECHA.format(transaccion.getFecha())));
         binding.tvFechaMovimiento.setVisibility(View.VISIBLE);
+        binding.tvMontoMovimiento.setText(context.getString(
+                R.string.aMapa_detalle_monto_movimiento,
+                CurrencyFormatter.format(transaccion.getMonto())));
+        binding.tvMontoMovimiento.setVisibility(View.VISIBLE);
     }
 
     /**

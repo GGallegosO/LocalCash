@@ -255,6 +255,8 @@
     <string name="aMapa_detalle_vinculado">Vinculado a un movimiento</string>
     <string name="aMapa_detalle_independiente">Pin independiente</string>
     <string name="aMapa_detalle_fecha_movimiento">Movimiento del %1$s</string>
+    <string name="aMapa_detalle_monto_movimiento">Monto: %1$s</string>
+    <string name="aMapa_detalle_movimiento_no_disponible">Movimiento no disponible</string>
     <string name="aMapa_btn_editar">Editar</string>
     <string name="aMapa_btn_mover">Mover en el mapa</string>
     <string name="aMapa_btn_cerrar">Cerrar pin</string>
