@@ -8,6 +8,7 @@ import com.localcash.data.db.AppDatabase;
 import com.localcash.domain.error.BusinessRuleException;
 import com.localcash.data.model.DeudaContacto;
 import com.localcash.data.model.ResumenDeuda;
+import com.localcash.data.repository.GastoCompartidoRepository;
 import com.localcash.domain.error.ErrorCode;
 import com.localcash.domain.model.Contacto;
 import com.localcash.domain.service.ContactoService;
@@ -26,11 +27,14 @@ import java.util.List;
 public class ContactosViewModel extends ViewModel {
 
     private final AppDatabase db;
+    private final GastoCompartidoRepository gastoCompartidoRepository;
+    private final MutableLiveData<ErrorCode> resultadoPago = new MutableLiveData<>();
     private final LiveData<List<com.localcash.data.entities.Contacto>> contactos;
     private final MutableLiveData<ErrorCode> resultado = new MutableLiveData<>();
 
     public ContactosViewModel(AppDatabase db) {
         this.db = db;
+        this.gastoCompartidoRepository = new GastoCompartidoRepository(db);
         this.contactos = db.contactoDao().getAll();
     }
 
@@ -52,6 +56,33 @@ public class ContactosViewModel extends ViewModel {
     /** Resultado de la última operación de escritura ({@code null} = éxito). */
     public LiveData<ErrorCode> getResultado() {
         return resultado;
+    }
+
+    /** Resultado del último cobro ({@code null} = éxito). */
+    public LiveData<ErrorCode> getResultadoPago() {
+        return resultadoPago;
+    }
+
+    /**
+     * Cobra una parte de gasto compartido (botón "Pagar" del detalle).
+     *
+     * @param parteId id de la parte
+     */
+    public void pagarParte(long parteId) {
+        db.getExecutor().execute(() -> resultadoPago.postValue(
+                gastoCompartidoRepository.marcarPagada(
+                        parteId, java.time.Instant.now().toString())));
+    }
+
+    /**
+     * Cobra varias partes en una sola transacción (botón "Pagar todo").
+     *
+     * @param partesIds ids de las partes pendientes
+     */
+    public void pagarTodas(java.util.List<Long> partesIds) {
+        db.getExecutor().execute(() -> resultadoPago.postValue(
+                gastoCompartidoRepository.marcarTodasPagadas(
+                        partesIds, java.time.Instant.now().toString())));
     }
 
     /**

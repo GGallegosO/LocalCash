@@ -330,7 +330,17 @@
       Responsable: Agente SDD | Estimación: 60 min
       *Dependencias:* **requiere T13** (el botón se invoca desde el detalle de contacto que T13 crea) y
       T6 (`GastoCompartidoRepository.marcarPagada`). Conviene ejecutar T9/T10 antes para llegar a esta
-      tarea con el cobro ya probado en persistencia.*
+      tarea con el cobro ya probado en persistencia.
+      *Cierre (2026-10-26):* implementado. Cada fila del detalle (`item_deuda_contacto.xml`) muestra
+      concepto y fecha a 16sp, monto en negrita 18sp con `?attr/colorError`, padding vertical de 8dp y
+      un `ImageButton` de check que llama a `ContactosViewModel.pagarParte` (→ `marcarPagada`). El footer
+      añade "Pagar todo ($X)" que invoca `marcarTodasPagadas` (una sola `runInTransaction`: si una parte
+      falla, no se cobra ninguna). El diálogo mantiene vivo el observador de deudas, así que tras cada
+      cobro se reconstruye solo: "Sin deudas pendientes" y la lista principal pasa a "Al día" vía
+      Room. Formato de moneda unificado con un único `instalarWatcherMoneda` ($5.000, sin "CLP") en el
+      monto principal y en cada parte. Verificación: `assembleDebug` OK, `testDebugUnitTest` verde,
+      `lint` 120 baseline. Pendiente: prueba manual en emulador y la cobertura de persistencia de
+      `marcarTodasPagadas` (T9/T10).
 
 - [ ] **T15. Strings y lint.**
       Textos en español en `res/values/strings.xml` (prefijo de convención de la feature, p. ej.

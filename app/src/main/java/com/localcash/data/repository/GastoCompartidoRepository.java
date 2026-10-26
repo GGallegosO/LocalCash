@@ -83,6 +83,41 @@ public final class GastoCompartidoRepository {
     }
 
     /**
+     * Cobra varias partes en una sola transacción (botón "Pagar todo").
+     * <p>
+     * Si alguna falla, se revierte el bloque completo: no se cobra ninguna.
+     * </p>
+     *
+     * @param partesIds ids de las partes a cobrar
+     * @param fechaPagoIso fecha del cobro en ISO-8601 UTC
+     * @return {@code null} si todas se cobraron, o el código del primer rechazo
+     */
+    public ErrorCode marcarTodasPagadas(@NonNull List<Long> partesIds,
+                                        @NonNull String fechaPagoIso) {
+        if (partesIds.isEmpty()) {
+            return null;
+        }
+        final ErrorCode[] resultado = {null};
+        try {
+            db.runInTransaction(() -> {
+                for (Long parteId : partesIds) {
+                    ErrorCode error = cobrarEnTransaccion(parteId, fechaPagoIso);
+                    if (error != null) {
+                        resultado[0] = error;
+                        throw new IllegalStateException("Cobro múltiple revertido: " + error);
+                    }
+                }
+            });
+        } catch (IllegalStateException e) {
+            if (resultado[0] != null) {
+                return resultado[0];
+            }
+            throw e;
+        }
+        return null;
+    }
+
+    /**
      * Inserta las partes de un egreso compartido. Debe invocarse <b>dentro</b>
      * de la transacción que registra el egreso (junto con el asiento y el
      * descuento del saldo): si una parte falla, el egreso tampoco se escribe.

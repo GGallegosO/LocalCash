@@ -285,9 +285,10 @@
     <string name="aGastoCompartido_al_dia">Al día</string>
     <string name="aGastoCompartido_sin_deudas">Sin deudas pendientes</string>
     <string name="aGastoCompartido_detalle_titulo">Deudas pendientes</string>
-    <string name="aGastoCompartido_detalle_fila">%1$s\n%2$s · %3$s</string>
     <string name="aGastoCompartido_cerrar">Cerrar</string>
     <string name="aGastoCompartido_cancelar">Cancelar</string>
     <string name="aGastoCompartido_buscar">Buscar contacto</string>
     <string name="aGastoCompartido_tu_parte">Tu parte: %1$s</string>
+    <string name="aGastoCompartido_pagar">Pagar</string>
+    <string name="aGastoCompartido_pagar_todo">Pagar todo (%1$s)</string>
 </resources>

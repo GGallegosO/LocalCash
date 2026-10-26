@@ -129,7 +129,8 @@ public interface GastoCompartidoDao {
      * @param contactoId id del contacto deudor
      * @return LiveData con las filas {@code (descripcion, fechaMillis, monto)}
      */
-    @Query("SELECT t.concepto AS descripcion,"
+    @Query("SELECT gc.id AS parteId,"
+            + "       t.concepto AS descripcion,"
             + "       t.fecha AS fechaMillis,"
             + "       gc.monto_asignado AS montoAsignado"
             + " FROM " + TABLE_NAME + " gc"

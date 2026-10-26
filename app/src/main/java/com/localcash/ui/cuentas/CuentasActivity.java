@@ -52,6 +52,7 @@ import com.localcash.databinding.ActivityCuentasBinding;
 import com.localcash.databinding.BottomSheetLugaresBinding;
 import com.localcash.databinding.BottomSheetTransaccionBinding;
 import com.localcash.databinding.DialogContactoBinding;
+import com.localcash.databinding.ItemDeudaContactoBinding;
 import com.localcash.databinding.ItemParteGastoBinding;
 import com.localcash.databinding.ViewContactosBinding;
 import com.localcash.databinding.ViewCuentasBinding;
@@ -85,6 +86,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.LongConsumer;
 
 /**
  * Activity principal de LocalCash (Módulo 1): 4 vistas en un {@code ViewFlipper}
@@ -609,7 +611,7 @@ public class CuentasActivity extends BaseActivity
         int pad = (int) (16 * getResources().getDisplayMetrics().density);
         contenedor.setPadding(pad, pad / 2, pad, 0);
 
-        new MaterialAlertDialogBuilder(this)
+        AlertDialog dialogo = new MaterialAlertDialogBuilder(this)
                 .setTitle(contacto.getNombre())
                 .setView(contenedor)
                 .setPositiveButton(R.string.aContacto_btn_editar, (d, w) ->
@@ -619,14 +621,20 @@ public class CuentasActivity extends BaseActivity
                 .setNeutralButton(android.R.string.cancel, null)
                 .show();
 
-        final Observer<List<DeudaContacto>> observador = new Observer<List<DeudaContacto>>() {
-            @Override
-            public void onChanged(List<DeudaContacto> deudas) {
-                contactosViewModel.getDeudasPendientes(contacto.getId()).removeObserver(this);
+        final Observer<List<DeudaContacto>> observador = deudas ->
                 pintarDeudasDetalle(contenedor, deudas);
+        contactosViewModel.getDeudasPendientes(contacto.getId()).observe(this, observador);
+        final Observer<ErrorCode> observadorPago = error -> {
+            if (error != null) {
+                Toast.makeText(this, mensajeReparto(error), Toast.LENGTH_SHORT).show();
             }
         };
-        contactosViewModel.getDeudasPendientes(contacto.getId()).observe(this, observador);
+        contactosViewModel.getResultadoPago().observe(this, observadorPago);
+        dialogo.setOnDismissListener(d -> {
+            contactosViewModel.getDeudasPendientes(contacto.getId())
+                    .removeObserver(observador);
+            contactosViewModel.getResultadoPago().removeObserver(observadorPago);
+        });
     }
 
     /**
@@ -648,19 +656,37 @@ public class CuentasActivity extends BaseActivity
         }
 
         SimpleDateFormat formato = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-        int pad = (int) (4 * getResources().getDisplayMetrics().density);
+        long total = 0L;
+        List<Long> pendientes = new ArrayList<>();
         for (DeudaContacto deuda : deudas) {
-            TextView fila = new TextView(this);
+            ItemDeudaContactoBinding fila = ItemDeudaContactoBinding.inflate(
+                    LayoutInflater.from(contenedor.getContext()), contenedor, false);
             String concepto = deuda.getDescripcion() == null || deuda.getDescripcion().isEmpty()
                     ? getString(R.string.aGastoCompartido_detalle_titulo)
                     : deuda.getDescripcion();
-            fila.setText(getString(R.string.aGastoCompartido_detalle_fila,
-                    concepto,
-                    formato.format(new Date(deuda.getFechaMillis())),
-                    CurrencyFormatter.format(deuda.getMontoAsignado())));
-            fila.setPadding(0, pad, 0, pad);
-            contenedor.addView(fila);
+            fila.tvConcepto.setText(concepto);
+            fila.tvFecha.setText(formato.format(new Date(deuda.getFechaMillis())));
+            fila.tvMonto.setText(CurrencyFormatter.format(deuda.getMontoAsignado()));
+            fila.btnPagar.setOnClickListener(v ->
+                    contactosViewModel.pagarParte(deuda.getParteId()));
+            contenedor.addView(fila.getRoot());
+            total += deuda.getMontoAsignado();
+            pendientes.add(Long.valueOf(deuda.getParteId()));
         }
+
+        // Footer "Pagar todo": oculto cuando ya no hay deudas.
+        com.google.android.material.button.MaterialButton pagarTodo =
+                new com.google.android.material.button.MaterialButton(this);
+        pagarTodo.setText(getString(R.string.aGastoCompartido_pagar_todo,
+                CurrencyFormatter.format(total)));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        params.topMargin = (int) (8 * getResources().getDisplayMetrics().density);
+        pagarTodo.setLayoutParams(params);
+        final List<Long> ids = new ArrayList<>(pendientes);
+        pagarTodo.setOnClickListener(v -> contactosViewModel.pagarTodas(ids));
+        contenedor.addView(pagarTodo);
     }
 
     /** Pide confirmación antes de eliminar un contacto. */
@@ -1117,21 +1143,8 @@ public class CuentasActivity extends BaseActivity
         });
 
         // El total del egreso entra al estado del reparto para poder comparar.
-        sheetBinding.inputMonto.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                transaccionViewModel.setMontoTotal(
-                        parsearMonto(s == null ? "" : s.toString()));
-            }
-        });
+        instalarWatcherMoneda(sheetBinding.inputMonto,
+                valor -> transaccionViewModel.setMontoTotal(valor));
 
         sheetBinding.searchContactos.setOnItemClickListener(
                 (AdapterView<?> parent, View vista, int position, long id) -> {
@@ -1298,41 +1311,9 @@ public class CuentasActivity extends BaseActivity
             if (personalizado) {
                 long captura = transaccionViewModel.getMontoPersonalizado(id);
                 fila.inputMontoParte.setText(captura > 0L
-                        ? CurrencyFormatter.formatWithCurrency(captura) : "");
-                fila.inputMontoParte.addTextChangedListener(new TextWatcher() {
-                    private boolean formateando;
-
-                    @Override
-                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                    }
-
-                    @Override
-                    public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    }
-
-                    @Override
-                    public void afterTextChanged(Editable s) {
-                        if (formateando) {
-                            return;
-                        }
-                        String crudo = s == null ? "" : s.toString().replaceAll("[^0-9]", "");
-                        long valor = 0L;
-                        if (!crudo.isEmpty()) {
-                            try {
-                                valor = Long.parseLong(crudo);
-                            } catch (NumberFormatException e) {
-                                valor = 0L;
-                            }
-                        }
-                        formateando = true;
-                        String formateado = valor > 0L
-                                ? CurrencyFormatter.formatWithCurrency(valor) : "";
-                        fila.inputMontoParte.setText(formateado);
-                        fila.inputMontoParte.setSelection(formateado.length());
-                        formateando = false;
-                        transaccionViewModel.setMontoPersonalizado(id, valor);
-                    }
-                });
+                        ? CurrencyFormatter.format(captura) : "");
+                instalarWatcherMoneda(fila.inputMontoParte,
+                        valor -> transaccionViewModel.setMontoPersonalizado(id, valor));
             } else {
                 Long monto = montosIguales.get(Long.valueOf(id));
                 fila.inputMontoParte.setText(
@@ -1458,24 +1439,47 @@ public class CuentasActivity extends BaseActivity
     }
 
     /**
-     * Lectura tolerante de un monto: vacío o no numérico equivale a 0.
+     * Instala el formato de moneda chilena ($5.000, sin "CLP") en un campo de
+     * monto y entrega al callback el valor limpio (solo dígitos).
      *
-     * @param texto texto capturado
-     * @return importe en pesos CLP
+     * @param campo      EditText de monto
+     * @param alCambiar  receptor del valor en pesos CLP
      */
-    private static long parsearMonto(@Nullable String texto) {
-        if (texto == null) {
-            return 0L;
-        }
-        String limpio = texto.trim();
-        if (limpio.isEmpty()) {
-            return 0L;
-        }
-        try {
-            return Long.parseLong(limpio);
-        } catch (NumberFormatException e) {
-            return 0L;
-        }
+    private void instalarWatcherMoneda(@NonNull android.widget.EditText campo,
+                                       @NonNull LongConsumer alCambiar) {
+        campo.addTextChangedListener(new TextWatcher() {
+            private boolean formateando;
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (formateando) {
+                    return;
+                }
+                String crudo = s == null ? "" : s.toString().replaceAll("[^0-9]", "");
+                long valor = 0L;
+                if (!crudo.isEmpty()) {
+                    try {
+                        valor = Long.parseLong(crudo);
+                    } catch (NumberFormatException e) {
+                        valor = 0L;
+                    }
+                }
+                formateando = true;
+                String formateado = valor > 0L ? CurrencyFormatter.format(valor) : "";
+                campo.setText(formateado);
+                campo.setSelection(formateado.length());
+                formateando = false;
+                alCambiar.accept(valor);
+            }
+        });
     }
 
     /**

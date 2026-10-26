@@ -6,11 +6,21 @@ package com.localcash.data.model;
  */
 public class DeudaContacto {
 
+    private long parteId;
+
     private String descripcion;
 
     private long fechaMillis;
 
     private long montoAsignado;
+
+    public long getParteId() {
+        return parteId;
+    }
+
+    public void setParteId(long parteId) {
+        this.parteId = parteId;
+    }
 
     public String getDescripcion() {
         return descripcion;
