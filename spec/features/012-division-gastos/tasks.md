@@ -118,13 +118,32 @@
 
 ## Fase 3 — Dominio (núcleo de negocio)
 
-- [ ] **T5. Crear modelo `GastoCompartido` y servicio `GastoCompartidoService` (reparto).**
+- [x] **T5. Crear modelo `GastoCompartido` y servicio `GastoCompartidoService` (reparto).**
       Modelo inmutable con `toEntity()`/`fromEntity()`. Servicio (Java puro, sin Android):
       `dividirIgual(monto, contactosIds)` → aritmética entera con residuo de a 1 CLP al inicio de la
       lista, rechaza monto < n; `validarPersonalizada(monto, partes)` → Σ exacto (INV-2), cada parte > 0;
       rechaza 0 contactos (INV-1) y contacto duplicado. Devuelve `ErrorCode`, nunca lanza crudo.
       *Criterio de salida:* invocable y verificable unitariamente; cero advertencias.
       Responsable: Agente SDD | Estimación: 60 min
+      *Cierre (2026-10-26):* desglose previo con **sequential-thinking** (3 pasos: reglas y orden de
+      validación, casos borde numéricos, decisión de alcance). Creados `domain/model/PartePropuesta.java`
+      (inmutable, `contactoId` + `montoAsignado` CLP) y `domain/service/GastoCompartidoService.java`
+      (final, métodos estáticos, sin `android.*` ni `androidx.*`):
+      `validarReparto(monto, ids)` → `MONTO_INVALIDO` / `GASTO_SIN_CONTACTOS` / `CONTACTO_DUPLICADO`;
+      `dividirIgual(monto, ids)` → `base = total/n`, residuo de a 1 CLP a los primeros contactos,
+      `REPARTO_IGUAL_INSUFICIENTE` si `total < n`; `validarPersonalizado(monto, partes)` →
+      `MONTO_PARTE_INVALIDO`, `CONTACTO_DUPLICADO`, `REPARTO_NO_CUADRA`. Se agregaron los 7 códigos del
+      contrato a `domain/error/ErrorCode.java`. **Corrección al plan (regla SDD):** las firmas reales
+      son las de esta tarea (una sola `validarReparto` sin modo ni montos) y **todas las validaciones
+      lanzan `BusinessRuleException`** con su `ErrorCode` (no devuelven `ErrorCode`); `plan.md` §1 y la
+      matriz de INV-2 actualizados. **Alcance ajustado:** el modelo de dominio `GastoCompartido` con
+      `toEntity()`/`fromEntity()` se pospone a T7, donde el registro del egreso realmente mapea las
+      partes; T5 no lo necesita y así se evita inventar un código de error solo para el mapeo.
+      Verificación: `compileDebugJavaWithJavac` OK, `lint` sin advertencias nuevas; los tests de esta
+      lógica son T8 (aún no existen, por eso no hay tests nuevos en este commit). Comprobación manual en
+      JVM contra las clases compiladas: `100000 / 3` → `33334 + 33333 + 33333` (suma exacta 100000) y
+      los rechazos devuelven `REPARTO_IGUAL_INSUFICIENTE`, `GASTO_SIN_CONTACTOS`, `CONTACTO_DUPLICADO`,
+      `REPARTO_NO_CUADRA` y `MONTO_PARTE_INVALIDO` según corresponda.
 
 - [ ] **T6. Implementar `marcarPagada()` en el repositorio con `runInTransaction`.**
       Secuencia exacta de `plan.md` §2 (bloque SQL): validar pendiente → UPDATE estado+fecha →
@@ -138,10 +157,12 @@
       Responsable: Agente SDD | Estimación: 60 min
 
 - [ ] **T7. Extender `TransaccionViewModel.registrarTransaccion()` para egresos compartidos.**
-      Tras el asiento del egreso y dentro de la MISMA transacción, validar con
-      `GastoCompartidoService` (T5) e insertar las N partes con `estado='pendiente'` y
-      `fecha_creacion`. Si la validación o alguna inserción de parte falla, el egreso tampoco se
-      escribe (todo o nada).
+      Crear `domain/model/GastoCompartido.java` inmutable con `toEntity()`/`fromEntity()` (pospuesto
+      desde T5: aquí es donde el registro mapea las partes al DAO) y `EstadoGastoCompartido`
+      (`pendiente`/`pagado`) si hace falta tipar el estado. Tras el asiento del egreso y dentro de la
+      MISMA transacción, validar con `GastoCompartidoService` (T5) e insertar las N partes con
+      `estado='pendiente'` y `fecha_creacion`. Si la validación o alguna inserción de parte falla, el
+      egreso tampoco se escribe (todo o nada).
       *Criterio de salida:* registrar un egreso compartido con partes inválidas (Σ ≠ total, 0
       contactos) no deja ni movimiento ni partes ni saldo modificado.
       Responsable: Agente SDD | Estimación: 60 min

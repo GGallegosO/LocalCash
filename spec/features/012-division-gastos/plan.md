@@ -19,7 +19,7 @@
 | `data/entities/GastoCompartido.java` | Entidad Room: tabla `GASTOS_COMPARTIDOS` con índices | CREAR | BAJA |
 | `data/dao/GastoCompartidoDao.java` | DAO: inserción por lotes, consulta por transacción, partes pendientes por contacto, resumen de deudas, operaciones de cobro. Nombre de tabla por constante | CREAR | ALTA |
 | `data/db/AppDatabase.java` | Entidad + DAO + versión 5 + `MIGRATION_4_5` + `gastoCompartidoDao()` | MODIFICAR | ALTA |
-| `domain/model/GastoCompartido.java` | Modelo de dominio inmutable con `toEntity()`/`fromEntity()` | CREAR | BAJA |
+| `domain/model/GastoCompartido.java` | Modelo de dominio inmutable con `toEntity()`/`fromEntity()` (se crea en T7, cuando el registro del egreso necesita mapear las partes) | CREAR | BAJA |
 | `domain/service/GastoCompartidoService.java` | Reglas de negocio: INV-1, INV-2 (reparto igual y personalizada), validaciones de monto | CREAR | ALTA |
 | `domain/error/ErrorCode.java` | Nuevos códigos de error de negocio | MODIFICAR | BAJA |
 | `ui/cuentas/TransaccionViewModel.java` | Extender `registrarTransaccion` con partes compartidas y cobro atómico | MODIFICAR | ALTA |
@@ -42,22 +42,23 @@
   al cobrar: parte `pagado` con `fecha_pago` + ingreso automático en historial + saldo actualizado
   (o `ErrorCode`). Resumen: lista `(contacto, Σ adeudado)` por contacto con pendientes.
 
-**Contrato mutable invocable de `GastoCompartidoService`** (T1 — escritura confirmada del contrato; es
-lo que los tests de T8 pueden escribir desde ya, sin conocer Room ni Android):
+**Contrato mutable invocable de `GastoCompartidoService`** (T5 — firmas implementadas; es lo que los
+tests de T8 pueden escribir desde ya, sin conocer Room ni Android):
 
 | Método | Entrada | Devuelve | Regla |
 |---|---|---|---|
-| `validarReparto(long montoTotal, List<Long> contactosIds, ModoDivision modo, List<Long> montosPorContacto)` | total > 0; ids canónicos (sin repetir); `montosPorContacto` solo en `PERSONALIZADA`, mismo tamaño que ids | `ErrorCode` o `null` si el reparto es válido | INV-1 + INV-2 (todos los códigos de validación) |
-| `dividirIgual(long montoTotal, List<Long> contactosIds)` | total > 0; ≥ 1 id | `List<PartePropuesta>` `(contactoId, montoAsignado)` o lanza `BusinessRuleException` con `GASTO_SIN_CONTACTOS` / `REPARTO_IGUAL_INSUFICIENTE` | Reparto entero: `base = total / n`, residuo `total % n` a los `n'` primeros ids de a 1 CLP; Σ = total exacto |
-| `repartoPersonalizado(List<Long> contactosIds, List<Long> montos)` | ids canónicos; montos > 0 | `List<PartePropuesta>`; `validarReparto` completo antes | Σ = total (llega en `validarReparto`), cada parte > 0 |
+| `validarReparto(long montoTotal, List<Long> contactosIds)` | total > 0; ≥ 1 id identificable (no nulo ni ≤ 0); sin repetir | `void`; lanza `BusinessRuleException` con `MONTO_INVALIDO`, `GASTO_SIN_CONTACTOS` o `CONTACTO_DUPLICADO` | INV-1 + validación común de INV-2 |
+| `dividirIgual(long montoTotal, List<Long> contactosIds)` | total > 0; ≥ 1 id; `total >= n` | `List<PartePropuesta>` `(contactoId, montoAsignado)`; lanza `REPARTO_IGUAL_INSUFICIENTE` si `total < n` | Reparto entero: `base = total / n`, residuo `total % n` a los primeros ids de a 1 CLP; Σ = total exacto |
+| `validarPersonalizado(long montoTotal, List<PartePropuesta> partes)` | total > 0; ≥ 1 parte; montos > 0; contactos sin repetir | `void`; lanza `MONTO_INVALIDO`, `GASTO_SIN_CONTACTOS`, `MONTO_PARTE_INVALIDO`, `CONTACTO_DUPLICADO` o `REPARTO_NO_CUADRA` | INV-2: Σ exacta del total |
 
-- `ModoDivision` (`IGUAL` | `PERSONALIZADA`) y `PartePropuesta` (`contactoId`, `montoAsignado`) viven en
-  `domain/model/`. `GastoCompartidoService` sigue el patrón de `ContactoService`/`LugarService`:
-  validaciones devuelven `ErrorCode`, los cálculos que no pueden completarse lanzan
-  `BusinessRuleException` con el código (no `null` silencioso).
+- `PartePropuesta` (`contactoId`, `montoAsignado`) vive en `domain/model/`. `GastoCompartidoService`
+  sigue el patrón de `ContactoService`/`LugarService`: clase final con métodos estáticos, y **todas las
+  validaciones lanzan `BusinessRuleException` con su `ErrorCode`** (decisión del dueño en T5, en lugar
+  de devolver `ErrorCode`), de modo que el llamador no puede ignorar un reparto inválido por accidente.
+  Los códigos permiten a la UI traducir a texto; el dominio nunca produce mensajes de usuario.
 - **Repositorio (T6), fuera del alcance de los tests puros:** `marcarPagada(long parteId)` devuelve
   `ErrorCode` (`null` = cobrada) y es el **único** punto de escritura del estado `pagado`. No existe
-  método público que reabran una parte (`PARTE_YA_PAGADA` / `PARTE_INEXISTENTE` cubren el rechazo).
+  método público que reabra una parte (`PARTE_YA_PAGADA` / `PARTE_INEXISTENTE` cubren el rechazo).
 - Errores posibles (códigos y significado):
   - `GASTO_SIN_CONTACTOS`: egreso marcado compartido sin ningún contacto elegido (INV-1).
   - `REPARTO_NO_CUADRA`: la suma de las partes personalizadas no iguala el total del egreso (INV-2).
@@ -163,7 +164,7 @@ referencial.
 | Invariante | Dueño (capa) | Respaldo del motor | Test | Método del contrato |
 |---|---|---|---|---|
 | INV-1 · compartido = 0 contactos es inválido | `domain/` — `GastoCompartidoService.validarReparto` | Ninguno (Room no permite `CHECK` ni contar filas hijas) | `GastoCompartidoServiceTest` (T8) | `validarReparto` → `GASTO_SIN_CONTACTOS` |
-| INV-2 · Σ partes = monto del egreso, al peso | `domain/` — `dividirIgual` / `repartoPersonalizado` | Ninguno (regla agregada entre filas) | `GastoCompartidoServiceTest` (T8) + integración (T10) | `validarReparto` → `REPARTO_NO_CUADRA`, `REPARTO_IGUAL_INSUFICIENTE`, `MONTO_PARTE_INVALIDO`, `CONTACTO_DUPLICADO` |
+| INV-2 · Σ partes = monto del egreso, al peso | `domain/` — `dividirIgual` / `validarPersonalizado` | Ninguno (regla agregada entre filas) | `GastoCompartidoServiceTest` (T8) + integración (T10) | `validarReparto` → `MONTO_INVALIDO`, `GASTO_SIN_CONTACTOS`, `CONTACTO_DUPLICADO`; `dividirIgual` → `REPARTO_IGUAL_INSUFICIENTE`; `validarPersonalizado` → `MONTO_PARTE_INVALIDO`, `REPARTO_NO_CUADRA` |
 | INV-3 · una parte pagada no vuelve a pendiente | `data/` — repositorio/DAO: único write es `marcarPagada` con `WHERE estado='pendiente'` | `NOT NULL` + dominio cerrado de `estado` (sin `CHECK` en Room) | `GastoCompartidoDaoTest` (T9, asserts d) | `marcarPagada` → `PARTE_YA_PAGADA` |
 | INV-4 · no se elimina contacto con partes | `data/` — motor + traducción a `CONTACTO_EN_USO` en el repositorio (`ContactoService.puedeEliminar`) | `FK ON DELETE RESTRICT` | `GastoCompartidoDaoTest` (T9, assert f) | `ContactoService.puedeEliminar` |
 | INV-5 · cobro atómico (estado → ingreso → saldo) | `data/` — repositorio con un solo `runInTransaction` | Aritmética atómica de `saldo_actual`; rollback de Room | `GastoCompartidoDaoTest` (T9, asserts a–c) + integración I-1 (T10) | `marcarPagada` → `PARTE_INEXISTENTE`/`PARTE_YA_PAGADA` |
