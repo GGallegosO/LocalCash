@@ -25,8 +25,8 @@
 | Fecha de aprobación          | 2026-09-28                                  |
 | Aprobado por                 | GG (`doc/000-initial-setup.md` §1)           |
 | Tarea que originó la decisión| `003-modelo-datos` (archivo en `/doc/`)      |
-| Última revisión              | 2026-10-23 (Feature `009-geolocalizacion-map`) |
-| Estado del esquema           | v1 vigente; v2 en preparación (10 tablas)    |
+| Última revisión              | 2026-10-26 (Feature `012-division-gastos`) |
+| Estado del esquema           | v2 vigente (10 tablas); v3 en preparación (11 tablas) |
 
 > **Justificación en una línea:** se prioriza la integridad referencial sobre la flexibilidad de
 > esquema porque el dominio tiene relaciones estables (un movimiento pertenece a una cuenta, una
@@ -34,11 +34,12 @@
 > usuario, sin servidor que pueda normalizar inconsistencias.
 
 **Alcance.** Persistencia relacional local en SQLite para la gestión financiera personal y grupal
-**100% offline para los datos del usuario** y con **privacidad absoluta**: 10 tablas que cubren
+**100% offline para los datos del usuario** y con **privacidad absoluta**: 11 tablas que cubren
 cuentas, movimientos geolocalizados, categorías, agenda local de contactos, lugares/pines con sus
-listas de cosas y el ciclo completo de gasto compartido (compra planificada → compra grupal → ítems
-→ deuda por participante). El mapa base puede descargar teselas públicas con caché local, pero los
-datos financieros y las listas nunca salen del dispositivo. Quedan fuera de alcance la
+listas de cosas, partes de un egreso compartido con su estado de cobro y el ciclo completo de gasto
+compartido futurible (compra planificada → compra grupal → ítems → deuda por participante). El mapa
+base puede descargar teselas públicas con caché local, pero los datos financieros y las listas nunca
+salen del dispositivo. Quedan fuera de alcance la
 sincronización, el multiusuario, la conversión de moneda, la auditoría de cambios y cualquier
 construcción dependiente de un servidor remoto, conforme a los anti-objetivos de `mission.md` §3 y a
 `tech-stack.md` §3.
@@ -57,11 +58,13 @@ erDiagram
     CONTACTOS ||--o{ COMPRAS_PLANIFICADAS : "asociado a"
     CONTACTOS ||--o{ COMPRAS_GRUPALES : "paga o participa"
     CONTACTOS ||--o{ DEUDAS_PARTICIPANTES : "mantiene deuda con"
+    CONTACTOS ||--o{ GASTOS_COMPARTIDOS : "responde por"
 
     CUENTAS ||--o{ TRANSACCIONES : "registra"
     CATEGORIAS ||--o{ TRANSACCIONES : "clasifica"
     TRANSACCIONES ||--o| COMPRAS_GRUPALES : "vincula pago de"
     TRANSACCIONES ||--o| LUGARES : "se marca con"
+    TRANSACCIONES ||--o{ GASTOS_COMPARTIDOS : "se divide en"
 
     LUGARES ||--o{ ITEMS_LUGAR : "contiene"
     COMPRAS_GRUPALES ||--|{ ITEMS_COMPRA : "desglosa en"
@@ -162,6 +165,16 @@ erDiagram
         INTEGER monto_pagado
         TEXT estado
     }
+
+    GASTOS_COMPARTIDOS {
+        INTEGER id PK
+        INTEGER transaccion_id FK
+        INTEGER contacto_id FK
+        INTEGER monto_asignado
+        TEXT estado
+        TEXT fecha_creacion
+        TEXT fecha_pago
+    }
 ```
 
 **Imagen renderizada (opcional, complementaria):**
@@ -175,10 +188,12 @@ erDiagram
 | `CONTACTOS` → `COMPRAS_PLANIFICADAS`      | 1:N          | Una planificación pertenece a un contacto y es de él. `contacto_id` es `NOT NULL`.              |
 | `CONTACTOS` → `COMPRAS_GRUPALES`          | 1:N opcional | Un contacto puede haber pagado muchas compras. `NULL` significa que pagó el usuario principal (§4.1). |
 | `CONTACTOS` → `DEUDAS_PARTICIPANTES`      | 1:N          | Un contacto puede acumular deudas en muchas compras.                                           |
+| `CONTACTOS` → `GASTOS_COMPARTIDOS`        | 1:0..N       | Un contacto puede responder por la parte de muchos egresos compartidos. `contacto_id` es `NOT NULL`. |
 | `CUENTAS` → `TRANSACCIONES`               | 1:N          | Una cuenta es el contenedor de los movimientos; sin cuenta no hay movimiento.                   |
 | `CATEGORIAS` → `TRANSACCIONES`            | 1:N opcional | La clasificación es opcional: un movimiento sin categoría sigue siendo válido.                  |
 | `TRANSACCIONES` → `COMPRAS_GRUPALES`      | 1:0..1       | Un movimiento genera **a lo sumo una** compra grupal. La compra puede existir sin movimiento (`NULL`). |
 | `TRANSACCIONES` → `LUGARES`               | 1:0..1       | Un movimiento puede originar **a lo sumo un pin** vinculado. Un lugar independiente tiene `transaccion_id` `NULL`. |
+| `TRANSACCIONES` → `GASTOS_COMPARTIDOS`    | 1:0..N (mín. 1 si se comparte) | Un egreso común no tiene partes; si el usuario lo marca compartido, tiene **al menos una** parte (I-12). |
 | `LUGARES` → `ITEMS_LUGAR`                 | 1:0..N       | Un lugar puede no tener lista de cosas o tener muchos elementos; el elemento no existe sin lugar. |
 | `COMPRAS_GRUPALES` → `ITEMS_COMPRA`       | 1:N (mín. 1) | Una compra grupal se desglosa en al menos un ítem; no hay compra vacía.                        |
 | `COMPRAS_GRUPALES` → `DEUDAS_PARTICIPANTES` | 1:0..N     | Una compra puede no tener deudas (compra propia, sin reparto) o generar una por participante.   |
@@ -240,9 +255,10 @@ leyendo antes el valor: se actualiza con aritmética atómica (§4.2).
 - **Índices:** `ux_contactos_telefono` y `ux_contactos_email`, ambos únicos parciales
   (`WHERE ... IS NOT NULL`), para impedir que el mismo contacto se capture dos veces.
 - **Eliminación:** FÍSICA, con `ON DELETE RESTRICT` desde `COMPRAS_PLANIFICADAS`,
-  `COMPRAS_GRUPALES` y `DEUDAS_PARTICIPANTES` → Justificación: la identidad de una persona es un
-  dato financiero no recuperable; borrarla en cascada destruiría deudas y pagos. La UI traduce el
-  bloqueo al error de negocio `CONTACTO_EN_USO` y ofrece reasignar o eliminar con sus registros.
+  `COMPRAS_GRUPALES`, `DEUDAS_PARTICIPANTES` y `GASTOS_COMPARTIDOS` → Justificación: la identidad de
+  una persona es un dato financiero no recuperable; borrarla en cascada destruiría deudas y pagos. La
+  UI traduce el bloqueo al error de negocio `CONTACTO_EN_USO` y ofrece reasignar o eliminar con sus
+  registros.
 
 ### 3.2 CUENTAS
 
@@ -313,8 +329,10 @@ leyendo antes el valor: se actualiza con aritmética atómica (§4.2).
   historial paginado; `idx_transacciones_geo (latitud, longitud)` parcial para el mapa;
   `idx_transacciones_categoria (categoria_id, fecha_hora DESC)` parcial para el filtro por categoría.
 - **Eliminación:** FÍSICA, con `ON DELETE CASCADE` desde `CUENTAS` y hacia
-  `COMPRAS_GRUPALES` → Justificación: el movimiento es la unidad atómica de la contabilidad local y
-  su eliminación debe reflejarse en el saldo; conservarlo sin cuenta dejaría un asiento imposible.
+  `COMPRAS_GRUPALES` y `GASTOS_COMPARTIDOS` → Justificación: el movimiento es la unidad atómica de la
+  contabilidad local y su eliminación debe reflejarse en el saldo; conservarlo sin cuenta dejaría un
+  asiento imposible. Las partes de un egreso compartido caen con él porque el reparto sin gasto no
+  significa nada (I-12).
 
 ### 3.5 COMPRAS_PLANIFICADAS
 
@@ -484,7 +502,65 @@ persona y un importe, no es un dato derivable que se pueda recalcular sin contex
 - **Eliminación:** FÍSICA en cascada desde `LUGARES` → Justificación: un elemento sin pin no tiene
   contexto ni consulta posible.
 
-### 3.11 Índices y plan de consultas
+### 3.11 GASTOS_COMPARTIDOS
+
+- **Propósito:** Parte de un egreso que **un contacto** debe al usuario. Es la tabla de unión entre el
+  movimiento pagado por el usuario y la agenda de contactos: cada fila responde a "el contacto X debe
+  Y pesos por el egreso Z" (Feature 012, división de gastos). **Solo almacena partes de contactos:** la
+  parte del usuario principal es implícita y no se persiste (ver abajo).
+- **Ciclo de vida:** se crea con el reparto, al confirmar el egreso compartido (una fila por
+  contacto); `pendiente → pagado` es la única transición y `pagado` es **terminal**. El cobro lo hace
+  el repositorio con `marcarPagada()` (I-14/I-16); no existe operación pública para reabrir una parte.
+  Se elimina en cascada con el egreso que la origina.
+
+| Campo | Tipo SQLite | Clave / Restricción | Nullable | Descripción y regla de negocio |
+|---|---|---|---|---|
+| `id` | `INTEGER` | `PK` · `AUTOINCREMENT` | No | Identificador local. |
+| `transaccion_id` | `INTEGER` | `FK → TRANSACCIONES(id)` · `NOT NULL` · `ON DELETE CASCADE` | No | Egreso compartido del que nace la parte. Una parte sin gasto no significa nada; borrar el egreso borra el reparto. |
+| `contacto_id` | `INTEGER` | `FK → CONTACTOS(id)` · `NOT NULL` · `ON DELETE RESTRICT` | No | Contacto deudor. Es siempre un tercero, nunca el usuario principal (§4.1). `RESTRICT` protege la identidad y su historial. |
+| `monto_asignado` | `INTEGER` | `NOT NULL` · `CHECK (monto_asignado > 0)` · pesos CLP | No | Parte del egreso asignada a este contacto. Positiva: una parte de cero pesos no es una deuda. |
+| `estado` | `TEXT` | `NOT NULL` · `DEFAULT 'pendiente'` · `CHECK IN ('pendiente','pagado')` | No | Estado de cobro. Dominio cerrado de dos valores: la liquidación parcial queda para `DEUDAS_PARTICIPANTES` (hito futuro). |
+| `fecha_creacion` | `TEXT` | `NOT NULL` · `CHECK` de formato `YYYY-MM-DDTHH:MM:SSZ` | No | Momento del reparto, en UTC. |
+| `fecha_pago` | `TEXT` | `CHECK` de formato `YYYY-MM-DDTHH:MM:SSZ` | Sí | Momento del cobro. `NULL` mientras esté pendiente y **obligatoria** si está pagado (regla de tabla). |
+
+- **Regla de tabla:** `CHECK ((estado = 'pendiente' AND fecha_pago IS NULL) OR (estado = 'pagado' AND
+  fecha_pago IS NOT NULL))` impide una parte pagada sin fecha de cobro y una pendiente con fecha. Al
+  igual que en §3.8, el `CHECK` valida la fila: la prohibición de **volver** de `pagado` a `pendiente`
+  la impone el repositorio, único punto de escritura del estado (I-14).
+- **Índices:** `ux_gastos_compartidos_transaccion_contacto`, único sobre `(transaccion_id,
+  contacto_id)`, que evita repetir el mismo deudor en el mismo egreso y sirve además las consultas por
+  egreso (columna izquierda del índice); e `idx_gastos_compartidos_contacto_estado (contacto_id,
+  estado)` para el historial y el resumen de deuda por contacto. No se declara un índice aislado sobre
+  `transaccion_id` porque el único compuesto ya lo cubre y todo índice extra se paga en cada
+  `INSERT`/`UPDATE` (§3.12).
+- **Eliminación:** FÍSICA en cascada desde `TRANSACCIONES`; bloqueada desde `CONTACTOS` → Justificación:
+  la parte identifica a una persona y un importe que el usuario ya cobró o espera cobrar; perderla en
+  cascada al borrar la cuenta del egreso es aceptable porque el asiento contable también desaparece,
+  pero perderla por borrar al contacto falsearía la historia.
+- **Efecto contable:** crear el reparto **no** mueve ninguna cuenta (el egreso ya movió el saldo al
+  registrarse). Cobrar una parte inserta un ingreso "Devolución gasto compartido" y suma el monto con
+  aritmética atómica, todo en una transacción (I-16 y §4.2).
+- **Parte implícita del usuario (decisión del dueño, 2026-10-26).** En la división igual el total se
+  reparte entre **N + 1** (usuario + N contactos), pero la parte del usuario **no genera fila**: el
+  egreso completo ya es su gasto y no existe un contacto "Yo" (§4.1). Lo mismo hacen Splitwise o
+  Tricount: solo se guarda lo que otros deben. Consecuencia: en modo igual
+  `Σ GASTOS_COMPARTIDOS.monto_asignado = monto del egreso − parte del usuario`; en división
+  personalizada el usuario aporta el resto: los montos de los contactos pueden sumar menos que el
+  total (solo se rechaza si lo superan). El cálculo y la
+  validación en vivo viven en `GastoCompartidoService.dividirConUsuario()`.
+
+> **Estado previsto (Feature 012, Room v5).** Room no expresa `CHECK` **ni `DEFAULT`** en `@Entity`, así
+> que el esquema real del archivo no los incluirá: la coherencia `estado` ↔ `fecha_pago`, el monto
+> positivo y la unicidad del contacto por egreso se validan en `GastoCompartidoService`/repositorio con
+> tests propios (el estado siempre se escribe explícito al insertar). **Los dos índices llevan nombre
+> explícito en la anotación `@Index(name = ...)`**, idéntico al de este documento
+> (`ux_gastos_compartidos_transaccion_contacto` e `idx_gastos_compartidos_contacto_estado`), para que la
+> migración los reproduzca sin traducción de nombres. Las claves foráneas del archivo conservan
+> `ON UPDATE CASCADE` y `ON DELETE CASCADE`/`RESTRICT` del DDL canónico. El DDL de este documento sigue
+> siendo la referencia ejecutable para `sqlite3`. La migración Room `4 → 5` materializa esta revisión y
+> el archivo queda en `user_version = 5`.
+
+### 3.12 Índices y plan de consultas
 
 | Consulta de la interfaz                                                            | Índice que la sirve                                    | Nota                                                                                                  |
 |-----------------------------------------------------------------------------------|--------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
@@ -498,6 +574,8 @@ persona y un importe, no es un dato derivable que se pueda recalcular sin contex
 | Detalle de una compra: ítems + deudas + total adeudado                                | `idx_items_compra` + `idx_deudas_compra`               | Consultas de igualdad por la clave foránea.                                                          |
 | Compras pagadas por un contacto                                                      | `idx_compras_grupales_pagador` (parcial)               | Evita un `WHERE pagado_por_contacto_id IS NOT NULL` en cada consulta.                                 |
 | Agenda de planificaciones pendientes                                                 | `idx_compras_planificadas_fecha` (parcial)             | Solo pendientes, ordenadas por día.                                                                  |
+| Partes de un egreso compartido: `WHERE transaccion_id = ? ORDER BY id`               | `ux_gastos_compartidos_transaccion_contacto` (único)   | La columna izquierda del único compuesto sirve la consulta; no hace falta un índice aparte por egreso. |
+| Resumen "me deben" y detalle por contacto: `WHERE contacto_id = ? AND estado = 'pendiente'` | `idx_gastos_compartidos_contacto_estado`        | Consulta del resumen de deudas y del historial del contacto (Feature 012).                           |
 
 **Sentencias `CREATE INDEX` recomendadas** (las que exige el esquema, en el orden de creación del
 Apéndice A):
@@ -555,6 +633,14 @@ CREATE INDEX idx_compras_planificadas_fecha
     ON COMPRAS_PLANIFICADAS (fecha_agendada, id)
     WHERE estado = 'pendiente';
 
+-- Partes de un egreso compartido: un contacto a lo sumo una vez por egreso
+CREATE UNIQUE INDEX ux_gastos_compartidos_transaccion_contacto
+    ON GASTOS_COMPARTIDOS (transaccion_id, contacto_id);
+
+-- Resumen "me deben" e historial por contacto
+CREATE INDEX idx_gastos_compartidos_contacto_estado
+    ON GASTOS_COMPARTIDOS (contacto_id, estado);
+
 -- Clasificación por tipo
 CREATE INDEX idx_categorias_tipo
     ON CATEGORIAS (tipo_transaccion);
@@ -591,8 +677,10 @@ CREATE INDEX idx_categorias_tipo
 | `CONTACTOS` | `COMPRAS_PLANIFICADAS` | 1:N | Una planificación es un compromiso con un contacto. | `RESTRICT` (no puede quedar huérfana) |
 | `CONTACTOS` | `COMPRAS_GRUPALES` | 1:N opcional | Identifica al pagador de la compra; `NULL` = usuario principal. | `RESTRICT` (`SET NULL` reescribiría el pasado) |
 | `CONTACTOS` | `DEUDAS_PARTICIPANTES` | 1:N | Identifica al deudor de la deuda. | `RESTRICT` (identidad de una persona) |
+| `CONTACTOS` | `GASTOS_COMPARTIDOS` | 1:0..N | Identifica al deudor de la parte de un egreso compartido. | `RESTRICT` (borrar al deudor reescribiría cobros ya registrados) |
 | `TRANSACCIONES` | `COMPRAS_GRUPALES` | 1:0..1 | Un movimiento origina a lo sumo una compra grupal. | `CASCADE` + `UNIQUE` (asiento y desglose son una realidad) |
 | `TRANSACCIONES` | `LUGARES` | 1:0..1 | Un movimiento puede originar a lo sumo un pin vinculado. | `SET NULL` + `UNIQUE` (borrar el movimiento no debe borrar la lista del usuario) |
+| `TRANSACCIONES` | `GASTOS_COMPARTIDOS` | 1:0..N (mín. 1 si se comparte) | El egreso se reparte en la parte que debe cada contacto. | `CASCADE` (una parte sin gasto no significa nada) |
 | `LUGARES` | `ITEMS_LUGAR` | 1:0..N | El pin contiene su lista de cosas. | `CASCADE` (un elemento sin pin no significa nada) |
 | `COMPRAS_GRUPALES` | `ITEMS_COMPRA` | 1:N (mín. 1) | La compra se desglosa en ítems. | `CASCADE` (un ítem sin cabecera no significa nada) |
 | `COMPRAS_GRUPALES` | `DEUDAS_PARTICIPANTES` | 1:0..N | La compra genera las deudas del reparto. | `CASCADE` (la deuda nace de la compra) |
@@ -628,6 +716,11 @@ Es la distinción central del dominio compartido y la razón de que
 - **Los participantes no pagan nada directamente al pagador.** `DEUDAS_PARTICIPANTES` registra lo
   que cada contacto *debe* y `monto_pagado` sus abonos. Nada de eso toca `CUENTAS.saldo_actual`
   hasta que el usuario registre la devolución del pago como movimiento, si decide hacerlo.
+- **`GASTOS_COMPARTIDOS` (Feature 012) materializa esa devolución como movimiento.** Marcar una parte
+  como `pagado` inserta el ingreso "Devolución gasto compartido" en la cuenta del egreso original y
+  mueve `CUENTAS.saldo_actual` con aritmética atómica, todo en la misma transacción (I-16). No es una
+  excepción al párrafo anterior: es exactamente el movimiento que ese párrafo exige, generado por la
+  app en lugar de capturado a mano. Crear el reparto, en cambio, no mueve ninguna cuenta.
 
 | Dimensión | Pagador real | Participante deudor |
 |---|---|---|
@@ -669,6 +762,11 @@ obligatorios, así que las reglas siguientes se validan en la capa de dominio y 
 | I-9 | Todo `LUGARES` tiene coordenadas completas y dentro de rango WGS84 | Capa de dominio: `LugarService` + `Ubicacion` + tests (`LugarServiceTest`); Room no expresa `CHECK` (§3.9) |
 | I-10 | Un movimiento tiene como máximo un pin vinculado | Índice `UNIQUE index_LUGARES_transaccion_id` (no parcial; los `NULL` no colisionan) + test de DAO `testVinculoConMovimientoEsUnico` |
 | I-11 | `ITEMS_LUGAR.completado` solo vale 0 o 1 y todo elemento pertenece a un lugar existente | Dominio (`ItemLugar` booleano) + `FK` `ON DELETE CASCADE` del motor + test de cascada |
+| I-12 | Un egreso compartido tiene ≥ 1 parte **de contacto**; no existe reparto sin contactos (la parte del usuario no se persiste) | Dominio: `GastoCompartidoService.validarReparto` → `GASTO_SIN_CONTACTOS`; `GastoCompartidoServiceTest` |
+| I-13 | En modo **igual**: `Σ GASTOS_COMPARTIDOS.monto_asignado = TRANSACCIONES.monto − parte implícita del usuario`, al peso (el usuario es 1 de las N+1 partes). En **personalizada**: la suma de las partes de contactos es ≤ monto del egreso; el resto es la parte implícita del usuario. | Dominio: `dividirConUsuario` (residuo de a 1 CLP) y `validarPersonalizado` (`REPARTO_NO_CUADRA`, `REPARTO_IGUAL_INSUFICIENTE`, `MONTO_PARTE_INVALIDO`); test puro + integración |
+| I-14 | Una parte `pagado` no vuelve a `pendiente`; `estado` y `fecha_pago` son coherentes | `CHECK` de fila (§3.11) + repositorio: único write es `marcarPagada()` con `WHERE estado = 'pendiente'`; test de DAO |
+| I-15 | No se elimina un contacto con partes registradas | `FK ON DELETE RESTRICT` + traducción a `CONTACTO_EN_USO`; test de DAO |
+| I-16 | Cobrar una parte es atómico: estado + ingreso "Devolución gasto compartido" + saldo en una sola transacción | Repositorio con `runInTransaction` y `saldo_actual = saldo_actual + :monto`; test de DAO y de recálculo de I-1 |
 
 > **Límite explícito de las garantías del motor.** El `CHECK` de coherencia estado ↔ importe valida
 > la **fila**, no el **historial**: SQLite aceptaría escribir `estado = 'pendiente',
@@ -723,6 +821,37 @@ UPDATE DEUDAS_PARTICIPANTES
    AND compra_grupal_id = :compra_id;   -- el filtro por compra evita tocar deudas ajenas
 ```
 
+**Operación atómica de referencia: cobrar una parte de un gasto compartido** (Feature 012, un solo
+`runInTransaction`; el orden importa):
+
+```sql
+-- 1) validar y leer el importe y la cuenta del egreso original
+SELECT gc.monto_asignado, t.cuenta_id
+  FROM GASTOS_COMPARTIDOS gc
+  JOIN TRANSACCIONES t ON t.id = gc.transaccion_id
+ WHERE gc.id = :parte_id AND gc.estado = 'pendiente';
+-- sin fila → PARTE_INEXISTENTE / PARTE_YA_PAGADA y rollback
+
+-- 2) cerrar la parte (el filtro por estado hace que un segundo cobro afecte 0 filas)
+UPDATE GASTOS_COMPARTIDOS
+   SET estado = 'pagado', fecha_pago = :ahora_iso
+ WHERE id = :parte_id AND estado = 'pendiente';
+
+-- 3) asentar la devolución como ingreso: el dinero entró a la cuenta y el historial lo muestra
+INSERT INTO TRANSACCIONES
+  (cuenta_id, categoria_id, monto, tipo, fecha_hora, descripcion, latitud, longitud, direccion_lugar)
+VALUES (:cuenta_id, NULL, :monto_asignado, 'ingreso', :ahora_iso,
+        'Devolución gasto compartido', NULL, NULL, NULL);
+
+-- 4) mover el saldo con aritmética atómica (nunca leer-sumar-escribir)
+UPDATE CUENTAS SET saldo_actual = saldo_actual + :monto_asignado WHERE id = :cuenta_id;
+```
+
+Este bloque cierra la única vía por la que una devolución llega al saldo. El ingreso del paso 3 no es
+decorativo: es lo que mantiene verdadero I-1 (`saldo_actual = saldo_inicial + Σ ingresos − Σ egresos`).
+Si cualquiera de los cuatro pasos falla, Room revierte el bloque completo y no queda ni parte cobrada
+ni ingreso huérfano ni saldo desplazado.
+
 ## 5. Decisiones de Diseño del Esquema (ADR-lite)
 
 > *Guía:* Lista numerada. Cada entrada: decisión → alternativas descartadas → justificación →
@@ -768,6 +897,11 @@ UPDATE DEUDAS_PARTICIPANTES
    - **Justificación:** no hay servidor (`mission.md` §3), luego las columnas de sincronización serían datos muertos; no hay conversión de moneda, luego cada cuenta declara su unidad; la búsqueda de texto no es requisito de ningún objetivo; las vistas quedarían fuera de la verificación en compilación de Room; y el volumen local no justifica un índice espacial nativo.
    - **Consecuencia:** si algún objetivo de `mission.md` incorporara alguno de estos casos, exige una migración y una entrada nueva en esta lista, no una excepción silenciosa.
 
+9. **`GASTOS_COMPARTIDOS` (tabla única transacción↔contacto) frente al trío `COMPRAS_GRUPALES` + `ITEMS_COMPRA` + `DEUDAS_PARTICIPANTES`**
+   - **Alternativas descartadas:** implementar el trío completo aunque sin ítems (cabecera + deudas); guardar el reparto como JSON dentro de `TRANSACCIONES`; reutilizar `DEUDAS_PARTICIPANTES` exigiendo una `COMPRAS_GRUPALES` de cabecera por cada egreso compartido.
+   - **Justificación:** la Feature 012 reparte un egreso ya registrado con cobro binario (`pendiente`/`pagado`) y necesita una consulta directa por contacto ("me deben"); el trío, en cambio, exige título, fecha civil, estado de la compra, ítems con precio y `monto_pagado` acumulable, datos que esa feature no captura. Una cabecera vacía por cada egreso compartido duplicaría filas sin aportar información, y el JSON rompería la integridad referencial y las consultas indexadas.
+   - **Consecuencia:** conviven dos granularidades —`GASTOS_COMPARTIDOS` para el reparto por egreso (Feature 012) y el trío para la compra con ítems y abonos parciales (hito futuro, que además habilita el "les debo" cuando paga un contacto). Pasar 012 al trío exigiría migrar datos y actualizar esta entrada; no se hará en silencio.
+
 ---
 
 ## 6. Estrategia de Evolución del Esquema
@@ -787,14 +921,17 @@ UPDATE DEUDAS_PARTICIPANTES
 
 | `user_version` | Cambios | Estado |
 |---|---|---|
-| 1 | Versión inicial: las 8 tablas, sus `CHECK`, `FOREIGN KEY` e índices (§3.11) | Vigente |
-| 2 | Geolocalización de movimientos (`TRANSACCIONES.latitud/longitud/direccion_lugar`) y nuevas tablas `LUGARES` e `ITEMS_LUGAR` con sus índices (§3.9-§3.11) | Implementado (Feature 009, migración Room 2 → 3) |
+| 1 | Versión inicial: las 8 tablas, sus `CHECK`, `FOREIGN KEY` e índices (§3.12) | Reemplazada por la revisión 2 |
+| 2 | Geolocalización de movimientos (`TRANSACCIONES.latitud/longitud/direccion_lugar`) y nuevas tablas `LUGARES` e `ITEMS_LUGAR` con sus índices (§3.9-§3.12) | Implementado (Feature 009, migración Room 2 → 3) |
+| 3 | `GASTOS_COMPARTIDOS`: partes de un egreso compartido con estado de cobro `pendiente`/`pagado`, fecha de pago e índices (§3.11-§3.12) | En preparación (Feature 012, migración Room 4 → 5) |
 
 > **Nota de implementación (Room):** la base Android ya estaba en `version = 2` por la migración
 > 1 → 2 que agregó `CUENTAS.activa` en la Feature 007. Esa columna no forma parte del DDL canónico
 > de este documento, así que la Feature 009 se implementa con una migración Room **2 → 3** que
 > materializa la revisión **2** del esquema canónico. No son dos numeraciones equivalentes: una es la
-> ruta de migración del archivo y la otra la revisión del contrato de datos.
+> ruta de migración del archivo y la otra la revisión del contrato de datos. La ruta Room sigue:
+> **3 → 4** agregó `CONTACTOS` (Feature 011) y **4 → 5** agrega `GASTOS_COMPARTIDOS` (Feature 012,
+> revisión 3 del contrato).
 >
 > **Desviaciones conocidas y conscientes del archivo real** (documentadas en §3.9): Room no expresa
 > `CHECK`, los índices usan su convención de nombres y el único del vínculo es no parcial. El
@@ -810,24 +947,27 @@ UPDATE DEUDAS_PARTICIPANTES
 
 | Entidad/Tabla afectada | Feature (carpeta en `spec/features/`) | Dirección de acceso | Notas |
 |---|---|---|---|
-| `CONTACTOS` | `NNN-directorio-contactos` (pendiente de crear, Fase 1) | ambas | Tabla base del reparto de deudas; su borrado está bloqueado por `RESTRICT`. |
-| `CUENTAS` | `007-cuentas` (Feature 007, en desarrollo) | ambas | `saldo_actual` es proyección de `TRANSACCIONES` (invariante I-1). |
-| `CATEGORIAS` | `007-cuentas` (Feature 007, en desarrollo) | ambas | Semilla de 7 categorías en el primer arranque; se puebla por SQL, no por feature. |
-| `TRANSACCIONES` | `007-cuentas` (Feature 007, en desarrollo) | ambas | Libro mayor. También es la fuente del mapa en la Fase 2. |
-| `TRANSACCIONES` (geometría) | `009-geolocalizacion-map` (en preparación, Fase 2) | ambas | `idx_transacciones_geo` y la geolocalización opcional del movimiento. |
-| `LUGARES` | `009-geolocalizacion-map` (en preparación, Fase 2) | ambas | Pin referencial vinculado a un movimiento o independiente; `ux_lugares_transaccion` garantiza 1:0..1. |
-| `ITEMS_LUGAR` | `009-geolocalizacion-map` (en preparación, Fase 2) | ambas | Lista de cosas del pin; se borra en cascada con `LUGARES`. |
+| `CONTACTOS` | `011-contactos` (implementada) | ambas | Agenda local de terceros; su borrado está bloqueado por `RESTRICT` (incluye `GASTOS_COMPARTIDOS`). |
+| `CUENTAS` | `007-cuentas` (implementada) | ambas | `saldo_actual` es proyección de `TRANSACCIONES` (invariante I-1). |
+| `CATEGORIAS` | `007-cuentas` (implementada) | ambas | Semilla de 7 categorías en el primer arranque; se puebla por SQL, no por feature. |
+| `TRANSACCIONES` | `007-cuentas` / `008-historial` (implementadas) | ambas | Libro mayor. También es la fuente del mapa en la Fase 2. |
+| `TRANSACCIONES` (geometría) | `009-geolocalizacion-map` (implementada) | ambas | `idx_transacciones_geo` y la geolocalización opcional del movimiento. |
+| `LUGARES` | `009-geolocalizacion-map` (implementada) | ambas | Pin referencial vinculado a un movimiento o independiente; `ux_lugares_transaccion` garantiza 1:0..1. |
+| `ITEMS_LUGAR` | `009-geolocalizacion-map` (implementada) | ambas | Lista de cosas del pin; se borra en cascada con `LUGARES`. |
 | `COMPRAS_PLANIFICADAS` | `NNN-historial-agenda` (pendiente, Fase 2) | ambas | Agenda de compras futuras; al completarse materializa `TRANSACCIONES`. |
-| `COMPRAS_GRUPALES` | `NNN-gastos-compartidos` (pendiente, Fase 3) | ambas | Distingue pagador real de participantes (§4.1). |
-| `ITEMS_COMPRA` | `NNN-gastos-compartidos` (pendiente, Fase 3) | ambas | Base del reparto equitativo; `monto_subtotal` verificado por `CHECK`. |
-| `DEUDAS_PARTICIPANTES` | `NNN-gastos-compartidos` (pendiente, Fase 3) | ambas | Ciclo `pendiente`/`parcial`/`liquidado` y balance de deudas. |
+| `GASTOS_COMPARTIDOS` | `012-division-gastos` (en preparación) | ambas | Reparto de un egreso por contacto (`pendiente`/`pagado`) con cobro atómico (I-16); base del resumen "me deben". |
+| `COMPRAS_GRUPALES` | `NNN-gastos-compartidos` (pendiente, hito futuro) | ambas | Distingue pagador real de participantes (§4.1) y habilita el "les debo". |
+| `ITEMS_COMPRA` | `NNN-gastos-compartidos` (pendiente, hito futuro) | ambas | Base del reparto equitativo; `monto_subtotal` verificado por `CHECK`. |
+| `DEUDAS_PARTICIPANTES` | `NNN-gastos-compartidos` (pendiente, hito futuro) | ambas | Ciclo `pendiente`/`parcial`/`liquidado` y balance de deudas. |
 | Esquema completo | — | — | Definido y validado en este documento; registro de memoria `doc/003-modelo-datos.md`. |
 
 **Hitos del roadmap que dependen de este esquema** (`roadmap.md` §2): "Directorio Local de
 Contactos" y "Gestión de Cuentas y Transacciones (SQLite)" dependen de las 4 primeras tablas;
 "Geolocalización de Movimientos en Mapa" depende de las 3 columnas de coordenadas;
-"Historial y Agendamiento de Compras" depende de `COMPRAS_PLANIFICADAS`; y "Gastos Compartidos y
-Asignación de Deudas" depende de `COMPRAS_GRUPALES`, `ITEMS_COMPRA` y `DEUDAS_PARTICIPANTES`.
+"Historial y Agendamiento de Compras" depende de `COMPRAS_PLANIFICADAS`; "Gastos Compartidos y
+Asignación de Deudas" depende de `CONTACTOS`, `TRANSACCIONES` y `GASTOS_COMPARTIDOS` en la Feature
+012, y de `COMPRAS_GRUPALES`, `ITEMS_COMPRA` y `DEUDAS_PARTICIPANTES` en el hito futuro de compras
+grupales con ítems.
 
 **Registro de cambios del modelo de datos:**
 
@@ -836,6 +976,7 @@ Asignación de Deudas" depende de `COMPRAS_GRUPALES`, `ITEMS_COMPRA` y `DEUDAS_P
 | 2026-09-28 | Definición inicial del esquema v1: 8 tablas, FK con `CASCADE`/`SET NULL`/`RESTRICT`, `CHECK` de integridad, dinero en pesos CLP `INTEGER` y coordenadas en `REAL`. | Cumplir el pilar de persistencia local offline y fijar el contrato de datos antes de escribir la Fase 1. | `doc/003-modelo-datos.md` |
 | 2026-10-05 | Adaptación de unidad monetaria: de centavos a pesos CLP (Decisión #2 en `spec/features/007-cuentas/plan.md`). Los pesos chilenos no tienen centavos en circulación desde 1984. | Alinear el modelo de datos con el contexto local de Chile y evitar conversiones innecesarias. | `spec/features/007-cuentas/plan.md` |
 | 2026-10-23 | Revisión v2: se agregan `LUGARES` e `ITEMS_LUGAR` para pines de mapa con tipo, emoji, estado y lista de cosas; `LUGARES.transaccion_id` vincula opcionalmente el pin con un movimiento. Se formalizan las coordenadas de `TRANSACCIONES` como parte de la Feature 009. | La feature se reescribe para cubrir pines independientes y vinculados a movimientos, con listas de recordatorio y cierre reversible. | `spec/features/009-geolocalizacion-map/plan.md` (registro final: `doc/009-geolocalizacion-map.md`) |
+| 2026-10-26 | Revisión v3: se agrega `GASTOS_COMPARTIDOS` (partes de un egreso por contacto, `pendiente`/`pagado`, `fecha_creacion`/`fecha_pago` ISO-8601), sus dos índices, las invariantes I-12..I-16 y la operación atómica de cobro. | La Feature 012 divide egresos entre contactos y necesita que el cobro llegue al saldo con asiento contable (I-16) sin implementar todavía el trío de compras grupales. | `spec/features/012-division-gastos/plan.md` (registro final: `doc/012-division-gastos.md`) |
 
 ---
 
@@ -845,7 +986,7 @@ Fuente de verdad ejecutable. Debe reproducirse sin cambios en `SQLiteOpenHelper.
 1-2) o en las migraciones de Room (Fase 3). Si el código y este apéndice discrepan, es un bug.
 
 ```sql
--- LocalCash Database Schema v2
+-- LocalCash Database Schema v3
 -- Unidad monetaria: pesos CLP (INTEGER, no centavos)
 -- Coordenadas: grados WGS84 (REAL)
 -- Fechas: ISO-8601 UTC (TEXT)
@@ -1001,7 +1142,29 @@ CREATE TABLE ITEMS_LUGAR (
         ON UPDATE CASCADE ON DELETE CASCADE
 );
 
--- ────────────────────────────── ÍNDICES (§3.11) ──────────────────────────────
+-- ─────────────────────────── GASTOS_COMPARTIDOS ─────────────────────────────
+CREATE TABLE GASTOS_COMPARTIDOS (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    transaccion_id INTEGER NOT NULL,
+    contacto_id    INTEGER NOT NULL,
+    monto_asignado INTEGER NOT NULL CHECK (monto_asignado > 0),
+    estado         TEXT    NOT NULL DEFAULT 'pendiente'
+                   CHECK (estado IN ('pendiente', 'pagado')),
+    fecha_creacion TEXT    NOT NULL CHECK (fecha_creacion GLOB
+                       '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]Z'),
+    fecha_pago     TEXT    CHECK (fecha_pago IS NULL OR fecha_pago GLOB
+                       '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]Z'),
+    CHECK (
+        (estado = 'pendiente' AND fecha_pago IS NULL)
+     OR (estado = 'pagado'    AND fecha_pago IS NOT NULL)
+    ),
+    FOREIGN KEY (transaccion_id) REFERENCES TRANSACCIONES (id)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    FOREIGN KEY (contacto_id)    REFERENCES CONTACTOS (id)
+        ON UPDATE CASCADE ON DELETE RESTRICT
+);
+
+-- ────────────────────────────── ÍNDICES (§3.12) ──────────────────────────────
 CREATE INDEX idx_transacciones_geo
     ON TRANSACCIONES (latitud, longitud)
     WHERE latitud IS NOT NULL AND longitud IS NOT NULL;
@@ -1066,8 +1229,14 @@ CREATE UNIQUE INDEX ux_compras_planificadas_contacto_fecha
 CREATE UNIQUE INDEX ux_deudas_item
     ON DEUDAS_PARTICIPANTES (compra_grupal_id, item_id, contacto_id) WHERE item_id IS NOT NULL;
 
+CREATE UNIQUE INDEX ux_gastos_compartidos_transaccion_contacto
+    ON GASTOS_COMPARTIDOS (transaccion_id, contacto_id);
+
+CREATE INDEX idx_gastos_compartidos_contacto_estado
+    ON GASTOS_COMPARTIDOS (contacto_id, estado);
+
 -- ──────────────────────────────── VERSIONADO ─────────────────────────────────
-PRAGMA user_version = 2;
+PRAGMA user_version = 3;
 ```
 
 ### A.1 Semilla de `CATEGORIAS`

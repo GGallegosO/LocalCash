@@ -10,13 +10,20 @@ import android.os.CancellationSignal;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.Toolbar;
@@ -30,17 +37,23 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.color.MaterialColors;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.localcash.R;
 import com.localcash.data.db.AppDatabase;
+import com.localcash.data.model.DeudaContacto;
 import com.localcash.data.entities.Cuenta;
 import com.localcash.databinding.ActivityCuentasBinding;
 import com.localcash.databinding.BottomSheetLugaresBinding;
 import com.localcash.databinding.BottomSheetTransaccionBinding;
 import com.localcash.databinding.DialogContactoBinding;
+import com.localcash.databinding.ItemDeudaContactoBinding;
+import com.localcash.databinding.ItemParteGastoBinding;
 import com.localcash.databinding.ViewContactosBinding;
 import com.localcash.databinding.ViewCuentasBinding;
 import com.localcash.databinding.ViewHistorialBinding;
@@ -52,6 +65,9 @@ import com.localcash.domain.model.TipoTransaccion;
 import com.localcash.domain.model.Transaccion;
 import com.localcash.domain.model.Ubicacion;
 import com.localcash.domain.model.Contacto;
+import com.localcash.domain.model.EstadoReparto;
+import com.localcash.domain.model.ModoDivision;
+import com.localcash.domain.model.PartePropuesta;
 import com.localcash.ui.BaseActivity;
 import com.localcash.ui.contactos.ContactoAdapter;
 import com.localcash.ui.contactos.ContactosViewModel;
@@ -65,8 +81,12 @@ import com.localcash.ui.mapa.SeleccionarUbicacionActivity;
 import com.localcash.ui.theme.ThemeManager;
 import com.localcash.ui.util.CurrencyFormatter;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+import java.util.function.LongConsumer;
 
 /**
  * Activity principal de LocalCash (Módulo 1): 4 vistas en un {@code ViewFlipper}
@@ -130,6 +150,26 @@ public class CuentasActivity extends BaseActivity
      * lanzar la selección de ubicación al recibir el resultado.
      */
     private boolean actualizandoSwitchUbicacion;
+
+    /**
+     * Contacto en curso para el reparto: checkbox "Compartido" deshabilitado en
+     * los ingresos (solo un egreso se divide), y guardado al cambiar el tipo
+     * programáticamente (Feature 012, T11).
+     */
+    private boolean actualizandoCheckCompartido;
+
+    /** Contactos de la agenda disponibles para compartir un egreso (Feature 012). */
+    private final List<Contacto> contactosAgenda = new ArrayList<>();
+
+    /**
+     * Firma de las filas de partes ya infladas (modo + ids seleccionados).
+     * Evita reconstruir los EditText en cada tecla, lo que robaría el foco.
+     */
+    private String firmaFilasParte = "";
+
+    /** Observador del bloque de división, activo solo con la hoja abierta. */
+    @Nullable
+    private androidx.lifecycle.Observer<EstadoReparto> observadorEstadoReparto;
 
     /** Lanzador de la Activity de selección de ubicación (T24). */
     private ActivityResultLauncher<Intent> lanzadorUbicacion;
@@ -500,11 +540,19 @@ public class CuentasActivity extends BaseActivity
         contactosViewModel.getContactos().observe(this, entidades -> {
             List<Contacto> dominio = ContactosViewModel.aDominio(entidades);
             adapter.setContactos(dominio);
+            contactosAgenda.clear();
+            if (dominio != null) {
+                contactosAgenda.addAll(dominio);
+            }
             boolean hayContactos = dominio != null && !dominio.isEmpty();
             vistaContactos.recyclerContactos.setVisibility(
                     hayContactos ? View.VISIBLE : View.GONE);
             vistaContactos.layoutEmpty.setVisibility(hayContactos ? View.GONE : View.VISIBLE);
         });
+
+        // Deuda pendiente por contacto: pinta "Debe: $X" o "Al día" (T13).
+        contactosViewModel.getResumenDeudas().observe(this,
+                resumen -> adapter.setResumenDeudas(resumen));
 
         // FAB: abrir el diálogo de alta de contacto.
         vistaContactos.fabAgregar.setOnClickListener(v -> mostrarDialogoContacto(null));
@@ -558,15 +606,87 @@ public class CuentasActivity extends BaseActivity
 
     /** Muestra el diálogo de detalle de un contacto (editar/eliminar). */
     private void mostrarDialogoDetalleContacto(Contacto contacto) {
-        new MaterialAlertDialogBuilder(this)
+        LinearLayout contenedor = new LinearLayout(this);
+        contenedor.setOrientation(LinearLayout.VERTICAL);
+        int pad = (int) (16 * getResources().getDisplayMetrics().density);
+        contenedor.setPadding(pad, pad / 2, pad, 0);
+
+        AlertDialog dialogo = new MaterialAlertDialogBuilder(this)
                 .setTitle(contacto.getNombre())
-                .setMessage(contacto.getTelefono() != null ? contacto.getTelefono() : "")
+                .setView(contenedor)
                 .setPositiveButton(R.string.aContacto_btn_editar, (d, w) ->
                         mostrarDialogoContacto(contacto))
                 .setNegativeButton(R.string.aContacto_btn_eliminar, (d, w) ->
                         confirmarEliminacionContacto(contacto))
                 .setNeutralButton(android.R.string.cancel, null)
                 .show();
+
+        final Observer<List<DeudaContacto>> observador = deudas ->
+                pintarDeudasDetalle(contenedor, deudas);
+        contactosViewModel.getDeudasPendientes(contacto.getId()).observe(this, observador);
+        final Observer<ErrorCode> observadorPago = error -> {
+            if (error != null) {
+                Toast.makeText(this, mensajeReparto(error), Toast.LENGTH_SHORT).show();
+            }
+        };
+        contactosViewModel.getResultadoPago().observe(this, observadorPago);
+        dialogo.setOnDismissListener(d -> {
+            contactosViewModel.getDeudasPendientes(contacto.getId())
+                    .removeObserver(observador);
+            contactosViewModel.getResultadoPago().removeObserver(observadorPago);
+        });
+    }
+
+    /**
+     * Pinta las deudas pendientes del contacto en el diálogo de detalle (T13).
+     *
+     * @param contenedor contenedor vertical del diálogo
+     * @param deudas     filas {@code (concepto, fecha, monto)}
+     */
+    private void pintarDeudasDetalle(@NonNull LinearLayout contenedor,
+                                     @Nullable List<DeudaContacto> deudas) {
+        contenedor.removeAllViews();
+        if (deudas == null || deudas.isEmpty()) {
+            TextView vacio = new TextView(this);
+            vacio.setText(R.string.aGastoCompartido_sin_deudas);
+            vacio.setTextColor(MaterialColors.getColor(
+                    vacio, com.google.android.material.R.attr.colorOnSurfaceVariant));
+            contenedor.addView(vacio);
+            return;
+        }
+
+        SimpleDateFormat formato = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+        long total = 0L;
+        List<Long> pendientes = new ArrayList<>();
+        for (DeudaContacto deuda : deudas) {
+            ItemDeudaContactoBinding fila = ItemDeudaContactoBinding.inflate(
+                    LayoutInflater.from(contenedor.getContext()), contenedor, false);
+            String concepto = deuda.getDescripcion() == null || deuda.getDescripcion().isEmpty()
+                    ? getString(R.string.aGastoCompartido_detalle_titulo)
+                    : deuda.getDescripcion();
+            fila.tvConcepto.setText(concepto);
+            fila.tvFecha.setText(formato.format(new Date(deuda.getFechaMillis())));
+            fila.tvMonto.setText(CurrencyFormatter.format(deuda.getMontoAsignado()));
+            fila.btnPagar.setOnClickListener(v ->
+                    contactosViewModel.pagarParte(deuda.getParteId()));
+            contenedor.addView(fila.getRoot());
+            total += deuda.getMontoAsignado();
+            pendientes.add(Long.valueOf(deuda.getParteId()));
+        }
+
+        // Footer "Pagar todo": oculto cuando ya no hay deudas.
+        com.google.android.material.button.MaterialButton pagarTodo =
+                new com.google.android.material.button.MaterialButton(this);
+        pagarTodo.setText(getString(R.string.aGastoCompartido_pagar_todo,
+                CurrencyFormatter.format(total)));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        params.topMargin = (int) (8 * getResources().getDisplayMetrics().density);
+        pagarTodo.setLayoutParams(params);
+        final List<Long> ids = new ArrayList<>(pendientes);
+        pagarTodo.setOnClickListener(v -> contactosViewModel.pagarTodas(ids));
+        contenedor.addView(pagarTodo);
     }
 
     /** Pide confirmación antes de eliminar un contacto. */
@@ -964,6 +1084,406 @@ public class CuentasActivity extends BaseActivity
     }
 
     /**
+     * Prepara el bloque de gasto compartido del formulario (Feature 012, T11/T12).
+     * <p>
+     * La Activity solo orquesta: pinta los contactos de la agenda, captura las
+     * decisiones del usuario y las manda al {@link TransaccionViewModel}, que
+     * delega el cálculo y la validación en
+     * {@link com.localcash.domain.service.GastoCompartidoService}. La suma en
+     * vivo y el habilitado de "Registrar" salen del {@link EstadoReparto} que
+     * expone el ViewModel.
+     * </p>
+     *
+     * @param sheetBinding Binding del BottomSheet abierto
+     */
+    private void configurarDivision(@NonNull BottomSheetTransaccionBinding sheetBinding) {
+        transaccionViewModel.reiniciarDivision();
+        firmaFilasParte = "";
+        sheetBinding.rgModoDivision.setOnCheckedChangeListener(null);
+        sheetBinding.rbIgual.setChecked(true);
+        sheetBinding.contenedorPartes.removeAllViews();
+        poblarSelectorContactos(sheetBinding);
+
+        // El reparto solo aplica a egresos: en un ingreso el checkbox se apaga
+        // y se desmarca (CA-12 de la feature, regla de la misión).
+        actualizandoCheckCompartido = true;
+        sheetBinding.chkCompartido.setChecked(false);
+        sheetBinding.chkCompartido.setEnabled(
+                sheetBinding.toggleTipoTransaccion.getCheckedButtonId() == R.id.btnEgreso);
+        actualizandoCheckCompartido = false;
+
+        sheetBinding.toggleTipoTransaccion.addOnButtonCheckedListener(
+                (group, checkedId, isChecked) -> {
+                    if (!isChecked) {
+                        return;
+                    }
+                    boolean esEgreso = checkedId == R.id.btnEgreso;
+                    actualizandoCheckCompartido = true;
+                    sheetBinding.chkCompartido.setEnabled(esEgreso);
+                    if (!esEgreso) {
+                        sheetBinding.chkCompartido.setChecked(false);
+                    }
+                    actualizandoCheckCompartido = false;
+                });
+
+        sheetBinding.chkCompartido.setOnCheckedChangeListener((boton, marcado) -> {
+            if (actualizandoCheckCompartido) {
+                return;
+            }
+            transaccionViewModel.setCompartido(marcado);
+        });
+
+        sheetBinding.rbIgual.setOnClickListener(v -> {
+            transaccionViewModel.setModoDivision(ModoDivision.IGUAL);
+            reconstruirFilasParte(sheetBinding);
+        });
+        sheetBinding.rbPersonalizado.setOnClickListener(v -> {
+            transaccionViewModel.setModoDivision(ModoDivision.PERSONALIZADA);
+            reconstruirFilasParte(sheetBinding);
+        });
+
+        // El total del egreso entra al estado del reparto para poder comparar.
+        instalarWatcherMoneda(sheetBinding.inputMonto,
+                valor -> transaccionViewModel.setMontoTotal(valor));
+
+        sheetBinding.searchContactos.setOnItemClickListener(
+                (AdapterView<?> parent, View vista, int position, long id) -> {
+                    String nombre = (String) parent.getItemAtPosition(position);
+                    agregarContactoSeleccionado(sheetBinding, nombre);
+                });
+
+        observadorEstadoReparto = estado -> aplicarEstadoReparto(sheetBinding, estado);
+        transaccionViewModel.getEstadoReparto().observe(this, observadorEstadoReparto);
+        transaccionViewModel.getDivisionVisible().observe(this, visible -> {
+            sheetBinding.layoutDivision.setVisibility(
+                    Boolean.TRUE.equals(visible) ? View.VISIBLE : View.GONE);
+            if (Boolean.TRUE.equals(visible)) {
+                poblarSelectorContactos(sheetBinding);
+                reconstruirFilasParte(sheetBinding);
+            }
+        });
+    }
+
+    /**
+     * Libera el observador del reparto: la hoja se cerró y su binding ya no
+     * debe recibir emisiones.
+     */
+    private void quitarObservadorDivision() {
+        if (observadorEstadoReparto != null) {
+            transaccionViewModel.getEstadoReparto().removeObserver(observadorEstadoReparto);
+            observadorEstadoReparto = null;
+        }
+        transaccionViewModel.getDivisionVisible().removeObservers(this);
+    }
+
+    /**
+     * Pinta un {@link CheckBox} por contacto de la agenda (Feature 011) y
+     * conserva la selección vigente al repoblar.
+     *
+     * @param sheetBinding Binding del BottomSheet abierto
+     */
+    private void poblarSelectorContactos(@NonNull BottomSheetTransaccionBinding sheetBinding) {
+        // Sugerencias del buscador (se filtran solas al escribir).
+        List<String> nombres = new ArrayList<>();
+        for (Contacto contacto : contactosAgenda) {
+            nombres.add(contacto.getNombre());
+        }
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                sheetBinding.getRoot().getContext(),
+                android.R.layout.simple_dropdown_item_1line, nombres);
+        sheetBinding.searchContactos.setAdapter(adapter);
+        sheetBinding.searchContactos.setText("", false);
+
+        sheetBinding.tvSinContactos.setVisibility(
+                contactosAgenda.isEmpty() ? View.VISIBLE : View.GONE);
+
+        // Chips: solo los ya elegidos, cada uno con su "X" para quitarlo.
+        ChipGroup grupo = sheetBinding.chipGroupContactos;
+        List<Long> seleccionActual = transaccionViewModel.getContactosSeleccionados();
+        grupo.removeAllViews();
+        for (Long contactoId : seleccionActual) {
+            Chip chip = new Chip(grupo.getContext());
+            chip.setText(nombreContacto(contactoId.longValue()));
+            chip.setTag(contactoId);
+            chip.setCheckable(false);
+            chip.setCloseIconVisible(true);
+            chip.setOnCloseIconClickListener(v -> {
+                grupo.removeView(chip);
+                actualizarSeleccionContactos(sheetBinding);
+            });
+            grupo.addView(chip);
+        }
+    }
+
+    /**
+     * Agrega un contacto al reparto desde el desplegable y limpia el buscador.
+     *
+     * @param sheetBinding Binding del BottomSheet abierto
+     * @param nombre       nombre elegido en el desplegable
+     */
+    private void agregarContactoSeleccionado(
+            @NonNull BottomSheetTransaccionBinding sheetBinding, String nombre) {
+        for (Contacto contacto : contactosAgenda) {
+            if (contacto.getNombre().equals(nombre)) {
+                List<Long> seleccion = transaccionViewModel.getContactosSeleccionados();
+                if (!seleccion.contains(contacto.getId())) {
+                    seleccion.add(contacto.getId());
+                }
+                transaccionViewModel.setContactosSeleccionados(seleccion);
+                break;
+            }
+        }
+        sheetBinding.searchContactos.setText("", false);
+        poblarSelectorContactos(sheetBinding);
+        reconstruirFilasParte(sheetBinding);
+    }
+
+    /**
+     * Vuelca la selección de chips al ViewModel en el orden de la agenda.
+     *
+     * @param sheetBinding Binding del BottomSheet abierto
+     */
+    private void actualizarSeleccionContactos(
+            @NonNull BottomSheetTransaccionBinding sheetBinding) {
+        List<Long> seleccion = new ArrayList<>();
+        ChipGroup grupo = sheetBinding.chipGroupContactos;
+        for (int i = 0; i < grupo.getChildCount(); i++) {
+            View hijo = grupo.getChildAt(i);
+            if (hijo instanceof Chip && hijo.getTag() instanceof Long) {
+                seleccion.add((Long) hijo.getTag());
+            }
+        }
+        transaccionViewModel.setContactosSeleccionados(seleccion);
+        reconstruirFilasParte(sheetBinding);
+    }
+
+    /**
+     * Reconstruye las filas de monto solo cuando cambia la firma
+     * (modo + contactos), para no robar el foco del EditText en cada tecla.
+     * En "partes iguales" las filas muestran el monto calculado y no son
+     * editables.
+     *
+     * @param sheetBinding Binding del BottomSheet abierto
+     */
+    private void reconstruirFilasParte(@NonNull BottomSheetTransaccionBinding sheetBinding) {
+        List<Long> seleccion = transaccionViewModel.getContactosSeleccionados();
+        boolean personalizado =
+                transaccionViewModel.getModoDivision() == ModoDivision.PERSONALIZADA;
+
+        StringBuilder firma = new StringBuilder()
+                .append(personalizado ? 'P' : 'I').append('|').append(seleccion.size());
+        for (Long id : seleccion) {
+            firma.append(',').append(id);
+        }
+        String nuevaFirma = firma.toString();
+
+        if (nuevaFirma.equals(firmaFilasParte)) {
+            return;
+        }
+        firmaFilasParte = nuevaFirma;
+
+        LinearLayout contenedor = sheetBinding.contenedorPartes;
+        contenedor.removeAllViews();
+        if (seleccion.isEmpty()) {
+            contenedor.setVisibility(View.GONE);
+            return;
+        }
+        contenedor.setVisibility(View.VISIBLE);
+
+        java.util.Map<Long, Long> montosIguales = new java.util.HashMap<>();
+        if (!personalizado) {
+            EstadoReparto estadoActual = transaccionViewModel.getEstadoReparto().getValue();
+            if (estadoActual != null) {
+                for (PartePropuesta parte : estadoActual.getPartes()) {
+                    montosIguales.put(Long.valueOf(parte.getContactoId()),
+                            Long.valueOf(parte.getMontoAsignado()));
+                }
+            }
+        }
+
+        LayoutInflater inflater = LayoutInflater.from(contenedor.getContext());
+        for (Long contactoId : seleccion) {
+            ItemParteGastoBinding fila = ItemParteGastoBinding.inflate(
+                    inflater, contenedor, false);
+            fila.tvNombreContacto.setText(nombreContacto(contactoId));
+            final long id = contactoId.longValue();
+
+            if (personalizado) {
+                long captura = transaccionViewModel.getMontoPersonalizado(id);
+                fila.inputMontoParte.setText(captura > 0L
+                        ? CurrencyFormatter.format(captura) : "");
+                instalarWatcherMoneda(fila.inputMontoParte,
+                        valor -> transaccionViewModel.setMontoPersonalizado(id, valor));
+            } else {
+                Long monto = montosIguales.get(Long.valueOf(id));
+                fila.inputMontoParte.setText(
+                        monto == null ? "" : CurrencyFormatter.format(monto.longValue()));
+                fila.inputMontoParte.setEnabled(false);
+            }
+            fila.getRoot().setTag(Long.valueOf(id));
+            contenedor.addView(fila.getRoot());
+        }
+    }
+
+    /**
+     * Pinta la suma en vivo (verde si cuadra, rojo si no) y habilita "Registrar"
+     * solo cuando el dominio aprueba el reparto.
+     *
+     * @param sheetBinding Binding del BottomSheet abierto
+     * @param estado       estado del reparto emitido por el ViewModel
+     */
+    private void aplicarEstadoReparto(@NonNull BottomSheetTransaccionBinding sheetBinding,
+                                      @Nullable EstadoReparto estado) {
+        if (estado == null) {
+            return;
+        }
+        if (!estado.isCompartido()) {
+            sheetBinding.btnGuardarMovimiento.setEnabled(true);
+            return;
+        }
+
+        String texto = getString(R.string.aGastoCompartido_suma_en_vivo,
+                CurrencyFormatter.format(estado.getSumaParcial()),
+                CurrencyFormatter.format(estado.getMontoTotal()));
+        if (estado.getNumeroPartes() > 0) {
+            texto = texto + " · " + getString(
+                    R.string.aGastoCompartido_partes, estado.getNumeroPartes());
+        }
+        if (estado.getParteUsuario() > 0L) {
+            texto = texto + " · " + getString(R.string.aGastoCompartido_tu_parte,
+                    CurrencyFormatter.format(estado.getParteUsuario()));
+        }
+        if (!estado.isValido() && estado.getError() != null) {
+            texto = texto + " · " + getString(mensajeReparto(estado.getError()));
+        }
+        sheetBinding.tvSumaEnVivo.setText(texto);
+        sheetBinding.tvSumaEnVivo.setTextColor(MaterialColors.getColor(
+                sheetBinding.tvSumaEnVivo,
+                estado.isValido()
+                        ? androidx.appcompat.R.attr.colorPrimary
+                        : androidx.appcompat.R.attr.colorError));
+        sheetBinding.btnGuardarMovimiento.setEnabled(estado.isValido());
+
+        if (estado.getModo() == ModoDivision.IGUAL && estado.isValido()) {
+            refrescarMontosIguales(sheetBinding, estado.getPartes());
+        }
+    }
+
+    /**
+     * Actualiza las filas de solo lectura del reparto igual sin reconstruirlas
+     * (los montos cambian cuando el usuario edita el total).
+     *
+     * @param sheetBinding Binding del BottomSheet abierto
+     * @param partes       partes calculadas por el dominio
+     */
+    private void refrescarMontosIguales(@NonNull BottomSheetTransaccionBinding sheetBinding,
+                                        @NonNull List<PartePropuesta> partes) {
+        java.util.Map<Long, Long> montos = new java.util.HashMap<>();
+        for (PartePropuesta parte : partes) {
+            montos.put(Long.valueOf(parte.getContactoId()),
+                    Long.valueOf(parte.getMontoAsignado()));
+        }
+        LinearLayout contenedor = sheetBinding.contenedorPartes;
+        for (int i = 0; i < contenedor.getChildCount(); i++) {
+            View fila = contenedor.getChildAt(i);
+            if (!(fila.getTag() instanceof Long)) {
+                continue;
+            }
+            Long monto = montos.get((Long) fila.getTag());
+            if (monto == null) {
+                continue;
+            }
+            com.google.android.material.textfield.TextInputEditText campo =
+                    fila.findViewById(R.id.inputMontoParte);
+            if (campo != null) {
+                campo.setText(CurrencyFormatter.format(monto.longValue()));
+            }
+        }
+    }
+
+    /**
+     * @param contactoId id del contacto
+     * @return nombre visible para la fila de monto
+     */
+    private String nombreContacto(long contactoId) {
+        String nombre = String.valueOf(contactoId);
+        for (Contacto contacto : contactosAgenda) {
+            if (contacto.getId() == contactoId) {
+                nombre = contacto.getNombre();
+                break;
+            }
+        }
+        return nombre;
+    }
+
+    /**
+     * @param error código de negocio del reparto
+     * @return recurso de texto que explica el rechazo al usuario
+     */
+    private int mensajeReparto(@NonNull ErrorCode error) {
+        switch (error) {
+            case GASTO_SIN_CONTACTOS:
+                return R.string.aGastoCompartido_toast_sin_contactos;
+            case REPARTO_NO_CUADRA:
+                return R.string.aGastoCompartido_toast_reparto_no_cuadra;
+            case REPARTO_IGUAL_INSUFICIENTE:
+                return R.string.aGastoCompartido_toast_reparto_insuficiente;
+            case MONTO_PARTE_INVALIDO:
+                return R.string.aGastoCompartido_toast_monto_parte_invalido;
+            case CONTACTO_DUPLICADO:
+                return R.string.aGastoCompartido_toast_contacto_duplicado;
+            case MONTO_INVALIDO:
+                return R.string.aGastoCompartido_toast_monto_invalido;
+            default:
+                return R.string.aGastoCompartido_toast_reparto_error;
+        }
+    }
+
+    /**
+     * Instala el formato de moneda chilena ($5.000, sin "CLP") en un campo de
+     * monto y entrega al callback el valor limpio (solo dígitos).
+     *
+     * @param campo      EditText de monto
+     * @param alCambiar  receptor del valor en pesos CLP
+     */
+    private void instalarWatcherMoneda(@NonNull android.widget.EditText campo,
+                                       @NonNull LongConsumer alCambiar) {
+        campo.addTextChangedListener(new TextWatcher() {
+            private boolean formateando;
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (formateando) {
+                    return;
+                }
+                String crudo = s == null ? "" : s.toString().replaceAll("[^0-9]", "");
+                long valor = 0L;
+                if (!crudo.isEmpty()) {
+                    try {
+                        valor = Long.parseLong(crudo);
+                    } catch (NumberFormatException e) {
+                        valor = 0L;
+                    }
+                }
+                formateando = true;
+                String formateado = valor > 0L ? CurrencyFormatter.format(valor) : "";
+                campo.setText(formateado);
+                campo.setSelection(formateado.length());
+                formateando = false;
+                alCambiar.accept(valor);
+            }
+        });
+    }
+
+    /**
      * Abre el BottomSheet para registrar un movimiento nuevo.
      * <p>
      * Infla {@code bottom_sheet_transaccion.xml}, puebla el selector de cuentas
@@ -980,6 +1500,9 @@ public class CuentasActivity extends BaseActivity
         sheetTransaccionBinding = sheetBinding;
         poblarSpinnerCuentas(sheetBinding);
         configurarConceptosPredefinidos(sheetBinding);
+        configurarDivision(sheetBinding);
+        sheetBinding.btnCerrar.setOnClickListener(v -> sheetDialog.dismiss());
+        sheetBinding.btnCancelar.setOnClickListener(v -> sheetDialog.dismiss());
 
         sheetBinding.spinnerCuentas.setOnItemClickListener((parent, view, position, id) -> {
             if (position >= 0 && position < cuentasSpinner.size()) {
@@ -1012,7 +1535,12 @@ public class CuentasActivity extends BaseActivity
             }
         });
 
-        sheetDialog.setOnDismissListener(dialog -> sheetTransaccionBinding = null);
+        sheetDialog.setOnDismissListener(dialog -> {
+            sheetTransaccionBinding = null;
+            quitarObservadorDivision();
+            transaccionViewModel.reiniciarDivision();
+            firmaFilasParte = "";
+        });
         sheetDialog.show();
     }
 
@@ -1071,7 +1599,8 @@ public class CuentasActivity extends BaseActivity
 
         // Monto: no vacío y > 0
         CharSequence montoTexto = sheetBinding.inputMonto.getText();
-        String montoStr = montoTexto != null ? montoTexto.toString().trim() : "";
+        // El campo muestra "$20.000": se valida y envía el valor limpio.
+        String montoStr = montoTexto == null ? "" : montoTexto.toString().replaceAll("[^0-9]", "");
         long monto = 0L;
         if (!montoStr.isEmpty()) {
             try {
@@ -1107,12 +1636,25 @@ public class CuentasActivity extends BaseActivity
                 ? TipoTransaccion.EGRESO.name()
                 : TipoTransaccion.INGRESO.name();
 
+        // Reparto compartido: la validación la decide el dominio a través del
+        // ViewModel; si rechaza el reparto, no se invoca el registro (CA-2/CA-5).
+        List<PartePropuesta> partes = null;
+        if (transaccionViewModel.isCompartido()) {
+            ErrorCode errorReparto = transaccionViewModel.validarReparto();
+            if (errorReparto != null) {
+                Toast.makeText(this, mensajeReparto(errorReparto), Toast.LENGTH_SHORT).show();
+                return;
+            }
+            partes = transaccionViewModel.partesParaRegistrar();
+        }
+
         final long montoFinal = monto;
         final Double latitudFinal = latitudMovimiento;
         final Double longitudFinal = longitudMovimiento;
+        final List<PartePropuesta> partesFinal = partes;
         LiveData<ErrorCode> resultado = transaccionViewModel.registrarTransaccion(
                 cuentaSeleccionadaId, tipo, montoFinal, concepto,
-                latitudFinal, longitudFinal, null);
+                latitudFinal, longitudFinal, null, partesFinal);
 
         resultado.observe(this, new Observer<ErrorCode>() {
             @Override
@@ -1156,6 +1698,16 @@ public class CuentasActivity extends BaseActivity
             case MONTO_INVALIDO:
                 mensaje = R.string.aCuentas_toast_error_monto_invalido;
                 break;
+            case GASTO_SIN_CONTACTOS:
+            case REPARTO_NO_CUADRA:
+            case REPARTO_IGUAL_INSUFICIENTE:
+            case MONTO_PARTE_INVALIDO:
+            case CONTACTO_DUPLICADO:
+            case GASTO_COMPARTIDO_INVALIDO:
+                // Rechazos del reparto: el mismo traductor que usa la suma en
+                // vivo (Feature 012).
+                mensaje = mensajeReparto(errorCode);
+                break;
             default:
                 mensaje = R.string.aCuentas_toast_movimiento_error;
                 break;
@@ -1178,6 +1730,20 @@ public class CuentasActivity extends BaseActivity
         sheetBinding.spinnerCuentas.setText("", false);
         cuentaSeleccionadaId = -1L;
         limpiarUbicacionMovimiento(sheetBinding);
+
+        // El reparto vuelve a su estado inicial: oculto, sin selección y con
+        // el bloque de división limpio (Feature 012).
+        actualizandoCheckCompartido = true;
+        sheetBinding.chkCompartido.setChecked(false);
+        actualizandoCheckCompartido = false;
+        sheetBinding.rgModoDivision.setOnCheckedChangeListener(null);
+        sheetBinding.rbIgual.setChecked(true);
+        sheetBinding.chipGroupContactos.removeAllViews();
+        sheetBinding.searchContactos.setText("", false);
+        sheetBinding.contenedorPartes.removeAllViews();
+        sheetBinding.tvSumaEnVivo.setText("");
+        firmaFilasParte = "";
+        transaccionViewModel.reiniciarDivision();
     }
 
     /**

@@ -103,7 +103,7 @@ public class MigracionV2V3Test {
 
         assertTrue(existeTabla(sqlite, LugarDao.TABLA));
         assertTrue(existeTabla(sqlite, ItemLugarDao.TABLA));
-        assertEquals(4, versionUsuario(sqlite));
+        assertEquals(5, versionUsuario(sqlite));
     }
 
     @Test
@@ -197,13 +197,18 @@ public class MigracionV2V3Test {
 
     /**
      * Abre la base sembrada con Room y la migración real.
+     * <p>
+     * Incluye {@link AppDatabase#MIGRATION_4_5} porque la base ya apunta a la
+     * versión 5: sin esa migración Room rechazaría la apertura. La prueba sigue
+     * verificando el tramo 2 → 3 y su resultado final en la versión vigente.
+     * </p>
      *
      * @return base ya migrada
      */
     private AppDatabase abrirConMigracion() {
         return Room.databaseBuilder(context, AppDatabase.class, NOMBRE_DB)
                 .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3,
-                        AppDatabase.MIGRATION_3_4)
+                        AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5)
                 .allowMainThreadQueries()
                 .build();
     }

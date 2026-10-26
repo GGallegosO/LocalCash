@@ -101,6 +101,24 @@ public interface CuentaDao {
     void updateSaldo(long cuentaId, long saldo);
 
     /**
+     * Suma (o resta, con delta negativo) un importe al saldo con
+     * <b>aritmética atómica</b>: la base calcula {@code saldo = saldo + :delta}
+     * en una sola sentencia, sin leer antes el valor.
+     * <p>
+     * Es la vía obligatoria para movimientos generados por el sistema (por
+     * ejemplo, el cobro de una parte de un gasto compartido, I-16): evita la
+     * condición de carrera del patrón leer-calcular-escribir. El delta va en
+     * pesos CLP.
+     * </p>
+     *
+     * @param cuentaId Id de la cuenta
+     * @param delta    importe a sumar en pesos CLP (negativo para restar)
+     * @return número de filas afectadas: 1 si la cuenta existe, 0 si no
+     */
+    @Query("UPDATE cuentas SET saldo = saldo + :delta WHERE id = :cuentaId")
+    int sumarSaldo(long cuentaId, long delta);
+
+    /**
      * Elimina una cuenta. Sus transacciones se eliminan en cascada
      * (ON DELETE CASCADE declarado en la entidad Transaccion).
      *

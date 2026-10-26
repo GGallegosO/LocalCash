@@ -82,6 +82,20 @@ public interface TransaccionDao {
     LiveData<Transaccion> getById(long id);
 
     /**
+     * Obtiene un movimiento por su id de forma <b>bloqueante</b>. Solo para
+     * hilos secundarios.
+     * <p>
+     * Lo usa el cobro de una parte de gasto compartido: necesita la cuenta del
+     * egreso original para asentar la devolución en esa misma cuenta (I-16).
+     * </p>
+     *
+     * @param id Id del movimiento
+     * @return movimiento o {@code null} si no existe
+     */
+    @Query("SELECT * FROM transacciones WHERE id = :id")
+    Transaccion getByIdSync(long id);
+
+    /**
      * Observa los movimientos con coordenadas completas. La regla de negocio
      * {@code ambas o ninguna} se valida antes de persistir; la consulta filtra
      * filas históricas incompletas por seguridad.

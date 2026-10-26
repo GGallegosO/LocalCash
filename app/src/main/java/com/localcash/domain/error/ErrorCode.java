@@ -48,5 +48,29 @@ public enum ErrorCode {
     CONTACTO_EMAIL_DUPLICADO,
 
     /** El contacto tiene compras asociadas o deudas pendientes/parciales; no se puede eliminar. */
-    CONTACTO_EN_USO
+    CONTACTO_EN_USO,
+
+    /** Un egreso marcado como compartido no tiene ningún contacto (INV-1). */
+    GASTO_SIN_CONTACTOS,
+
+    /** La suma de las partes no iguala el monto del egreso (INV-2). */
+    REPARTO_NO_CUADRA,
+
+    /** División igual con un monto menor que el número de contactos (INV-2). */
+    REPARTO_IGUAL_INSUFICIENTE,
+
+    /** Una parte del reparto tiene monto nulo, cero o negativo. */
+    MONTO_PARTE_INVALIDO,
+
+    /** El mismo contacto aparece dos veces en el reparto del mismo egreso. */
+    CONTACTO_DUPLICADO,
+
+    /** La parte que se intenta cobrar no existe en la base de datos. */
+    PARTE_INEXISTENTE,
+
+    /** La parte ya estaba pagada: no puede volver a cobrarse (INV-3). */
+    PARTE_YA_PAGADA,
+
+    /** El reparto compartido no aplica (no es un egreso) o no se pudo persistir. */
+    GASTO_COMPARTIDO_INVALIDO
 }

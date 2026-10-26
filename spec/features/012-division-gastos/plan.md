@@ -18,14 +18,19 @@
 | `spec/constitution/data-model.md` | Sincronizar esquema: ERD Mermaid, diccionario `GASTOS_COMPARTIDOS`, invariantes I-12.., DDL Apéndice A | MODIFICAR (antes del código, regla AGENTS.md) | MEDIA |
 | `data/entities/GastoCompartido.java` | Entidad Room: tabla `GASTOS_COMPARTIDOS` con índices | CREAR | BAJA |
 | `data/dao/GastoCompartidoDao.java` | DAO: inserción por lotes, consulta por transacción, partes pendientes por contacto, resumen de deudas, operaciones de cobro. Nombre de tabla por constante | CREAR | ALTA |
+| `data/repository/GastoCompartidoRepository.java` | Repositorio: único punto de escritura del cobro atómico (I-16) y del registro de las partes dentro de la transacción del egreso | CREAR | ALTA |
 | `data/db/AppDatabase.java` | Entidad + DAO + versión 5 + `MIGRATION_4_5` + `gastoCompartidoDao()` | MODIFICAR | ALTA |
-| `domain/model/GastoCompartido.java` | Modelo de dominio inmutable con `toEntity()`/`fromEntity()` | CREAR | BAJA |
+| `domain/model/GastoCompartido.java` | Modelo de dominio inmutable con `toEntity()`/`fromEntity()` (se crea en T7, cuando el registro del egreso necesita mapear las partes) | CREAR | BAJA |
 | `domain/service/GastoCompartidoService.java` | Reglas de negocio: INV-1, INV-2 (reparto igual y personalizada), validaciones de monto | CREAR | ALTA |
 | `domain/error/ErrorCode.java` | Nuevos códigos de error de negocio | MODIFICAR | BAJA |
 | `ui/cuentas/TransaccionViewModel.java` | Extender `registrarTransaccion` con partes compartidas y cobro atómico | MODIFICAR | ALTA |
 | `ui/cuentas/CuentasActivity.java` | Formulario de egreso: checkbox "Compartido", selector de contactos, modo de división, suma en vivo | MODIFICAR | ALTA |
-| `res/layout/dialog_division_gastos.xml` | Layout del bloque de división (modo + filas de partes) | CREAR | BAJA |
-| `res/layout/item_parte_gasto.xml` | Fila: contacto + monto asignado editable/etiqueta de estado | CREAR | BAJA |
+| `res/layout/bottom_sheet_transaccion.xml` | Formulario existente del egreso: checkbox "Compartido" + bloque `layoutDivision` (selector de contactos, radios, filas de monto, suma en vivo) | MODIFICAR (corregido en T9: el bloque vive dentro de la hoja existente en lugar de un `dialog_division_gastos.xml` aparte) | MEDIA |
+| `res/layout/item_contacto_seleccion.xml` | Fila `CheckBox` de un contacto para la selección múltiple del reparto | CREAR | BAJA |
+| `res/layout/item_parte_gasto.xml` | Fila: contacto + monto asignado editable (personalizada) o de solo lectura (iguales) | CREAR | BAJA |
+| `domain/model/ModoDivision.java` | Enum de modo de división (estado de pantalla, no columna) | CREAR | BAJA |
+| `domain/model/EstadoReparto.java` | Valor inmutable del reparto en vivo: total, suma, partes, validez y `ErrorCode` | CREAR | BAJA |
+| `test/ui/cuentas/TransaccionViewModelDivisionTest.java` | Tests JVM del estado de reparto del ViewModel (suma en vivo, modos, reinicio) | CREAR | MEDIA |
 | `ui/contactos/ContactosViewModel.java` | Resumen de deudas (Σ pendientes por contacto) + marcar parte pagada | MODIFICAR | MEDIA |
 | `ui/contactos/ContactosActivity.java` | Sección "Resumen de deudas" en la lista; detalle/historial por contacto con acción "Marcar pagada" (cierra CA-9/CA-10 heredados de 011) | MODIFICAR | ALTA |
 | `res/layout/item_resumen_deuda.xml` | Fila del resumen: contacto + total que debe | CREAR | BAJA |
@@ -41,6 +46,24 @@
 - Salida garantizada: egreso registrado + N partes `pendiente` cuya suma iguala el monto (o `ErrorCode`);
   al cobrar: parte `pagado` con `fecha_pago` + ingreso automático en historial + saldo actualizado
   (o `ErrorCode`). Resumen: lista `(contacto, Σ adeudado)` por contacto con pendientes.
+
+**Contrato mutable invocable de `GastoCompartidoService`** (T5 — firmas implementadas; es lo que los
+tests de T8 pueden escribir desde ya, sin conocer Room ni Android):
+
+| Método | Entrada | Devuelve | Regla |
+|---|---|---|---|
+| `validarReparto(long montoTotal, List<Long> contactosIds)` | total > 0; ≥ 1 id identificable (no nulo ni ≤ 0); sin repetir | `void`; lanza `BusinessRuleException` con `MONTO_INVALIDO`, `GASTO_SIN_CONTACTOS` o `CONTACTO_DUPLICADO` | INV-1 + validación común de INV-2 |
+| `dividirIgual(long montoTotal, List<Long> contactosIds)` | total > 0; ≥ 1 id; `total >= n` | `List<PartePropuesta>` `(contactoId, montoAsignado)`; lanza `REPARTO_IGUAL_INSUFICIENTE` si `total < n` | Reparto entero: `base = total / n`, residuo `total % n` a los primeros ids de a 1 CLP; Σ = total exacto |
+| `validarPersonalizado(long montoTotal, List<PartePropuesta> partes)` | total > 0; ≥ 1 parte; montos > 0; contactos sin repetir | `void`; lanza `MONTO_INVALIDO`, `GASTO_SIN_CONTACTOS`, `MONTO_PARTE_INVALIDO`, `CONTACTO_DUPLICADO` o `REPARTO_NO_CUADRA` | INV-2: Σ exacta del total |
+
+- `PartePropuesta` (`contactoId`, `montoAsignado`) vive en `domain/model/`. `GastoCompartidoService`
+  sigue el patrón de `ContactoService`/`LugarService`: clase final con métodos estáticos, y **todas las
+  validaciones lanzan `BusinessRuleException` con su `ErrorCode`** (decisión del dueño en T5, en lugar
+  de devolver `ErrorCode`), de modo que el llamador no puede ignorar un reparto inválido por accidente.
+  Los códigos permiten a la UI traducir a texto; el dominio nunca produce mensajes de usuario.
+- **Repositorio (T6), fuera del alcance de los tests puros:** `marcarPagada(long parteId)` devuelve
+  `ErrorCode` (`null` = cobrada) y es el **único** punto de escritura del estado `pagado`. No existe
+  método público que reabra una parte (`PARTE_YA_PAGADA` / `PARTE_INEXISTENTE` cubren el rechazo).
 - Errores posibles (códigos y significado):
   - `GASTO_SIN_CONTACTOS`: egreso marcado compartido sin ningún contacto elegido (INV-1).
   - `REPARTO_NO_CUADRA`: la suma de las partes personalizadas no iguala el total del egreso (INV-2).
@@ -49,6 +72,8 @@
   - `CONTACTO_DUPLICADO`: el mismo contacto elegido dos veces para el mismo egreso (unicidad).
   - `PARTE_INEXISTENTE` / `PARTE_YA_PAGADA`: el cobro apunta a una fila que no existe o que ya no está
     pendiente (INV-3/INV-5).
+  - `GASTO_COMPARTIDO_INVALIDO`: se intentó compartir algo que no es un egreso, o el reparto no se
+    pudo persistir dentro de la transacción (fallo inesperado de base).
   - `CONTACTO_EN_USO` (ya definido en la constitución §5.4): bloqueo de borrado por RESTRICT (INV-4).
 
 ---
@@ -111,8 +136,13 @@
      índices, `IF NOT EXISTS`), sin `DROP TABLE` ni `fallbackToDestructiveMigration()` (`.agent.md` §6.11).
      Room valida el esquema: los índices se declaran también en `@Entity(indices=...)`
      (`ux_gastos_compartidos_transaccion_contacto` único sobre `(transaccion_id, contacto_id)`;
-     `idx_gastos_compartidos_contacto_estado`; `idx_gastos_compartidos_transaccion_id`). Ninguna columna
-     involucrada es nullable, así que los índices pueden declararse completos sin `WHERE`.
+     `idx_gastos_compartidos_contacto_estado`). Ninguna columna involucrada es nullable, así que los
+     índices pueden declararse completos sin `WHERE`.
+   - **Corrección de T2 (2026-10-26):** se descarta el tercer índice
+     `idx_gastos_compartidos_transaccion_id` que figuraba en el borrador. El único compuesto
+     `(transaccion_id, contacto_id)` ya tiene `transaccion_id` como columna izquierda y sirve
+     `WHERE transaccion_id = ?`; un índice adicional duplicaría escrituras sin añadir plan de consulta.
+     `data-model.md` §3.12 lo prohíbe expresamente ("no se crean índices por si acaso").
 
 7. **Reglas que el motor impone y reglas que solo valida el dominio** (Room no permite `CHECK` en
    `@Entity` — precedente documentado §3.9):
@@ -132,6 +162,25 @@
 9. **`CUENTAS.saldo_actual` es proyección.** Toda escritura del cobro usa aritmética atómica
    `SET saldo_actual = saldo_actual + :monto` dentro de `runInTransaction` — nunca leer-sumar-escribir
    (condición de carrera, regla AGENTS.md). El asiento de `TRANSACCIONES` sigue siendo la fuente de verdad.
+
+**Matriz de propiedad de las invariantes** (`spec.md` §5 → capa que la hace cumplir → test que la prueba).
+Ninguna invariante queda sin dueño ni se duplica el dueño entre capas: la UI nunca valida, el dominio
+valida y calcula, el repositorio/DAO hace cumplir el ciclo de vida y el motor impone la integridad
+referencial.
+
+| Invariante | Dueño (capa) | Respaldo del motor | Test | Método del contrato |
+|---|---|---|---|---|
+| INV-1 · compartido = 0 contactos es inválido | `domain/` — `GastoCompartidoService.validarReparto` | Ninguno (Room no permite `CHECK` ni contar filas hijas) | `GastoCompartidoServiceTest` (T8) | `validarReparto` → `GASTO_SIN_CONTACTOS` |
+| INV-2 · Σ partes = monto del egreso, al peso | `domain/` — `dividirIgual` / `validarPersonalizado` | Ninguno (regla agregada entre filas) | `GastoCompartidoServiceTest` (T8) + integración (T10) | `validarReparto` → `MONTO_INVALIDO`, `GASTO_SIN_CONTACTOS`, `CONTACTO_DUPLICADO`; `dividirIgual` → `REPARTO_IGUAL_INSUFICIENTE`; `validarPersonalizado` → `MONTO_PARTE_INVALIDO`, `REPARTO_NO_CUADRA` |
+| INV-3 · una parte pagada no vuelve a pendiente | `data/` — repositorio/DAO: único write es `marcarPagada` con `WHERE estado='pendiente'` | `NOT NULL` + dominio cerrado de `estado` (sin `CHECK` en Room) | `GastoCompartidoDaoTest` (T9, asserts d) | `marcarPagada` → `PARTE_YA_PAGADA` |
+| INV-4 · no se elimina contacto con partes | `data/` — motor + traducción a `CONTACTO_EN_USO` en el repositorio (`ContactoService.puedeEliminar`) | `FK ON DELETE RESTRICT` | `GastoCompartidoDaoTest` (T9, assert f) | `ContactoService.puedeEliminar` |
+| INV-5 · cobro atómico (estado → ingreso → saldo) | `data/` — repositorio con un solo `runInTransaction` | Aritmética atómica de `saldo_actual`; rollback de Room | `GastoCompartidoDaoTest` (T9, asserts a–c) + integración I-1 (T10) | `marcarPagada` → `PARTE_INEXISTENTE`/`PARTE_YA_PAGADA` |
+
+> **Consecuencia para `test/GastoCompartidoServiceTest.java` (T8):** solo depende de clases de
+> `domain/` (`GastoCompartidoService`, `ModoDivision`, `PartePropuesta`, `ErrorCode`,
+> `BusinessRuleException`). No importa `android.*` ni `androidx.room.*`, así que se ejecuta en JVM puro
+> sin Robolectric. Los tests de INV-3/INV-4/INV-5 se escriben contra el DAO en T9 y el flujo completo en
+> T10; no deben pretender probarse con el servicio.
 
 **Operación atómica de referencia: cobrar una parte** (Room `runInTransaction`, orden obligatorio):
 
