@@ -182,7 +182,7 @@
       sigue usando `updateSaldo` absoluto (leer-calcular-escribir de 007/008); el cobro nuevo usa
       aritmética atómica. Corregir el flujo antiguo exige tocar la Feature 007 y merece su propia tarea.
 
-- [ ] **T7. Extender `TransaccionViewModel.registrarTransaccion()` para egresos compartidos.**
+- [x] **T7. Extender `TransaccionViewModel.registrarTransaccion()` para egresos compartidos.**
       Crear `domain/model/GastoCompartido.java` inmutable con `toEntity()`/`fromEntity()` (pospuesto
       desde T5: aquí es donde el registro mapea las partes al DAO) y `EstadoGastoCompartido`
       (`pendiente`/`pagado`) si hace falta tipar el estado. Tras el asiento del egreso y dentro de la
@@ -192,13 +192,19 @@
       *Criterio de salida:* registrar un egreso compartido con partes inválidas (Σ ≠ total, 0
       contactos) no deja ni movimiento ni partes ni saldo modificado.
       Responsable: Agente SDD | Estimación: 60 min
-      *Estado (2026-10-26):* el contenido de esta tarea (sobrecargas con `List<PartePropuesta>`,
-      validación pre-transacción e `insertTodas` dentro de la transacción del egreso) se entregó por
-      instrucción explícita del dueño **dentro de T6**, junto con el cobro. No se marca todavía porque
-      su criterio de salida (todo-o-nada del egreso compartido con partes inválidas) se demuestra
-      end-to-end en T9/T10. El modelo de dominio `GastoCompartido` con `toEntity()`/`fromEntity()` no
-      se necesitó: el repositorio construye la entidad directamente desde `PartePropuesta`, y el
-      mapeo inverso lo hará la capa que lea las partes (T13) si hace falta.
+      *Estado (2026-10-26):* implementado dentro de T6 (commit 3095cf3). Criterio de salida verificado
+      end-to-end en T11/T12.
+      Detalle: las sobrecargas con `List<PartePropuesta>` (las firmas anteriores delegan con `null`),
+      la validación pre-transacción con `GastoCompartidoService.validarReparto` +
+      `validarPersonalizado` y la llamada a `GastoCompartidoRepository.insertTodas` dentro de la MISMA
+      transacción del egreso y su saldo se entregaron en T6 por instrucción explícita del dueño. En
+      T11/T12 se comprobó que el rechazo del reparto no llega al registro: el botón "Registrar" queda
+      deshabilitado mientras `EstadoReparto` es inválido y `registrarMovimiento` sale con el
+      `ErrorCode` sin invocar el ViewModel (`TransaccionViewModelDivisionTest`, 2 tests JVM). El modelo
+      de dominio `GastoCompartido` con `toEntity()`/`fromEntity()` no se creó: el repositorio construye
+      la entidad desde `PartePropuesta`.
+      *Alcance aún abierto (no bloquea T7):* la aserción sobre las filas de base de datos (ni asiento,
+      ni partes, ni saldo tras un reparto inválido) corresponde a T9/T10, que siguen pendientes.
 
 - [x] **T8. Tests de dominio `GastoCompartidoServiceTest` (JVM puro).**
       Cubre CA-1..CA-6 y casos borde 1–6 de `spec.md` §6: reparto igual exacto, con residuo
@@ -243,6 +249,12 @@
 
 ## Fase 4 — Interfaz
 
+> **Orden de ejecución restante (2026-10-26):** T11 y T12 están cerradas (comportamiento confirmado en
+> emulador por el dueño). La siguiente tarea real es **T13** (resumen de deudas + detalle de contacto);
+> **T14 depende de T13** porque el botón "Marcar pagada" vive en el detalle que T13 crea. T9 y T10
+> (pruebas de persistencia e integración, Fase 3) quedaron pendientes al ejecutarse T11/T12 fuera de
+> orden por instrucción del dueño: deben cerrarse antes de T16.
+
 - [x] **T11. Checkbox "Compartido" + selector de contactos en el formulario de egreso.**
       En `ui/cuentas` (formulario de `CuentasActivity`/`TransaccionViewModel`): marcar el egreso como
       compartido y elegir uno o más contactos de la agenda (Feature 011). Sin selector de contactos el
@@ -257,10 +269,12 @@
       vacía, y observadores de `getDivisionVisible()`/`getEstadoReparto()` del ViewModel que muestran u
       ocultan el bloque. El checkbox se **deshabilita y desmarca** cuando el tipo elegido es Ingreso.
       `registrarMovimiento` pregunta al ViewModel (`isCompartido`/`validarReparto`/
-      `partesParaRegistrar`) y solo entonces llama al registro con las partes. Sin adb disponible en
-      este entorno: la verificación en emulador queda pendiente y se marca en T16; lo que sí está
-      cubierto por tests es el estado del reparto (`TransaccionViewModelDivisionTest`, 2 tests JVM con
-      Robolectric).
+      `partesParaRegistrar`) y solo entonces llama al registro con las partes. El agente no dispone de adb ni
+      emulador en su entorno, así que la interacción se probó en el emulador del proyecto y **el dueño
+      confirmó el 2026-10-26 que el bloque aparece al marcar "Compartido" y desaparece al desmarcarlo**;
+      resta la pasada formal de `connectedCheck` en T16. Lo que sí está cubierto por tests automáticos es el estado del reparto
+      (`TransaccionViewModelDivisionTest`, 2 tests JVM con Robolectric).
+      *Dependencias:* requiere T3/T4 (DAO y base) y T5 (`GastoCompartidoService`). Bloquea a T12.*
 
 - [x] **T12. Radios "Partes iguales" / "Montos personalizados" con suma en vivo.**
       Layouts `dialog_division_gastos.xml`, `item_parte_gasto.xml`: modo de división, fila por contacto
@@ -289,7 +303,9 @@
       `resumenDeudasPorContacto` y `getPendientesPorContacto` del DAO.
       *Criterio de salida:* el resumen y el detalle se pueblan desde la base; contacto sin partes
       muestra "Sin compras compartidas".
-      Responsable: Agente SDD | Estimación: 60 min
+      Responsable: Agente SDD | Estimación: 90 min
+      *Dependencias:* requiere T3/T4 (DAO `resumenDeudasPorContacto` / `getPendientesPorContacto`) y
+      T11/T12 (ya cerradas: existen partes que mostrar). **Bloquea a T14**, que vive en este detalle.*
 
 - [ ] **T14. Botón "Marcar pagada" + verificación en emulador.**
       Desde el detalle del contacto invoca el cobro atómico de T6 (`marcarPagada()`); recarga resumen
@@ -299,6 +315,9 @@
       partes pendientes no se deja borrar (CA-10).
       *Criterio de salida:* flujo completo comprobado con `./gradlew installDebug` en emulador.
       Responsable: Agente SDD | Estimación: 60 min
+      *Dependencias:* **requiere T13** (el botón se invoca desde el detalle de contacto que T13 crea) y
+      T6 (`GastoCompartidoRepository.marcarPagada`). Conviene ejecutar T9/T10 antes para llegar a esta
+      tarea con el cobro ya probado en persistencia.*
 
 - [ ] **T15. Strings y lint.**
       Textos en español en `res/values/strings.xml` (prefijo de convención de la feature, p. ej.
@@ -340,4 +359,19 @@ emulador activo**: si se ejecuta primero y falla, se pierde el ciclo de compilac
 - [ ] `tech-stack.md` verificado (sin dependencias nuevas — si apareciera alguna, registrarla antes)
 - [ ] Commits con formato de `.agent.md` §5.2, uno por unidad lógica
 
-**Notas de ejecución:** [ESPACIO PARA APUNTES DURANTE LA IMPLEMENTACION]
+**Notas de ejecución:**
+
+- **UX Issue #1 (T11, 2026-10-26):** el selector de contactos con CheckBox verticales no escala a más
+  de ~20 contactos: obliga a hacer scroll largo dentro de la hoja inferior y vuelve difícil ver cuántos
+  se eligieron. Solución pendiente: `ChipGroup` de selección múltiple o un diálogo de selección
+  (`MultiSelectDialog`) con contador. Registra también que el orden de selección queda invisible.
+- **UX Issue #2 (T13/T14, 2026-10-26):** la pantalla de Contactos todavía **no muestra deudas ni ofrece
+  el botón de pago**: el resumen de deudas y el cobro atómico ya existen en datos (`GastoCompartidoDao`,
+  `GastoCompartidoRepository`) pero no tienen superficie en la UI. **Bloquea la demo universitaria**:
+  sin T13/T14 no se puede mostrar "quién me debe" ni cobrar una parte desde la app.
+- Desfase de numeración durante la ejecución: el dueño solicitó los tests de dominio como "T7" y el
+  formulario como "T9"; en este checklist corresponden a T8 y T11/T12. Se marcaron las tareas reales,
+  no las etiquetas pedidas, para que el registro coincida con el código entregado.
+- Conteo verificado de la suite: **113 tests en verde** (86 base + 25 de `GastoCompartidoServiceTest` +
+  2 de `TransaccionViewModelDivisionTest`). En los cierres de T4 y T6 se había anotado "90"; se corrigió
+  a 86 tras contar los XML de JUnit.
