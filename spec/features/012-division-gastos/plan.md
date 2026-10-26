@@ -18,6 +18,7 @@
 | `spec/constitution/data-model.md` | Sincronizar esquema: ERD Mermaid, diccionario `GASTOS_COMPARTIDOS`, invariantes I-12.., DDL Apéndice A | MODIFICAR (antes del código, regla AGENTS.md) | MEDIA |
 | `data/entities/GastoCompartido.java` | Entidad Room: tabla `GASTOS_COMPARTIDOS` con índices | CREAR | BAJA |
 | `data/dao/GastoCompartidoDao.java` | DAO: inserción por lotes, consulta por transacción, partes pendientes por contacto, resumen de deudas, operaciones de cobro. Nombre de tabla por constante | CREAR | ALTA |
+| `data/repository/GastoCompartidoRepository.java` | Repositorio: único punto de escritura del cobro atómico (I-16) y del registro de las partes dentro de la transacción del egreso | CREAR | ALTA |
 | `data/db/AppDatabase.java` | Entidad + DAO + versión 5 + `MIGRATION_4_5` + `gastoCompartidoDao()` | MODIFICAR | ALTA |
 | `domain/model/GastoCompartido.java` | Modelo de dominio inmutable con `toEntity()`/`fromEntity()` (se crea en T7, cuando el registro del egreso necesita mapear las partes) | CREAR | BAJA |
 | `domain/service/GastoCompartidoService.java` | Reglas de negocio: INV-1, INV-2 (reparto igual y personalizada), validaciones de monto | CREAR | ALTA |
@@ -67,6 +68,8 @@ tests de T8 pueden escribir desde ya, sin conocer Room ni Android):
   - `CONTACTO_DUPLICADO`: el mismo contacto elegido dos veces para el mismo egreso (unicidad).
   - `PARTE_INEXISTENTE` / `PARTE_YA_PAGADA`: el cobro apunta a una fila que no existe o que ya no está
     pendiente (INV-3/INV-5).
+  - `GASTO_COMPARTIDO_INVALIDO`: se intentó compartir algo que no es un egreso, o el reparto no se
+    pudo persistir dentro de la transacción (fallo inesperado de base).
   - `CONTACTO_EN_USO` (ya definido en la constitución §5.4): bloqueo de borrado por RESTRICT (INV-4).
 
 ---

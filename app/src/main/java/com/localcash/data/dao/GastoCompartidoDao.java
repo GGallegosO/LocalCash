@@ -63,6 +63,20 @@ public interface GastoCompartidoDao {
     List<GastoCompartido> getByTransaccion(long transaccionId);
 
     /**
+     * Obtiene una parte por su id de forma <b>bloqueante</b>. Solo para hilos
+     * secundarios.
+     * <p>
+     * Lo usa el cobro atómico para validar el estado actual antes de escribir
+     * (INV-3/INV-5).
+     * </p>
+     *
+     * @param parteId id de la parte
+     * @return la parte o {@code null} si no existe
+     */
+    @Query("SELECT * FROM " + TABLE_NAME + " WHERE id = :parteId")
+    GastoCompartido getByIdSync(long parteId);
+
+    /**
      * Obtiene las partes que un contacto todavía debe, de la más reciente a la
      * más antigua. Alimenta el detalle del contacto (Feature 012).
      *

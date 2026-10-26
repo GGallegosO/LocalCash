@@ -69,5 +69,8 @@ public enum ErrorCode {
     PARTE_INEXISTENTE,
 
     /** La parte ya estaba pagada: no puede volver a cobrarse (INV-3). */
-    PARTE_YA_PAGADA
+    PARTE_YA_PAGADA,
+
+    /** El reparto compartido no aplica (no es un egreso) o no se pudo persistir. */
+    GASTO_COMPARTIDO_INVALIDO
 }

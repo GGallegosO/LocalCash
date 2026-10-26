@@ -145,7 +145,7 @@
       los rechazos devuelven `REPARTO_IGUAL_INSUFICIENTE`, `GASTO_SIN_CONTACTOS`, `CONTACTO_DUPLICADO`,
       `REPARTO_NO_CUADRA` y `MONTO_PARTE_INVALIDO` según corresponda.
 
-- [ ] **T6. Implementar `marcarPagada()` en el repositorio con `runInTransaction`.**
+- [x] **T6. Implementar `marcarPagada()` en el repositorio con `runInTransaction`.**
       Secuencia exacta de `plan.md` §2 (bloque SQL): validar pendiente → UPDATE estado+fecha →
       INSERT ingreso "Devolución gasto compartido" en la cuenta del egreso →
       `SET saldo_actual = saldo_actual + :monto` — todo en un único `runInTransaction`.
@@ -155,6 +155,32 @@
       *Criterio de salida:* ninguna vía expone reabrir una parte; fallando cualquier paso no se aplica
       ninguno.
       Responsable: Agente SDD | Estimación: 60 min
+      *Cierre (2026-10-26):* desglose previo con **sequential-thinking** (4 pasos: validación, asiento
+      + saldo, atomicidad/rollback, registro del egreso). Creado
+      `data/repository/GastoCompartidoRepository.java` con `marcarPagada(parteId, fechaPagoIso)` —un solo
+      `db.runInTransaction` con el orden leer/validar → `marcarPagada` (WHERE pendiente) →
+      INSERT ingreso `Devolución gasto compartido` en la cuenta del egreso → `sumarSaldo` atómico— y
+      `insertTodas(transaccionId, partes, fechaCreacionIso)`. Para ello se agregaron al DAO
+      `GastoCompartidoDao.getByIdSync`, `TransaccionDao.getByIdSync` y el método **atómico**
+      `CuentaDao.sumarSaldo` (`SET saldo = saldo + :delta`), sin leer-calcular-escribir. Se agregó
+      `GASTO_COMPARTIDO_INVALIDO` (compartir un ingreso o fallo inesperado del reparto). El ViewModel
+      gana las sobrecargas `registrarTransaccion(..., List<PartePropuesta>)` (las firmas anteriores
+      delegan con `null`): valida con `GastoCompartidoService.validarReparto` + `validarPersonalizado`
+      **antes** de abrir la transacción y llama a `insertTodas` **dentro** de la misma transacción del
+      egreso y su saldo, de modo que un fallo revierte también el asiento.
+      **Atomicidad verificada con una prueba temporal de Robolectric** (ejecutada y retirada: la
+      cobertura permanente es T9): cobrar una parte de 60.000 sobre un egreso de 100.000 en una cuenta
+      de 200.000 deja saldo **160.000**, un ingreso de 60.000 en el historial, la parte `pagado` con
+      `fecha_pago`, I-1 exacto (`200.000 + Σ ingresos − Σ egresos`), segundo cobro →
+      `PARTE_YA_PAGADA` sin cambios, parte inexistente → `PARTE_INEXISTENTE`, y una excepción inyectada
+      dentro de la transacción deja **0 partes** (rollback). `compileDebugJavaWithJavac` OK,
+      `testDebugUnitTest` en verde (90) y `lint` con **las mismas 120 advertencias baseline**: se
+      omitieron los `Log` nuevos del repositorio porque el lint del proyecto exige Timber (no está en
+      `tech-stack.md`, sería dependencia no registrada) y el código de negocio se registra en la UI
+      (T14); los fallos inesperados siguen propagando excepción con contexto.
+      *Deuda preexistente anotada (fuera de scope):* el asiento del egreso en `TransaccionViewModel`
+      sigue usando `updateSaldo` absoluto (leer-calcular-escribir de 007/008); el cobro nuevo usa
+      aritmética atómica. Corregir el flujo antiguo exige tocar la Feature 007 y merece su propia tarea.
 
 - [ ] **T7. Extender `TransaccionViewModel.registrarTransaccion()` para egresos compartidos.**
       Crear `domain/model/GastoCompartido.java` inmutable con `toEntity()`/`fromEntity()` (pospuesto

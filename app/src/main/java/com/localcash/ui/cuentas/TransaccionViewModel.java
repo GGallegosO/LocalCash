@@ -11,17 +11,22 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.localcash.data.db.AppDatabase;
 import com.localcash.data.entities.Cuenta;
+import com.localcash.data.repository.GastoCompartidoRepository;
 import com.localcash.domain.error.BusinessRuleException;
 import com.localcash.domain.error.ErrorCode;
 import com.localcash.domain.model.EstadoLugar;
 import com.localcash.domain.model.Lugar;
+import com.localcash.domain.model.PartePropuesta;
 import com.localcash.domain.model.TipoLugar;
 import com.localcash.domain.model.TipoTransaccion;
 import com.localcash.domain.model.Ubicacion;
+import com.localcash.domain.service.GastoCompartidoService;
 import com.localcash.domain.service.LugarService;
 import com.localcash.domain.service.TransaccionService;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -54,6 +59,9 @@ public class TransaccionViewModel extends AndroidViewModel {
      */
     private final LiveData<List<Cuenta>> cuentasActivas;
 
+    /** Repositorio de partes compartidas: único punto de escritura del cobro (I-16). */
+    private final GastoCompartidoRepository gastoCompartidoRepository;
+
     /**
      * Construye el ViewModel y lo enlaza con Room.
      *
@@ -63,6 +71,7 @@ public class TransaccionViewModel extends AndroidViewModel {
         super(application);
         AppDatabase db = AppDatabase.getInstance(application);
         this.cuentasActivas = db.cuentaDao().getAll();
+        this.gastoCompartidoRepository = new GastoCompartidoRepository(db);
     }
 
     /**
@@ -130,6 +139,61 @@ public class TransaccionViewModel extends AndroidViewModel {
                                                     long monto, String concepto,
                                                     Double latitud, Double longitud,
                                                     String direccionLugar) {
+        return registrarTransaccion(cuentaId, tipo, monto, concepto,
+                latitud, longitud, direccionLugar, null);
+    }
+
+    /**
+     * Registra un movimiento sin geolocalización que puede ser un egreso
+     * compartido (Feature 012).
+     *
+     * @param cuentaId          id de la cuenta afectada
+     * @param tipo              tipo de movimiento ({@code INGRESO} o {@code EGRESO})
+     * @param monto             importe en pesos CLP (positivo)
+     * @param concepto          concepto libre del movimiento
+     * @param partesCompartidas partes del reparto, o {@code null} si el
+     *                          movimiento no es compartido
+     * @return LiveData con {@code null} si se registró, o el {@link ErrorCode} del fallo
+     */
+    public LiveData<ErrorCode> registrarTransaccion(long cuentaId, String tipo,
+                                                    long monto, String concepto,
+                                                    List<PartePropuesta> partesCompartidas) {
+        return registrarTransaccion(cuentaId, tipo, monto, concepto,
+                null, null, null, partesCompartidas);
+    }
+
+    /**
+     * Registra un movimiento, su pin opcional y —si es un egreso compartido—
+     * sus partes, todo en una sola transacción de base de datos.
+     * <p>
+     * Las partes se validan <b>antes</b> de abrir la transacción con
+     * {@link GastoCompartidoService#validarReparto} (INV-1, contactos sin
+     * repetir) y {@link GastoCompartidoService#validarPersonalizado} (INV-2,
+     * suma exacta y montos positivos). Si la validación o cualquier escritura
+     * falla, Room revierte el bloque completo: no queda ni el egreso, ni las
+     * partes, ni el saldo modificado (todo o nada).
+     * </p>
+     * <p>
+     * Solo un {@code EGRESO} puede compartirse; un ingreso con partes se
+     * rechaza con {@link ErrorCode#GASTO_COMPARTIDO_INVALIDO}.
+     * </p>
+     *
+     * @param cuentaId          id de la cuenta afectada
+     * @param tipo              tipo de movimiento ({@code INGRESO} o {@code EGRESO})
+     * @param monto             importe en pesos CLP (positivo)
+     * @param concepto          concepto libre del movimiento
+     * @param latitud           latitud WGS84 o {@code null} si no hay ubicación
+     * @param longitud          longitud WGS84 o {@code null} si no hay ubicación
+     * @param direccionLugar    referencia textual opcional del punto
+     * @param partesCompartidas partes del reparto ({@code null} = no compartido;
+     *                          lista vacía = compartido sin contactos, se rechaza)
+     * @return LiveData con {@code null} si se registró, o el {@link ErrorCode} del fallo
+     */
+    public LiveData<ErrorCode> registrarTransaccion(long cuentaId, String tipo,
+                                                    long monto, String concepto,
+                                                    Double latitud, Double longitud,
+                                                    String direccionLugar,
+                                                    List<PartePropuesta> partesCompartidas) {
         MutableLiveData<ErrorCode> resultado = new MutableLiveData<>();
 
         final Ubicacion ubicacion;
@@ -171,6 +235,21 @@ public class TransaccionViewModel extends AndroidViewModel {
             com.localcash.domain.model.Cuenta cuentaDominio =
                     com.localcash.domain.model.Cuenta.fromEntity(entidad);
 
+            if (partesCompartidas != null) {
+                if (tipoMovimiento != TipoTransaccion.EGRESO) {
+                    resultado.postValue(ErrorCode.GASTO_COMPARTIDO_INVALIDO);
+                    return;
+                }
+                try {
+                    GastoCompartidoService.validarReparto(
+                            monto, contactosDe(partesCompartidas));
+                    GastoCompartidoService.validarPersonalizado(monto, partesCompartidas);
+                } catch (BusinessRuleException e) {
+                    resultado.postValue(e.getErrorCode());
+                    return;
+                }
+            }
+
             com.localcash.domain.model.Transaccion transaccionDominio =
                     new com.localcash.domain.model.Transaccion(
                             0L,
@@ -207,18 +286,40 @@ public class TransaccionViewModel extends AndroidViewModel {
                     BigDecimal nuevoSaldo = TransaccionService.calcularNuevoSaldo(
                             cuentaDominio, transaccionDominio);
                     db.cuentaDao().updateSaldo(cuentaId, nuevoSaldo.longValueExact());
+
+                    if (partesCompartidas != null) {
+                        gastoCompartidoRepository.insertTodas(
+                                transaccionId, partesCompartidas, Instant.now().toString());
+                    }
                 });
                 resultado.postValue(null);
             } catch (BusinessRuleException e) {
                 Log.w(TAG, "Movimiento revertido por regla de negocio", e);
                 resultado.postValue(e.getErrorCode());
             } catch (RuntimeException e) {
-                Log.e(TAG, "No se pudo persistir el movimiento y su pin", e);
-                resultado.postValue(ErrorCode.LUGAR_INVALIDO);
+                Log.e(TAG, "No se pudo persistir el movimiento, su pin o su reparto", e);
+                resultado.postValue(partesCompartidas != null
+                        ? ErrorCode.GASTO_COMPARTIDO_INVALIDO
+                        : ErrorCode.LUGAR_INVALIDO);
             }
         });
 
         return resultado;
+    }
+
+    /**
+     * Extrae los ids de contacto de las partes para la validación común de
+     * INV-1 (los nulos se dejan pasar para que el servicio los rechace).
+     *
+     * @param partes partes del reparto
+     * @return ids en el mismo orden, con {@code null} donde la parte no lo trae
+     */
+    private static List<Long> contactosDe(List<PartePropuesta> partes) {
+        List<Long> ids = new ArrayList<>(partes.size());
+        for (PartePropuesta parte : partes) {
+            ids.add(parte == null ? null : parte.getContactoId());
+        }
+        return ids;
     }
 
     /**
