@@ -60,38 +60,41 @@ cuánto le debe cada uno al usuario.
 Cada criterio debe ser verificable por alguien distinto del implementador. Formato:
 `Dado <contexto>, Cuando <acción>, Entonces <resultado observable>` (Gherkin en español).
 
-- [ ] **[CA-1]** Dado un egreso válido de $90.000, cuando el usuario lo marca compartido con 3 contactos en
-      división igual y confirma, entonces el egreso queda registrado y existen 3 partes pendientes de $30.000
-      cada una, una por contacto.
-- [ ] **[CA-2]** Dado un egreso marcado como compartido, cuando el usuario confirma sin elegir ningún
+- [x] **[CA-1]** Dado un egreso válido de $90.000, cuando el usuario lo marca compartido con 3 contactos en
+      división igual y confirma, entonces el egreso queda registrado y existen 3 partes pendientes de $22.500
+      cada una (la cuarta parte, $22.500, es la del usuario implícito y no se persiste).
+- [x] **[CA-2]** Dado un egreso marcado como compartido, cuando el usuario confirma sin elegir ningún
       contacto, entonces el sistema rechaza el registro y muestra "Debes elegir al menos un contacto".
-- [ ] **[CA-3]** Dado un egreso de $100.000 compartido en partes iguales entre 3 contactos, cuando el
-      sistema calcula el reparto, entonces las partes son $33.334, $33.333 y $33.333 y su suma es
-      exactamente $100.000.
-- [ ] **[CA-4]** Dado un egreso de $2.000 compartido en partes iguales entre 3 contactos, cuando el usuario
-      confirma, entonces el sistema rechaza el reparto y muestra que el monto no alcanza para una parte por
-      contacto.
-- [ ] **[CA-5]** Dado un egreso de $50.000 en división personalizada, cuando el usuario ingresa partes que
-      suman $45.000 y confirma, entonces el sistema rechaza el registro y muestra que la suma de las partes
-      debe igualar el total del egreso.
-- [ ] **[CA-6]** Dado un egreso de $50.000 en división personalizada, cuando el usuario ingresa $30.000 y
+- [x] **[CA-3]** Dado un egreso de $100.000 compartido en partes iguales con 2 contactos, cuando el
+      sistema calcula el reparto entre las 3 partes (usuario + 2), entonces son $33.334 (usuario),
+      $33.333 y $33.333 y su suma es exactamente $100.000.
+      *Ajustado el 2026-10-26 por la decisión N+1: el usuario entra en el cálculo pero su parte no se
+      guarda (`data-model.md` §3.11).*
+- [x] **[CA-4]** Dado un egreso de $3 compartido en partes iguales entre 3 contactos (4 partes con el
+      usuario), cuando el usuario confirma, entonces el sistema rechaza el reparto y muestra que el monto
+      no alcanza para una parte por cada uno.
+- [x] **[CA-5]** Dado un egreso de $50.000 en división personalizada, cuando el usuario ingresa partes que
+      suman $45.000 y confirma, entonces el sistema **acepta** y registra los $5.000 restantes como parte
+      implícita del usuario; solo rechaza cuando la suma de las partes **supera** el total.
+      *Ajustado el 2026-10-26 por la decisión N+1.*
+- [x] **[CA-6]** Dado un egreso de $50.000 en división personalizada, cuando el usuario ingresa $30.000 y
       $20.000 (suma exacta) y confirma, entonces quedan dos partes pendientes con esos montos.
-- [ ] **[CA-7]** Dada una parte pendiente de $30.000, cuando el usuario la marca como pagada, entonces la
+- [x] **[CA-7]** Dada una parte pendiente de $30.000, cuando el usuario la marca como pagada, entonces la
       parte pasa a estado pagado con su fecha de pago, aparece en el historial un ingreso de $30.000 con
       descripción "Devolución gasto compartido" en la cuenta del egreso original, y el saldo de esa cuenta
       aumenta en $30.000.
-- [ ] **[CA-8]** Dada una parte ya pagada, cuando el usuario intenta volver a marcarla o reabrirla, entonces
+- [x] **[CA-8]** Dada una parte ya pagada, cuando el usuario intenta volver a marcarla o reabrirla, entonces
       el sistema no ofrece la acción y rechaza cualquier intento con "La parte ya fue cobrada".
-- [ ] **[CA-9]** Dado que existen contactos con partes pendientes, cuando el usuario abre el resumen de
+- [x] **[CA-9]** Dado que existen contactos con partes pendientes, cuando el usuario abre el resumen de
       deudas, entonces ve una fila por contacto con su nombre y la suma total que le debe, ordenada de mayor
       a menor deuda.
-- [ ] **[CA-10]** Dado un contacto con al menos una parte pendiente, cuando el usuario intenta eliminarlo,
+- [x] **[CA-10]** Dado un contacto con al menos una parte pendiente, cuando el usuario intenta eliminarlo,
       entonces el sistema muestra "No se puede eliminar: el contacto tiene compromisos pendientes" y el
       contacto permanece en la agenda.
-- [ ] **[CA-11]** Dado un egreso compartido con partes, cuando el usuario elimina el egreso, entonces
+- [x] **[CA-11]** Dado un egreso compartido con partes, cuando el usuario elimina el egreso, entonces
       desaparecen también sus partes (el asiento contable y su reparto son una sola realidad) y el resumen
       deja de mostrar esas deudas.
-- [ ] **[CA-12]** Dado un contacto con egresos compartidos, cuando el usuario abre su detalle, entonces ve
+- [x] **[CA-12]** Dado un contacto con egresos compartidos, cuando el usuario abre su detalle, entonces ve
       su historial de partes compartidas (egreso, monto asignado, estado pendiente/pagado), cerrando los
       criterios CA-9/CA-10 heredados de la Feature 011.
 
