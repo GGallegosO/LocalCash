@@ -50,6 +50,12 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
+        <!-- ContactosActivity: agenda de contactos (Feature 011) -->
+        <activity
+            android:name="com.localcash.ui.contactos.ContactosActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize" />
+
     </application>
 
 </manifest>

@@ -9,10 +9,12 @@ import androidx.room.RoomDatabase;
 import androidx.room.migration.Migration;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
+import com.localcash.data.dao.ContactoDao;
 import com.localcash.data.dao.CuentaDao;
 import com.localcash.data.dao.ItemLugarDao;
 import com.localcash.data.dao.LugarDao;
 import com.localcash.data.dao.TransaccionDao;
+import com.localcash.data.entities.Contacto;
 import com.localcash.data.entities.Cuenta;
 import com.localcash.data.entities.ItemLugar;
 import com.localcash.data.entities.Lugar;
@@ -38,8 +40,8 @@ import java.util.concurrent.Executors;
  * </p>
  */
 @Database(
-        entities = {Cuenta.class, Transaccion.class, Lugar.class, ItemLugar.class},
-        version = 3,
+        entities = {Cuenta.class, Transaccion.class, Lugar.class, ItemLugar.class, Contacto.class},
+        version = 4,
         exportSchema = true
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -117,6 +119,39 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    /**
+     * Migración no destructiva 3 → 4 (Feature 011 - Contactos):
+     * <ul>
+     *   <li>crea la tabla {@code CONTACTOS} con nombre obligatorio, teléfono y
+     *       email opcionales (únicos parciales), y notas;</li>
+     *   <li>los índices únicos parciales permiten múltiples {@code NULL} en
+     *       teléfono/email, así que varios contactos sin esos datos conviven.</li>
+     * </ul>
+     * No se usa {@code DROP TABLE} ni {@code fallbackToDestructiveMigration()}
+     * ({@code .agent.md} §6.11).
+     */
+    public static final Migration MIGRATION_3_4 = new Migration(3, 4) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `CONTACTOS` ("
+                            + "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, "
+                            + "`nombre` TEXT NOT NULL, "
+                            + "`telefono` TEXT, "
+                            + "`email` TEXT, "
+                            + "`notas` TEXT)");
+
+            database.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS `index_CONTACTOS_telefono` "
+                            + "ON `CONTACTOS` (`telefono` COLLATE NOCASE) "
+                            + "WHERE `telefono` IS NOT NULL");
+            database.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS `index_CONTACTOS_email` "
+                            + "ON `CONTACTOS` (`email` COLLATE NOCASE) "
+                            + "WHERE `email` IS NOT NULL");
+        }
+    };
+
     /** Instante única (double-checked locking). volatile: publicación segura entre hilos. */
     private static volatile AppDatabase instance;
 
@@ -144,7 +179,7 @@ public abstract class AppDatabase extends RoomDatabase {
                                     DATABASE_NAME
                             )
                             // fallbackToDestructiveMigration() PROHIBIDO (.agent.md §6.11)
-                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                             .addCallback(new SeedDataInitializer())
                             .build();
                 }
@@ -173,4 +208,8 @@ public abstract class AppDatabase extends RoomDatabase {
 
     /** Expone el DAO de la lista de cosas de un lugar. */
     public abstract ItemLugarDao itemLugarDao();
+
+    /** Expone el DAO de contactos. */
+    public abstract ContactoDao contactoDao();
+
 }
