@@ -538,7 +538,7 @@ persona y un importe, no es un dato derivable que se pueda recalcular sin contex
   cascada al borrar la cuenta del egreso es aceptable porque el asiento contable también desaparece,
   pero perderla por borrar al contacto falsearía la historia.
 - **Efecto contable:** crear el reparto **no** mueve ninguna cuenta (el egreso ya movió el saldo al
-  registrarse). Cobrar una parte inserta un ingreso "Devolución gasto compartido" y suma el monto con
+  registrarse). Cobrar una parte inserta un ingreso "Devolución gasto compartido - <contacto>" y suma el monto con
   aritmética atómica, todo en una transacción (I-16 y §4.2).
 - **Parte implícita del usuario (decisión del dueño, 2026-10-26).** En la división igual el total se
   reparte entre **N + 1** (usuario + N contactos), pero la parte del usuario **no genera fila**: el
@@ -717,7 +717,8 @@ Es la distinción central del dominio compartido y la razón de que
   que cada contacto *debe* y `monto_pagado` sus abonos. Nada de eso toca `CUENTAS.saldo_actual`
   hasta que el usuario registre la devolución del pago como movimiento, si decide hacerlo.
 - **`GASTOS_COMPARTIDOS` (Feature 012) materializa esa devolución como movimiento.** Marcar una parte
-  como `pagado` inserta el ingreso "Devolución gasto compartido" en la cuenta del egreso original y
+  como `pagado` inserta el ingreso "Devolución gasto compartido - <contacto>" en la cuenta del egreso
+  original y
   mueve `CUENTAS.saldo_actual` con aritmética atómica, todo en la misma transacción (I-16). No es una
   excepción al párrafo anterior: es exactamente el movimiento que ese párrafo exige, generado por la
   app en lugar de capturado a mano. Crear el reparto, en cambio, no mueve ninguna cuenta.
@@ -766,7 +767,7 @@ obligatorios, así que las reglas siguientes se validan en la capa de dominio y 
 | I-13 | En modo **igual**: `Σ GASTOS_COMPARTIDOS.monto_asignado = TRANSACCIONES.monto − parte implícita del usuario`, al peso (el usuario es 1 de las N+1 partes). En **personalizada**: la suma de las partes de contactos es ≤ monto del egreso; el resto es la parte implícita del usuario. | Dominio: `dividirConUsuario` (residuo de a 1 CLP) y `validarPersonalizado` (`REPARTO_NO_CUADRA`, `REPARTO_IGUAL_INSUFICIENTE`, `MONTO_PARTE_INVALIDO`); test puro + integración |
 | I-14 | Una parte `pagado` no vuelve a `pendiente`; `estado` y `fecha_pago` son coherentes | `CHECK` de fila (§3.11) + repositorio: único write es `marcarPagada()` con `WHERE estado = 'pendiente'`; test de DAO |
 | I-15 | No se elimina un contacto con partes registradas | `FK ON DELETE RESTRICT` + traducción a `CONTACTO_EN_USO`; test de DAO |
-| I-16 | Cobrar una parte es atómico: estado + ingreso "Devolución gasto compartido" + saldo en una sola transacción | Repositorio con `runInTransaction` y `saldo_actual = saldo_actual + :monto`; test de DAO y de recálculo de I-1 |
+| I-16 | Cobrar una parte es atómico: estado + ingreso "Devolución gasto compartido - <contacto>" + saldo en una sola transacción | Repositorio con `runInTransaction` y `saldo_actual = saldo_actual + :monto`; test de DAO y de recálculo de I-1 |
 
 > **Límite explícito de las garantías del motor.** El `CHECK` de coherencia estado ↔ importe valida
 > la **fila**, no el **historial**: SQLite aceptaría escribir `estado = 'pendiente',
@@ -841,7 +842,8 @@ UPDATE GASTOS_COMPARTIDOS
 INSERT INTO TRANSACCIONES
   (cuenta_id, categoria_id, monto, tipo, fecha_hora, descripcion, latitud, longitud, direccion_lugar)
 VALUES (:cuenta_id, NULL, :monto_asignado, 'ingreso', :ahora_iso,
-        'Devolución gasto compartido', NULL, NULL, NULL);
+        'Devolución gasto compartido - :nombre_contacto', NULL, NULL, NULL);
+-- :nombre_contacto se lee de CONTACTOS: el historial debe decir QUIÉN devolvió.
 
 -- 4) mover el saldo con aritmética atómica (nunca leer-sumar-escribir)
 UPDATE CUENTAS SET saldo_actual = saldo_actual + :monto_asignado WHERE id = :cuenta_id;

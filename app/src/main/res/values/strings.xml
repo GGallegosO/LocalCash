@@ -290,6 +290,8 @@
     <string name="aGastoCompartido_buscar">Buscar contacto</string>
     <string name="aGastoCompartido_tu_parte">Tu parte: %1$s</string>
     <string name="aGastoCompartido_pagar">Pagar</string>
+    <string name="aGastoCompartido_historial_pagos">Historial de pagos</string>
+    <string name="aGastoCompartido_sin_pagos">Aún no hay pagos registrados</string>
     <string name="aGastoCompartido_partes">Partes: %1$d</string>
     <string name="aGastoCompartido_pagar_todo">Pagar todo (%1$s)</string>
 </resources>

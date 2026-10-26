@@ -28,6 +28,7 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -128,7 +129,10 @@ public class GastoCompartidoIntegrationTest {
         Transaccion ingreso = ultimoIngreso();
         assertNotNull(ingreso);
         assertEquals("INGRESO", ingreso.getTipo());
-        assertEquals(GastoCompartidoRepository.DESCRIPCION_DEVOLUCION, ingreso.getConcepto());
+        // El historial debe decir QUIÉN devolvió: prefijo + nombre del contacto.
+        assertEquals(GastoCompartidoRepository.DESCRIPCION_DEVOLUCION
+                        + GastoCompartidoRepository.SEPARADOR_PAGADOR + "Juan Pérez",
+                ingreso.getConcepto());
         assertEquals(cuentaId, ingreso.getCuentaId());
         assertEquals(montoJuan, ingreso.getMonto());
 
@@ -154,8 +158,53 @@ public class GastoCompartidoIntegrationTest {
         assertEquals(guardadas.get(1).getMontoAsignado(),
                 deudasMaría.get(0).getMontoAsignado());
 
-        // 9) Nada rompió la integridad referencial.
+        // 9) El historial de pagos del contacto ya figura, aunque solo quede una deuda.
+        List<com.localcash.data.model.PagoContacto> pagosJuan =
+                LiveDataTestUtil.awaitValue(dao.getPagosPorContactoLive(juanId));
+        assertEquals(1, pagosJuan.size());
+        assertEquals("Cena compartida", pagosJuan.get(0).getDescripcion());
+        assertEquals(montoJuan, pagosJuan.get(0).getMontoAsignado());
+        assertEquals(FECHA_COBRO, pagosJuan.get(0).getFechaPago());
+        assertTrue(LiveDataTestUtil
+                .awaitValue(dao.getPagosPorContactoLive(mariaId)).isEmpty());
+
+        // 10) Nada rompió la integridad referencial.
         assertTrue(foreignKeyCheckLimpio());
+    }
+
+    @Test
+    public void testPagoMultipleRotulaCadaDevolucionConSuContacto() {
+        long egresoId = db.transaccionDao().insert(new Transaccion(
+                cuentaId, "EGRESO", EGRESO, "Asado del sábado", 1_761_480_000_000L));
+        db.runInTransaction(() -> repository.insertTodas(egresoId,
+                GastoCompartidoService.dividirConUsuario(
+                        EGRESO, java.util.Arrays.asList(juanId, mariaId)),
+                FECHA_REPARTO));
+        db.cuentaDao().sumarSaldo(cuentaId, -EGRESO);
+        List<Long> ids = new ArrayList<>();
+        for (GastoCompartido guardada : dao.getByTransaccion(egresoId)) {
+            ids.add(Long.valueOf(guardada.getId()));
+        }
+        assertEquals(2, ids.size());
+
+        assertNull(repository.marcarTodasPagadas(ids, FECHA_COBRO));
+
+        Cursor cursor = db.getOpenHelper().getWritableDatabase().query(
+                "SELECT concepto FROM transacciones WHERE tipo = 'INGRESO' ORDER BY id ASC");
+        List<String> conceptos = new ArrayList<>();
+        try {
+            while (cursor.moveToNext()) {
+                conceptos.add(cursor.getString(0));
+            }
+        } finally {
+            cursor.close();
+        }
+        assertEquals(2, conceptos.size());
+        assertTrue(conceptos.get(0).endsWith("Juan Pérez"));
+        assertTrue(conceptos.get(1).endsWith("María García"));
+        // 100.000 entre 3 partes (usuario + 2): 33.334 para el usuario, 33.333
+        // para cada contacto. Se acreditan solo las dos devoluciones reales.
+        assertEquals(SALDO_INICIAL - EGRESO + 33_333L + 33_333L, saldo());
     }
 
     @Test

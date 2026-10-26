@@ -8,6 +8,7 @@ import androidx.room.Query;
 
 import com.localcash.data.entities.GastoCompartido;
 import com.localcash.data.model.DeudaContacto;
+import com.localcash.data.model.PagoContacto;
 import com.localcash.data.model.ResumenDeuda;
 
 import java.util.List;
@@ -155,6 +156,25 @@ public interface GastoCompartidoDao {
             + "   AND gc.contacto_id = :contactoId"
             + " GROUP BY gc.contacto_id, c.nombre")
     List<ResumenDeuda> resumenDeudasPorContacto(long contactoId);
+
+    /**
+     * Partes ya cobradas de un contacto, con el concepto del egreso original y
+     * su fecha de pago: el historial que sigue visible cuando no quedan deudas
+     * (Feature 012).
+     *
+     * @param contactoId id del contacto
+     * @return LiveData con las filas {@code (parteId, descripcion, fechaPago, monto)}
+     */
+    @Query("SELECT gc.id AS parteId,"
+            + "       t.concepto AS descripcion,"
+            + "       gc.fecha_pago AS fechaPago,"
+            + "       gc.monto_asignado AS montoAsignado"
+            + " FROM " + TABLE_NAME + " gc"
+            + " JOIN transacciones t ON t.id = gc.transaccion_id"
+            + " WHERE gc.contacto_id = :contactoId"
+            + "   AND gc.estado = '" + GastoCompartido.ESTADO_PAGADO + "'"
+            + " ORDER BY gc.fecha_pago DESC, gc.id DESC")
+    LiveData<List<PagoContacto>> getPagosPorContactoLive(long contactoId);
 
     /**
      * Marca una parte como cobrada. Única escritura de estado permitida

@@ -621,9 +621,26 @@ public class CuentasActivity extends BaseActivity
                 .setNeutralButton(android.R.string.cancel, null)
                 .show();
 
-        final Observer<List<DeudaContacto>> observador = deudas ->
-                pintarDeudasDetalle(contenedor, deudas);
-        contactosViewModel.getDeudasPendientes(contacto.getId()).observe(this, observador);
+        // Dos fuentes: pendientes (con cobro) e historial de pagos ya cobrados.
+        final List<DeudaContacto> pendientes = new ArrayList<>();
+        final List<com.localcash.data.model.PagoContacto> pagos = new ArrayList<>();
+        final Observer<List<DeudaContacto>> observadorDeudas = deudas -> {
+            pendientes.clear();
+            if (deudas != null) {
+                pendientes.addAll(deudas);
+            }
+            pintarDetalleContacto(contenedor, pendientes, pagos);
+        };
+        final Observer<List<com.localcash.data.model.PagoContacto>> observadorPagos =
+                cobradas -> {
+                    pagos.clear();
+                    if (cobradas != null) {
+                        pagos.addAll(cobradas);
+                    }
+                    pintarDetalleContacto(contenedor, pendientes, pagos);
+                };
+        contactosViewModel.getDeudasPendientes(contacto.getId()).observe(this, observadorDeudas);
+        contactosViewModel.getPagosPorContacto(contacto.getId()).observe(this, observadorPagos);
         final Observer<ErrorCode> observadorPago = error -> {
             if (error != null) {
                 Toast.makeText(this, mensajeReparto(error), Toast.LENGTH_SHORT).show();
@@ -632,61 +649,156 @@ public class CuentasActivity extends BaseActivity
         contactosViewModel.getResultadoPago().observe(this, observadorPago);
         dialogo.setOnDismissListener(d -> {
             contactosViewModel.getDeudasPendientes(contacto.getId())
-                    .removeObserver(observador);
+                    .removeObserver(observadorDeudas);
+            contactosViewModel.getPagosPorContacto(contacto.getId())
+                    .removeObserver(observadorPagos);
             contactosViewModel.getResultadoPago().removeObserver(observadorPago);
         });
     }
 
     /**
-     * Pinta las deudas pendientes del contacto en el diálogo de detalle (T13).
+     * Pinta el detalle del contacto en dos secciones (T13/T14): deudas pendientes
+     * —con "Pagar" por fila y "Pagar todo"— y el historial de pagos ya cobrados,
+     * que permanece visible aunque no quede ninguna deuda.
      *
      * @param contenedor contenedor vertical del diálogo
-     * @param deudas     filas {@code (concepto, fecha, monto)}
+     * @param pendientes partes pendientes del contacto
+     * @param pagos      partes ya cobradas del contacto
      */
-    private void pintarDeudasDetalle(@NonNull LinearLayout contenedor,
-                                     @Nullable List<DeudaContacto> deudas) {
+    private void pintarDetalleContacto(
+            @NonNull LinearLayout contenedor,
+            @NonNull List<DeudaContacto> pendientes,
+            @NonNull List<com.localcash.data.model.PagoContacto> pagos) {
         contenedor.removeAllViews();
-        if (deudas == null || deudas.isEmpty()) {
-            TextView vacio = new TextView(this);
-            vacio.setText(R.string.aGastoCompartido_sin_deudas);
-            vacio.setTextColor(MaterialColors.getColor(
-                    vacio, com.google.android.material.R.attr.colorOnSurfaceVariant));
-            contenedor.addView(vacio);
+
+        // ── Sección 1: deudas pendientes ────────────────────────────────────
+        contenedor.addView(crearEncabezadoSeccion(
+                R.string.aGastoCompartido_detalle_titulo));
+        if (pendientes.isEmpty()) {
+            contenedor.addView(crearFilaInformativa(R.string.aGastoCompartido_sin_deudas));
+        } else {
+            SimpleDateFormat formato = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+            long total = 0L;
+            List<Long> idsPendientes = new ArrayList<>();
+            for (DeudaContacto deuda : pendientes) {
+                ItemDeudaContactoBinding fila = ItemDeudaContactoBinding.inflate(
+                        LayoutInflater.from(contenedor.getContext()), contenedor, false);
+                fila.tvConcepto.setText(conceptoDeudor(deuda.getDescripcion()));
+                fila.tvFecha.setText(formato.format(new Date(deuda.getFechaMillis())));
+                fila.tvMonto.setText(CurrencyFormatter.format(deuda.getMontoAsignado()));
+                fila.btnPagar.setOnClickListener(v ->
+                        contactosViewModel.pagarParte(deuda.getParteId()));
+                contenedor.addView(fila.getRoot());
+                total += deuda.getMontoAsignado();
+                idsPendientes.add(Long.valueOf(deuda.getParteId()));
+            }
+
+            com.google.android.material.button.MaterialButton pagarTodo =
+                    new com.google.android.material.button.MaterialButton(this);
+            pagarTodo.setText(getString(R.string.aGastoCompartido_pagar_todo,
+                    CurrencyFormatter.format(total)));
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            params.topMargin = dp(8);
+            pagarTodo.setLayoutParams(params);
+            final List<Long> ids = new ArrayList<>(idsPendientes);
+            pagarTodo.setOnClickListener(v -> contactosViewModel.pagarTodas(ids));
+            contenedor.addView(pagarTodo);
+        }
+
+        // ── Sección 2: historial de pagos (siempre visible) ─────────────────
+        contenedor.addView(crearEncabezadoSeccion(
+                R.string.aGastoCompartido_historial_pagos));
+        if (pagos.isEmpty()) {
+            contenedor.addView(crearFilaInformativa(R.string.aGastoCompartido_sin_pagos));
             return;
         }
-
-        SimpleDateFormat formato = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-        long total = 0L;
-        List<Long> pendientes = new ArrayList<>();
-        for (DeudaContacto deuda : deudas) {
+        for (com.localcash.data.model.PagoContacto pago : pagos) {
             ItemDeudaContactoBinding fila = ItemDeudaContactoBinding.inflate(
                     LayoutInflater.from(contenedor.getContext()), contenedor, false);
-            String concepto = deuda.getDescripcion() == null || deuda.getDescripcion().isEmpty()
-                    ? getString(R.string.aGastoCompartido_detalle_titulo)
-                    : deuda.getDescripcion();
-            fila.tvConcepto.setText(concepto);
-            fila.tvFecha.setText(formato.format(new Date(deuda.getFechaMillis())));
-            fila.tvMonto.setText(CurrencyFormatter.format(deuda.getMontoAsignado()));
-            fila.btnPagar.setOnClickListener(v ->
-                    contactosViewModel.pagarParte(deuda.getParteId()));
+            fila.tvConcepto.setText(conceptoDeudor(pago.getDescripcion()));
+            fila.tvFecha.setText(fechaCobroLegible(pago.getFechaPago()));
+            fila.tvMonto.setText(CurrencyFormatter.format(pago.getMontoAsignado()));
+            fila.tvMonto.setTextColor(MaterialColors.getColor(
+                    fila.tvMonto, androidx.appcompat.R.attr.colorPrimary));
+            // El pago ya está cobrado: no hay acción posible sobre la fila.
+            fila.btnPagar.setVisibility(View.GONE);
             contenedor.addView(fila.getRoot());
-            total += deuda.getMontoAsignado();
-            pendientes.add(Long.valueOf(deuda.getParteId()));
         }
+    }
 
-        // Footer "Pagar todo": oculto cuando ya no hay deudas.
-        com.google.android.material.button.MaterialButton pagarTodo =
-                new com.google.android.material.button.MaterialButton(this);
-        pagarTodo.setText(getString(R.string.aGastoCompartido_pagar_todo,
-                CurrencyFormatter.format(total)));
+    /**
+     * Encabezado de sección del diálogo de detalle.
+     *
+     * @param recurso texto del encabezado
+     * @return TextView listo para insertar
+     */
+    private TextView crearEncabezadoSeccion(int recurso) {
+        TextView encabezado = new TextView(this);
+        encabezado.setText(recurso);
+        encabezado.setTextAppearance(
+                com.google.android.material.R.style.TextAppearance_Material3_TitleMedium);
+        encabezado.setTextColor(MaterialColors.getColor(
+                encabezado, com.google.android.material.R.attr.colorOnSurface));
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
-        params.topMargin = (int) (8 * getResources().getDisplayMetrics().density);
-        pagarTodo.setLayoutParams(params);
-        final List<Long> ids = new ArrayList<>(pendientes);
-        pagarTodo.setOnClickListener(v -> contactosViewModel.pagarTodas(ids));
-        contenedor.addView(pagarTodo);
+        params.topMargin = dp(16);
+        encabezado.setLayoutParams(params);
+        return encabezado;
+    }
+
+    /**
+     * Fila informativa (sin deudas o sin pagos) atenuada.
+     *
+     * @param recurso texto a mostrar
+     * @return TextView listo para insertar
+     */
+    private TextView crearFilaInformativa(int recurso) {
+        TextView texto = new TextView(this);
+        texto.setText(recurso);
+        texto.setPadding(0, dp(8), 0, dp(8));
+        texto.setTextColor(MaterialColors.getColor(
+                texto, com.google.android.material.R.attr.colorOnSurfaceVariant));
+        return texto;
+    }
+
+    /**
+     * @param descripcion concepto capturado del egreso, posiblemente vacío
+     * @return texto de la fila de deuda o pago
+     */
+    private String conceptoDeudor(@Nullable String descripcion) {
+        if (descripcion == null || descripcion.trim().isEmpty()) {
+            return getString(R.string.aGastoCompartido_detalle_titulo);
+        }
+        return descripcion;
+    }
+
+    /**
+     * Fecha ISO-8601 del cobro en formato local legible.
+     *
+     * @param fechaIso valor de {@code GASTOS_COMPARTIDOS.fecha_pago}
+     * @return {@code dd/MM/yyyy}; si el valor no es parseable, se muestra tal cual
+     */
+    private static String fechaCobroLegible(@Nullable String fechaIso) {
+        if (fechaIso == null || fechaIso.trim().isEmpty()) {
+            return "";
+        }
+        try {
+            return new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                    .format(Date.from(java.time.Instant.parse(fechaIso)));
+        } catch (java.time.format.DateTimeParseException e) {
+            return fechaIso;
+        }
+    }
+
+    /**
+     * @param densidadPixels cantidad de dp
+     * @return equivalente en píxeles
+     */
+    private int dp(int densidadPixels) {
+        return (int) (densidadPixels * getResources().getDisplayMetrics().density);
     }
 
     /** Pide confirmación antes de eliminar un contacto. */

@@ -95,8 +95,10 @@ tests de T8 pueden escribir desde ya, sin conocer Room ni Android):
 2. **¿El cobro de una parte mueve el saldo sin asiento contable? (Decisión del dueño, opción A)**
    - Opciones consideradas: `UPDATE CUENTAS SET saldo = saldo + monto` a secas; insertar un ingreso
      automático en `TRANSACCIONES` y luego actualizar el saldo, todo en la misma transacción.
-   - Decisión: **con ingreso automático** (`tipo='ingreso'`, `descripcion='Devolución gasto compartido'`,
-     `cuenta_id` = cuenta del egreso original, `monto` = `monto_asignado` de la parte).
+   - Decisión: **con ingreso automático** (`tipo='ingreso'`,
+     `descripcion='Devolución gasto compartido - <nombre del contacto>'`, `cuenta_id` = cuenta del egreso
+     original, `monto` = `monto_asignado` de la parte). El nombre se lee de `CONTACTOS` en el mismo
+     `runInTransaction`: sin él, el historial muestra devoluciones anónimas e inaudibles para el usuario.
    - Justificación: `data-model.md` I-1 exige `saldo = saldo_inicial + Σ ingresos − Σ egresos`; mover el
      saldo sin asiento lo rompería y rompería el test de recálculo existente. Además el cobro queda visible
      en el historial del usuario.

@@ -81,8 +81,8 @@ Cada criterio debe ser verificable por alguien distinto del implementador. Forma
       $20.000 (suma exacta) y confirma, entonces quedan dos partes pendientes con esos montos.
 - [x] **[CA-7]** Dada una parte pendiente de $30.000, cuando el usuario la marca como pagada, entonces la
       parte pasa a estado pagado con su fecha de pago, aparece en el historial un ingreso de $30.000 con
-      descripción "Devolución gasto compartido" en la cuenta del egreso original, y el saldo de esa cuenta
-      aumenta en $30.000.
+      descripción "Devolución gasto compartido - <nombre del contacto>" en la cuenta del egreso
+      original, y el saldo de esa cuenta aumenta en $30.000.
 - [x] **[CA-8]** Dada una parte ya pagada, cuando el usuario intenta volver a marcarla o reabrirla, entonces
       el sistema no ofrece la acción y rechaza cualquier intento con "La parte ya fue cobrada".
 - [x] **[CA-9]** Dado que existen contactos con partes pendientes, cuando el usuario abre el resumen de
@@ -95,7 +95,8 @@ Cada criterio debe ser verificable por alguien distinto del implementador. Forma
       desaparecen también sus partes (el asiento contable y su reparto son una sola realidad) y el resumen
       deja de mostrar esas deudas.
 - [x] **[CA-12]** Dado un contacto con egresos compartidos, cuando el usuario abre su detalle, entonces ve
-      su historial de partes compartidas (egreso, monto asignado, estado pendiente/pagado), cerrando los
+      dos secciones: **Deudas pendientes** (con su acción de cobro) e **Historial de pagos** (partes ya
+      cobradas con fecha, concepto y monto), que permanece visible aunque no quede ninguna deuda, cerrando los
       criterios CA-9/CA-10 heredados de la Feature 011.
 
 **Requisitos no funcionales aplicables:**
@@ -150,7 +151,8 @@ Reglas adicionales del registro:
 - **[INV-5]** Marcar una parte como pagada es una operación **atómica**, dentro de una sola transacción de
   base de datos, con este orden obligatorio: (1) validar que la parte existe y está pendiente; (2) cambiar
   su estado a pagado y registrar su fecha de pago; (3) registrar un ingreso automático en la cuenta del
-  egreso original con descripción "Devolución gasto compartido"; (4) aumentar el saldo de esa cuenta con
+  egreso original con descripción "Devolución gasto compartido - <nombre del contacto>" (el historial
+  debe identificar al pagador); (4) aumentar el saldo de esa cuenta con
   aritmética atómica (`saldo = saldo + monto_asignado`, nunca leer-calcular-escribir). Si cualquier paso
   falla, ninguno se aplica.
 

@@ -1,6 +1,7 @@
 package com.localcash.data.repository;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.localcash.data.db.AppDatabase;
 import com.localcash.data.entities.GastoCompartido;
@@ -29,8 +30,15 @@ import java.util.List;
  */
 public final class GastoCompartidoRepository {
 
-    /** Descripción fija del ingreso que asienta una devolución (visible en el historial). */
+    /**
+     * Prefijo del ingreso que asienta una devolución. Se completa con el nombre
+     * del contacto pagador (`"Devolución gasto compartido - Juan Pérez"`) para
+     * que el historial diga quién devolvió el dinero.
+     */
     public static final String DESCRIPCION_DEVOLUCION = "Devolución gasto compartido";
+
+    /** Separador entre el prefijo de la devolución y el nombre del contacto. */
+    public static final String SEPARADOR_PAGADOR = " - ";
 
     private final AppDatabase db;
 
@@ -80,6 +88,25 @@ public final class GastoCompartidoRepository {
         final ErrorCode[] resultado = {null};
         db.runInTransaction(() -> resultado[0] = cobrarEnTransaccion(parteId, fechaPagoIso));
         return resultado[0];
+    }
+
+    /**
+     * Concepto del asiento de devolución: prefijo + nombre del contacto.
+     * <p>
+     * Si la agenda ya no conserva el nombre (caso límite tras un borrado
+     * permisivo) se usa un genérico, nunca {@code null} ni el separador suelto.
+     * </p>
+     *
+     * @param pagador contacto que devolvió su parte, o {@code null}
+     * @return concepto para {@code TRANSACCIONES}
+     */
+    private static String descripcionDevolucion(
+            @Nullable com.localcash.data.entities.Contacto pagador) {
+        String nombre = pagador == null ? null : pagador.getNombre();
+        if (nombre == null || nombre.trim().isEmpty()) {
+            return DESCRIPCION_DEVOLUCION + " (contacto no identificado)";
+        }
+        return DESCRIPCION_DEVOLUCION + SEPARADOR_PAGADOR + nombre.trim();
     }
 
     /**
@@ -187,11 +214,13 @@ public final class GastoCompartidoRepository {
                             + " de la parte " + parteId + " no existe");
         }
 
+        com.localcash.data.entities.Contacto pagador =
+                db.contactoDao().getByIdSync(parte.getContactoId());
         Transaccion ingreso = new Transaccion(
                 egreso.getCuentaId(),
                 TipoTransaccion.INGRESO.name(),
                 parte.getMontoAsignado(),
-                DESCRIPCION_DEVOLUCION,
+                descripcionDevolucion(pagador),
                 System.currentTimeMillis());
         db.transaccionDao().insert(ingreso);
 

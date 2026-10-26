@@ -150,5 +150,8 @@
 - Deuda registrada: el asiento del egreso sigue usando `updateSaldo` absoluto (leer-calcular-escribir,
   herencia de 007/008); unificarlo con `sumarSaldo` requiere tocar la Feature 007 y merece su propia tarea.
 - Contador visible de chips seleccionados (resto de UX Issue #1).
+- **Ampliada tras el cierre (2026-10-26):** el asiento de devolución ahora rotula al pagador
+  ("Devolución gasto compartido - Juan Pérez") y el detalle del contacto muestra deudas pendientes **e
+  historial de pagos** (`getPagosPorContactoLive`), para que cobrar no borre la memoria del contacto.
 - Considerar una tarea propia para "Corregir un cobro" (hoy obliga a borrar y reinsertar el egreso):
   falta una vía explícita en la UI.

@@ -58,6 +58,12 @@ public class ContactosViewModel extends ViewModel {
         return resultado;
     }
 
+    /** Partes ya cobradas de un contacto: historial del diálogo de detalle. */
+    public LiveData<java.util.List<com.localcash.data.model.PagoContacto>> getPagosPorContacto(
+            long contactoId) {
+        return db.gastoCompartidoDao().getPagosPorContactoLive(contactoId);
+    }
+
     /** Resultado del último cobro ({@code null} = éxito). */
     public LiveData<ErrorCode> getResultadoPago() {
         return resultadoPago;
