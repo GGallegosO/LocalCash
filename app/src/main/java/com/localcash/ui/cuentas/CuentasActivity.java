@@ -1297,8 +1297,11 @@ public class CuentasActivity extends BaseActivity
 
             if (personalizado) {
                 long captura = transaccionViewModel.getMontoPersonalizado(id);
-                fila.inputMontoParte.setText(captura > 0L ? String.valueOf(captura) : "");
+                fila.inputMontoParte.setText(captura > 0L
+                        ? CurrencyFormatter.formatWithCurrency(captura) : "");
                 fila.inputMontoParte.addTextChangedListener(new TextWatcher() {
+                    private boolean formateando;
+
                     @Override
                     public void beforeTextChanged(CharSequence s, int start, int count, int after) {
                     }
@@ -1309,8 +1312,25 @@ public class CuentasActivity extends BaseActivity
 
                     @Override
                     public void afterTextChanged(Editable s) {
-                        transaccionViewModel.setMontoPersonalizado(
-                                id, parsearMonto(s == null ? "" : s.toString()));
+                        if (formateando) {
+                            return;
+                        }
+                        String crudo = s == null ? "" : s.toString().replaceAll("[^0-9]", "");
+                        long valor = 0L;
+                        if (!crudo.isEmpty()) {
+                            try {
+                                valor = Long.parseLong(crudo);
+                            } catch (NumberFormatException e) {
+                                valor = 0L;
+                            }
+                        }
+                        formateando = true;
+                        String formateado = valor > 0L
+                                ? CurrencyFormatter.formatWithCurrency(valor) : "";
+                        fila.inputMontoParte.setText(formateado);
+                        fila.inputMontoParte.setSelection(formateado.length());
+                        formateando = false;
+                        transaccionViewModel.setMontoPersonalizado(id, valor);
                     }
                 });
             } else {
@@ -1346,6 +1366,10 @@ public class CuentasActivity extends BaseActivity
                 CurrencyFormatter.format(estado.getMontoTotal()));
         if (estado.getNumeroPartes() > 0) {
             texto = texto + " · " + estado.getNumeroPartes() + " partes";
+        }
+        if (estado.getParteUsuario() > 0L) {
+            texto = texto + " · " + getString(R.string.aGastoCompartido_tu_parte,
+                    CurrencyFormatter.format(estado.getParteUsuario()));
         }
         if (!estado.isValido() && estado.getError() != null) {
             texto = texto + " · " + getString(mensajeReparto(estado.getError()));

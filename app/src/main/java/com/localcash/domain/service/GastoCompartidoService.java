@@ -156,7 +156,8 @@ public final class GastoCompartidoService {
 
     /**
      * Valida una división personalizada: montos positivos, un contacto a lo
-     * sumo una vez y suma exacta del total (INV-2).
+     * sumo una vez y suma que **no supere** el total. Si suma menos, el resto
+     * queda como parte implícita del usuario (N+1).
      *
      * @param montoTotal importe del egreso en pesos CLP
      * @param partes     partes propuestas por el usuario
@@ -167,7 +168,7 @@ public final class GastoCompartidoService {
      *                               parte no es positiva, {@link ErrorCode#CONTACTO_DUPLICADO}
      *                               si un contacto se repite, o
      *                               {@link ErrorCode#REPARTO_NO_CUADRA} si la suma
-     *                               no iguala el total
+     *                               supera el total
      */
     public static void validarPersonalizado(long montoTotal, List<PartePropuesta> partes) {
         if (montoTotal <= 0) {
@@ -203,10 +204,10 @@ public final class GastoCompartidoService {
             suma += parte.getMontoAsignado();
         }
 
-        if (suma != montoTotal) {
+        if (suma > montoTotal) {
             throw new BusinessRuleException(
                     ErrorCode.REPARTO_NO_CUADRA,
-                    "Las partes suman " + suma + " y el egreso es " + montoTotal);
+                    "Las partes suman " + suma + " y superan el egreso " + montoTotal);
         }
     }
 }

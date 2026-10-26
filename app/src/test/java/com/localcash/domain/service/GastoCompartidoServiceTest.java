@@ -259,11 +259,19 @@ public class GastoCompartidoServiceTest {
     }
 
     @Test
-    public void testPersonalizadoRechazaSumaQueNoIgualaElTotal() {
+    public void testPersonalizadoAceptaSumaMenorQueElTotal() {
+        // El resto (5.000) queda como parte implícita del usuario (N+1).
+        GastoCompartidoService.validarPersonalizado(50_000L, Arrays.asList(
+                new PartePropuesta(1L, 30_000L),
+                new PartePropuesta(2L, 15_000L)));
+    }
+
+    @Test
+    public void testPersonalizadoRechazaSumaMayorQueElTotal() {
         BusinessRuleException excepcion = assertThrows(
                 BusinessRuleException.class,
                 () -> GastoCompartidoService.validarPersonalizado(50_000L, Arrays.asList(
-                        new PartePropuesta(1L, 30_000L),
+                        new PartePropuesta(1L, 40_000L),
                         new PartePropuesta(2L, 15_000L))));
 
         assertEquals(ErrorCode.REPARTO_NO_CUADRA, excepcion.getErrorCode());

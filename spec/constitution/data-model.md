@@ -545,7 +545,8 @@ persona y un importe, no es un dato derivable que se pueda recalcular sin contex
   egreso completo ya es su gasto y no existe un contacto "Yo" (§4.1). Lo mismo hacen Splitwise o
   Tricount: solo se guarda lo que otros deben. Consecuencia: en modo igual
   `Σ GASTOS_COMPARTIDOS.monto_asignado = monto del egreso − parte del usuario`; en división
-  personalizada el usuario no aporta parte (los montos escritos suman el total). El cálculo y la
+  personalizada el usuario aporta el resto: los montos de los contactos pueden sumar menos que el
+  total (solo se rechaza si lo superan). El cálculo y la
   validación en vivo viven en `GastoCompartidoService.dividirConUsuario()`.
 
 > **Estado previsto (Feature 012, Room v5).** Room no expresa `CHECK` **ni `DEFAULT`** en `@Entity`, así
@@ -762,7 +763,7 @@ obligatorios, así que las reglas siguientes se validan en la capa de dominio y 
 | I-10 | Un movimiento tiene como máximo un pin vinculado | Índice `UNIQUE index_LUGARES_transaccion_id` (no parcial; los `NULL` no colisionan) + test de DAO `testVinculoConMovimientoEsUnico` |
 | I-11 | `ITEMS_LUGAR.completado` solo vale 0 o 1 y todo elemento pertenece a un lugar existente | Dominio (`ItemLugar` booleano) + `FK` `ON DELETE CASCADE` del motor + test de cascada |
 | I-12 | Un egreso compartido tiene ≥ 1 parte **de contacto**; no existe reparto sin contactos (la parte del usuario no se persiste) | Dominio: `GastoCompartidoService.validarReparto` → `GASTO_SIN_CONTACTOS`; `GastoCompartidoServiceTest` |
-| I-13 | En modo **igual**: `Σ GASTOS_COMPARTIDOS.monto_asignado = TRANSACCIONES.monto − parte implícita del usuario`, al peso (el usuario es 1 de las N+1 partes). En **personalizada**: la suma de las partes de contactos = monto del egreso. | Dominio: `dividirConUsuario` (residuo de a 1 CLP) y `validarPersonalizado` (`REPARTO_NO_CUADRA`, `REPARTO_IGUAL_INSUFICIENTE`, `MONTO_PARTE_INVALIDO`); test puro + integración |
+| I-13 | En modo **igual**: `Σ GASTOS_COMPARTIDOS.monto_asignado = TRANSACCIONES.monto − parte implícita del usuario`, al peso (el usuario es 1 de las N+1 partes). En **personalizada**: la suma de las partes de contactos es ≤ monto del egreso; el resto es la parte implícita del usuario. | Dominio: `dividirConUsuario` (residuo de a 1 CLP) y `validarPersonalizado` (`REPARTO_NO_CUADRA`, `REPARTO_IGUAL_INSUFICIENTE`, `MONTO_PARTE_INVALIDO`); test puro + integración |
 | I-14 | Una parte `pagado` no vuelve a `pendiente`; `estado` y `fecha_pago` son coherentes | `CHECK` de fila (§3.11) + repositorio: único write es `marcarPagada()` con `WHERE estado = 'pendiente'`; test de DAO |
 | I-15 | No se elimina un contacto con partes registradas | `FK ON DELETE RESTRICT` + traducción a `CONTACTO_EN_USO`; test de DAO |
 | I-16 | Cobrar una parte es atómico: estado + ingreso "Devolución gasto compartido" + saldo en una sola transacción | Repositorio con `runInTransaction` y `saldo_actual = saldo_actual + :monto`; test de DAO y de recálculo de I-1 |

@@ -66,6 +66,14 @@ public class TransaccionViewModelDivisionTest {
         assertNull(cuadrado.getError());
         // La personalizada no reparte con el usuario: 3 partes suman el total.
         assertEquals(3, vm.partesParaRegistrar().size());
+
+        // Suma menor: el resto es la parte implícita del usuario.
+        vm.setMontoPersonalizado(3L, 10_000L);
+        EstadoReparto conResto = vm.getEstadoReparto().getValue();
+        assertNotNull(conResto);
+        assertTrue(conResto.isValido());
+        assertEquals(55_000L, conResto.getSumaParcial());
+        assertEquals(45_000L, conResto.getParteUsuario());
     }
 
     @Test

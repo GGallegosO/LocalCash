@@ -28,10 +28,11 @@ public final class EstadoReparto {
     private final List<PartePropuesta> partes;
     private final boolean valido;
     private final ErrorCode error;
+    private final long parteUsuario;
 
     private EstadoReparto(boolean compartido, ModoDivision modo, long montoTotal,
                           long sumaParcial, List<PartePropuesta> partes,
-                          boolean valido, ErrorCode error) {
+                          boolean valido, ErrorCode error, long parteUsuario) {
         this.compartido = compartido;
         this.modo = modo;
         this.montoTotal = montoTotal;
@@ -41,6 +42,7 @@ public final class EstadoReparto {
                 : Collections.unmodifiableList(new ArrayList<>(partes));
         this.valido = valido;
         this.error = error;
+        this.parteUsuario = parteUsuario;
     }
 
     /**
@@ -51,7 +53,7 @@ public final class EstadoReparto {
      */
     public static EstadoReparto sinReparto(long montoTotal) {
         return new EstadoReparto(false, ModoDivision.IGUAL, montoTotal, 0L,
-                Collections.<PartePropuesta>emptyList(), true, null);
+                Collections.<PartePropuesta>emptyList(), true, null, 0L);
     }
 
     /**
@@ -70,7 +72,11 @@ public final class EstadoReparto {
                 suma += parte.getMontoAsignado();
             }
         }
-        return new EstadoReparto(true, modo, montoTotal, suma, partes, true, null);
+        long usuario = 0L;
+        if (modo == ModoDivision.PERSONALIZADA && montoTotal > suma) {
+            usuario = montoTotal - suma;
+        }
+        return new EstadoReparto(true, modo, montoTotal, suma, partes, true, null, usuario);
     }
 
     /**
@@ -86,7 +92,7 @@ public final class EstadoReparto {
     public static EstadoReparto rechazado(long montoTotal, ModoDivision modo,
                                           List<PartePropuesta> partes, long sumaParcial,
                                           ErrorCode error) {
-        return new EstadoReparto(true, modo, montoTotal, sumaParcial, partes, false, error);
+        return new EstadoReparto(true, modo, montoTotal, sumaParcial, partes, false, error, 0L);
     }
 
     public boolean isCompartido() {
@@ -126,5 +132,13 @@ public final class EstadoReparto {
      */
     public ErrorCode getError() {
         return error;
+    }
+
+    /**
+     * @return parte implícita del usuario en pesos CLP (solo personalizada;
+     *         en igual va dentro de las partes marcadas como del usuario)
+     */
+    public long getParteUsuario() {
+        return parteUsuario;
     }
 }

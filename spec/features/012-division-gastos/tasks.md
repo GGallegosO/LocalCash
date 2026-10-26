@@ -385,7 +385,8 @@ emulador activo**: si se ejecuta primero y falla, se pierde el ciclo de compilac
   sin T13/T14 no se puede mostrar "quién me debe" ni cobrar una parte desde la app.
 - **N+1 con usuario implícito (decisión del dueño, 2026-10-26):** el reparto igual divide entre
   usuario + N contactos, pero la parte del usuario **no se persiste** (no existe contacto "Yo"; el
-  egreso completo ya es su gasto). `Σ partes guardadas = total − parte del usuario`; ratificado en
+  egreso completo ya es su gasto). En personalizada el resto (`total − suma`) también es suyo.
+  `Σ partes guardadas = total − parte del usuario`; ratificado en
   `data-model.md` §3.11 e I-12/I-13, y reflejado en `spec.md` INV-2. Sin migración.
 - Desfase de numeración durante la ejecución: el dueño solicitó los tests de dominio como "T7" y el
   formulario como "T9"; en este checklist corresponden a T8 y T11/T12. Se marcaron las tareas reales,

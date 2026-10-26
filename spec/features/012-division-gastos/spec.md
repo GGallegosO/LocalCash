@@ -138,7 +138,8 @@ Reglas adicionales del registro:
   del egreso, descontando la **parte implícita del usuario**, que no se persiste: en la división igual se
   reparte entre N + 1 (usuario + contactos) y el residuo entero se asigna de a un peso empezando por el
   usuario; si el monto es menor que N + 1, el reparto se rechaza (no existen partes de cero pesos). En la
-  división personalizada no hay parte del usuario y los montos de los contactos suman el total.
+  división personalizada los montos de los contactos pueden sumar **menos** que el total: el resto es
+  la parte implícita del usuario (solo se rechaza si la suma lo supera).
 - **[INV-3]** Una parte ya `pagada` **no puede volver a `pendiente`**: el sistema no ofrece ninguna
   operación para reabrir un cobro (la máquina de estados la hace cumplir el repositorio, no la interfaz).
 - **[INV-4]** No se puede eliminar un contacto con partes registradas: la restricción de clave foránea lo
