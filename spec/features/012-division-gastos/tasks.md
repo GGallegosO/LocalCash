@@ -113,7 +113,7 @@
       los metería en release. **Impacto colateral corregido:** `MigracionV2V3Test` apuntaba al builder
       sin `MIGRATION_4_5` y esperaba `user_version = 4`; se actualizó al tramo completo y a la versión
       5 (sin cambiar lo que prueba del 2 → 3). Verificación: `compileDebugJavaWithJavac` OK,
-      `testDebugUnitTest` **90 tests en verde**, `lint` sin advertencias nuevas (120 baseline) y
+      `testDebugUnitTest` **86 tests en verde**, `lint` sin advertencias nuevas (120 baseline) y
       `assembleDebug` OK.
 
 ## Fase 3 — Dominio (núcleo de negocio)
@@ -174,7 +174,7 @@
       `fecha_pago`, I-1 exacto (`200.000 + Σ ingresos − Σ egresos`), segundo cobro →
       `PARTE_YA_PAGADA` sin cambios, parte inexistente → `PARTE_INEXISTENTE`, y una excepción inyectada
       dentro de la transacción deja **0 partes** (rollback). `compileDebugJavaWithJavac` OK,
-      `testDebugUnitTest` en verde (90) y `lint` con **las mismas 120 advertencias baseline**: se
+      `testDebugUnitTest` en verde (86) y `lint` con **las mismas 120 advertencias baseline**: se
       omitieron los `Log` nuevos del repositorio porque el lint del proyecto exige Timber (no está en
       `tech-stack.md`, sería dependencia no registrada) y el código de negocio se registra en la UI
       (T14); los fallos inesperados siguen propagando excepción con contexto.
@@ -192,13 +192,37 @@
       *Criterio de salida:* registrar un egreso compartido con partes inválidas (Σ ≠ total, 0
       contactos) no deja ni movimiento ni partes ni saldo modificado.
       Responsable: Agente SDD | Estimación: 60 min
+      *Estado (2026-10-26):* el contenido de esta tarea (sobrecargas con `List<PartePropuesta>`,
+      validación pre-transacción e `insertTodas` dentro de la transacción del egreso) se entregó por
+      instrucción explícita del dueño **dentro de T6**, junto con el cobro. No se marca todavía porque
+      su criterio de salida (todo-o-nada del egreso compartido con partes inválidas) se demuestra
+      end-to-end en T9/T10. El modelo de dominio `GastoCompartido` con `toEntity()`/`fromEntity()` no
+      se necesitó: el repositorio construye la entidad directamente desde `PartePropuesta`, y el
+      mapeo inverso lo hará la capa que lea las partes (T13) si hace falta.
 
-- [ ] **T8. Tests de dominio `GastoCompartidoServiceTest` (JVM puro).**
+- [x] **T8. Tests de dominio `GastoCompartidoServiceTest` (JVM puro).**
       Cubre CA-1..CA-6 y casos borde 1–6 de `spec.md` §6: reparto igual exacto, con residuo
       (100000/3 → 33334+33333+33333), monto < n rechazado, 0 contactos rechazado, personalizada que
       cuadra y que no, parte ≤ 0, contacto duplicado.
       *Criterio de salida:* rojo → verde documentado; cobertura ≥ 70% en la lógica nueva.
       Responsable: Agente SDD | Estimación: 45 min
+      *Cierre (2026-10-26):* creado
+      `app/src/test/java/com/localcash/domain/service/GastoCompartidoServiceTest.java` con **25 tests
+      JUnit 4**, sin una sola importación de `android.*` ni `androidx.*` (JVM puro, sin Robolectric):
+      reparto exacto entre 2 (50.000 + 50.000), con residuo entre 3 (33.334 + 33.333 + 33.333),
+      residuo de a 1 peso entre 7 (cinco de 14.286 y dos de 14.285), un solo contacto, orden de la
+      lista, suma exacta para montos de 5 a 92.147.483.647 con 1–5 contactos, `monto < n` →
+      `REPARTO_IGUAL_INSUFICIENTE`, lista nula/vacía/contacto nulo/contacto ≤ 0 →
+      `GASTO_SIN_CONTACTOS`, duplicado → `CONTACTO_DUPLICADO`, monto 0/negativo → `MONTO_INVALIDO`,
+      personalizada que cuadra (aceptada), suma 45.000 vs 50.000 → `REPARTO_NO_CUADRA`, parte 0 /
+      negativa / nula → `MONTO_PARTE_INVALIDO`, contacto repetido → `CONTACTO_DUPLICADO`, total no
+      positivo → `MONTO_INVALIDO`, y el resultado de `dividirIgual` aceptado por
+      `validarPersonalizado`. **Cobertura:** JaCoCo no está configurado en el proyecto (añadirlo sería
+      una dependencia nueva no registrada), así que se verifica por ramas: las 3 funciones y las 12
+      salidas de error del servicio están ejercitadas, igual que los dos caminos del bucle de residuo
+      (`i < residuo` verdadero/falso) → cobertura de ramas 100% del servicio.
+      `./gradlew testDebugUnitTest` en verde: **25 tests nuevos**, suite total **111 tests, 0 fallos**
+      (86 previos + 25).
 
 - [ ] **T9. Tests de persistencia `GastoCompartidoDaoTest` (Robolectric + Room in-memory).**
       Cubre CA-7, CA-8, CA-11, CA-9 (resumen Σ/orden), INV-4 y el cobro de T6: tras marcar pagada,
