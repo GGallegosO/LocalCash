@@ -376,12 +376,17 @@ emulador activo**: si se ejecuta primero y falla, se pierde el ciclo de compilac
 
 - **UX Issue #1 (T11, 2026-10-26):** el selector de contactos con CheckBox verticales no escala a más
   de ~20 contactos: obliga a hacer scroll largo dentro de la hoja inferior y vuelve difícil ver cuántos
-  se eligieron. Solución pendiente: `ChipGroup` de selección múltiple o un diálogo de selección
-  (`MultiSelectDialog`) con contador. Registra también que el orden de selección queda invisible.
+  se eligieron. **Resuelto el 2026-10-26 (commit d258da4):** el selector pasó a `ChipGroup` +
+  `SearchView`, y se agregaron cierre (X) y "Cancelar". Queda pendiente el contador visible de chips
+  seleccionados.
 - **UX Issue #2 (T13/T14, 2026-10-26):** la pantalla de Contactos todavía **no muestra deudas ni ofrece
   el botón de pago**: el resumen de deudas y el cobro atómico ya existen en datos (`GastoCompartidoDao`,
   `GastoCompartidoRepository`) pero no tienen superficie en la UI. **Bloquea la demo universitaria**:
   sin T13/T14 no se puede mostrar "quién me debe" ni cobrar una parte desde la app.
+- **N+1 con usuario implícito (decisión del dueño, 2026-10-26):** el reparto igual divide entre
+  usuario + N contactos, pero la parte del usuario **no se persiste** (no existe contacto "Yo"; el
+  egreso completo ya es su gasto). `Σ partes guardadas = total − parte del usuario`; ratificado en
+  `data-model.md` §3.11 e I-12/I-13, y reflejado en `spec.md` INV-2. Sin migración.
 - Desfase de numeración durante la ejecución: el dueño solicitó los tests de dominio como "T7" y el
   formulario como "T9"; en este checklist corresponden a T8 y T11/T12. Se marcaron las tareas reales,
   no las etiquetas pedidas, para que el registro coincida con el código entregado.
