@@ -134,10 +134,11 @@ Reglas adicionales del registro:
 
 - **[INV-1]** Un egreso marcado como compartido sin al menos un contacto **no es válido**. La división sin
   deudores es un reparto de nada.
-- **[INV-2]** La suma de los `monto_asignado` de todas las partes **iguala exactamente** el monto del egreso,
-  al peso. En la división igual, el residuo de la división entera se asigna de a un peso por contacto
-  empezando por el primero de la lista; si el monto es menor que el número de contactos, el reparto se
-  rechaza (no existen partes de cero pesos).
+- **[INV-2]** La suma de los `monto_asignado` de las partes **de contactos** cuadra al peso con el monto
+  del egreso, descontando la **parte implícita del usuario**, que no se persiste: en la división igual se
+  reparte entre N + 1 (usuario + contactos) y el residuo entero se asigna de a un peso empezando por el
+  usuario; si el monto es menor que N + 1, el reparto se rechaza (no existen partes de cero pesos). En la
+  división personalizada no hay parte del usuario y los montos de los contactos suman el total.
 - **[INV-3]** Una parte ya `pagada` **no puede volver a `pendiente`**: el sistema no ofrece ninguna
   operación para reabrir un cobro (la máquina de estados la hace cumplir el repositorio, no la interfaz).
 - **[INV-4]** No se puede eliminar un contacto con partes registradas: la restricción de clave foránea lo

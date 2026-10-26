@@ -504,9 +504,10 @@ persona y un importe, no es un dato derivable que se pueda recalcular sin contex
 
 ### 3.11 GASTOS_COMPARTIDOS
 
-- **Propósito:** Parte de un egreso que un contacto debe al usuario. Es la tabla de unión entre el
+- **Propósito:** Parte de un egreso que **un contacto** debe al usuario. Es la tabla de unión entre el
   movimiento pagado por el usuario y la agenda de contactos: cada fila responde a "el contacto X debe
-  Y pesos por el egreso Z" (Feature 012, división de gastos).
+  Y pesos por el egreso Z" (Feature 012, división de gastos). **Solo almacena partes de contactos:** la
+  parte del usuario principal es implícita y no se persiste (ver abajo).
 - **Ciclo de vida:** se crea con el reparto, al confirmar el egreso compartido (una fila por
   contacto); `pendiente → pagado` es la única transición y `pagado` es **terminal**. El cobro lo hace
   el repositorio con `marcarPagada()` (I-14/I-16); no existe operación pública para reabrir una parte.
@@ -539,6 +540,13 @@ persona y un importe, no es un dato derivable que se pueda recalcular sin contex
 - **Efecto contable:** crear el reparto **no** mueve ninguna cuenta (el egreso ya movió el saldo al
   registrarse). Cobrar una parte inserta un ingreso "Devolución gasto compartido" y suma el monto con
   aritmética atómica, todo en una transacción (I-16 y §4.2).
+- **Parte implícita del usuario (decisión del dueño, 2026-10-26).** En la división igual el total se
+  reparte entre **N + 1** (usuario + N contactos), pero la parte del usuario **no genera fila**: el
+  egreso completo ya es su gasto y no existe un contacto "Yo" (§4.1). Lo mismo hacen Splitwise o
+  Tricount: solo se guarda lo que otros deben. Consecuencia: en modo igual
+  `Σ GASTOS_COMPARTIDOS.monto_asignado = monto del egreso − parte del usuario`; en división
+  personalizada el usuario no aporta parte (los montos escritos suman el total). El cálculo y la
+  validación en vivo viven en `GastoCompartidoService.dividirConUsuario()`.
 
 > **Estado previsto (Feature 012, Room v5).** Room no expresa `CHECK` **ni `DEFAULT`** en `@Entity`, así
 > que el esquema real del archivo no los incluirá: la coherencia `estado` ↔ `fecha_pago`, el monto
@@ -753,8 +761,8 @@ obligatorios, así que las reglas siguientes se validan en la capa de dominio y 
 | I-9 | Todo `LUGARES` tiene coordenadas completas y dentro de rango WGS84 | Capa de dominio: `LugarService` + `Ubicacion` + tests (`LugarServiceTest`); Room no expresa `CHECK` (§3.9) |
 | I-10 | Un movimiento tiene como máximo un pin vinculado | Índice `UNIQUE index_LUGARES_transaccion_id` (no parcial; los `NULL` no colisionan) + test de DAO `testVinculoConMovimientoEsUnico` |
 | I-11 | `ITEMS_LUGAR.completado` solo vale 0 o 1 y todo elemento pertenece a un lugar existente | Dominio (`ItemLugar` booleano) + `FK` `ON DELETE CASCADE` del motor + test de cascada |
-| I-12 | Un egreso compartido tiene ≥ 1 parte; no existe reparto sin contactos | Dominio: `GastoCompartidoService.validarReparto` → `GASTO_SIN_CONTACTOS`; `GastoCompartidoServiceTest` |
-| I-13 | `TRANSACCIONES.monto` del egreso = `Σ GASTOS_COMPARTIDOS.monto_asignado` de sus partes, al peso | Dominio: reparto igual con residuo de a 1 CLP o personalizado validado (`REPARTO_NO_CUADRA`, `REPARTO_IGUAL_INSUFICIENTE`, `MONTO_PARTE_INVALIDO`); test puro + integración |
+| I-12 | Un egreso compartido tiene ≥ 1 parte **de contacto**; no existe reparto sin contactos (la parte del usuario no se persiste) | Dominio: `GastoCompartidoService.validarReparto` → `GASTO_SIN_CONTACTOS`; `GastoCompartidoServiceTest` |
+| I-13 | En modo **igual**: `Σ GASTOS_COMPARTIDOS.monto_asignado = TRANSACCIONES.monto − parte implícita del usuario`, al peso (el usuario es 1 de las N+1 partes). En **personalizada**: la suma de las partes de contactos = monto del egreso. | Dominio: `dividirConUsuario` (residuo de a 1 CLP) y `validarPersonalizado` (`REPARTO_NO_CUADRA`, `REPARTO_IGUAL_INSUFICIENTE`, `MONTO_PARTE_INVALIDO`); test puro + integración |
 | I-14 | Una parte `pagado` no vuelve a `pendiente`; `estado` y `fecha_pago` son coherentes | `CHECK` de fila (§3.11) + repositorio: único write es `marcarPagada()` con `WHERE estado = 'pendiente'`; test de DAO |
 | I-15 | No se elimina un contacto con partes registradas | `FK ON DELETE RESTRICT` + traducción a `CONTACTO_EN_USO`; test de DAO |
 | I-16 | Cobrar una parte es atómico: estado + ingreso "Devolución gasto compartido" + saldo en una sola transacción | Repositorio con `runInTransaction` y `saldo_actual = saldo_actual + :monto`; test de DAO y de recálculo de I-1 |
