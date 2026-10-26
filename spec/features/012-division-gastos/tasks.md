@@ -34,7 +34,7 @@
       `getComprasComoPagador`/`getDeudasComoDeudor` aunque `doc/011` lo afirmaba; el historial por
       contacto se resolverá solo con `GASTOS_COMPARTIDOS` (T13).
 
-- [ ] **T2. Sincronizar `spec/constitution/data-model.md` con la entidad `GASTOS_COMPARTIDOS`.**
+- [x] **T2. Sincronizar `spec/constitution/data-model.md` con la entidad `GASTOS_COMPARTIDOS`.**
       Agregar al ERD Mermaid la entidad y sus relaciones (`TRANSACCIONES ||--o{ GASTOS_COMPARTIDOS :
       "se divide en"`, `CONTACTOS ||--o{ GASTOS_COMPARTIDOS : "responde por"`), la subsección de
       diccionario, invariantes numeradas tras I-11 (equivalentes a INV-1..INV-5), los índices y el
@@ -43,12 +43,27 @@
       limpio; relaciones del Mermaid referencian solo entidades declaradas (diff contra el ERD
       aprobado, trampa documentada en AGENTS.md).
       Responsable: Agente SDD | Estimación: 45 min
+      *Cierre (2026-10-26):* `data-model.md` pasa a revisión v3 (11 tablas): ERD con la entidad y sus
+      dos relaciones (verificado por script: 11 entidades declaradas, 11 referenciadas, 0 huérfanas),
+      diccionario §3.11 con regla de tabla `estado` ↔ `fecha_pago`, índices de §3.11 reubicados a
+      §3.12 con dos consultas nuevas, invariantes I-12..I-16, bloque atómico de cobro en §4.2, ADR 9
+      (tabla única frente al trío de compras grupales), trazabilidad/registro de cambios y DDL del
+      Apéndice A (`user_version = 3` canónico). **Validado en `sqlite3`:** DDL ejecutado sin error,
+      `foreign_key_check` limpio, flujo egreso→reparto→cobro con saldo 150.000 = I-1, y rechazos
+      comprobados (monto 0, `pagado` sin fecha, `pendiente` con fecha, contacto repetido, fecha
+      malformada, FK inexistente, borrado de contacto con parte) más cascadas egreso→partes y
+      cuenta→movimientos. **Desviación del plan corregida:** se eliminó
+      `idx_gastos_compartidos_transaccion_id` por redundante con el único
+      `(transaccion_id, contacto_id)`; `plan.md` Decisión 6 y T3 actualizados con la justificación.
+      *Nota operativa:* el `PRAGMA foreign_keys = ON` es por conexión; los tests de rechazo solo
+      pasan si se activa en cada conexión (lo que confirma la trampa documentada en AGENTS.md).
 
 ## Fase 2 — Persistencia
 
 - [ ] **T3. Crear entidad Room `GastoCompartido` y DAO `GastoCompartidoDao`.**
       `data/entities/GastoCompartido.java` (tabla `GASTOS_COMPARTIDOS`, índices
-      `ux..._transaccion_contacto` único, `idx..._contacto_estado`, `idx..._transaccion_id`).
+      `ux..._transaccion_contacto` único y `idx..._contacto_estado`; sin índice aislado sobre
+      `transaccion_id`, cubierto por el único — ver `plan.md` Decisión 6 corregida en T2).
       `data/dao/GastoCompartidoDao.java` con nombre de tabla por constante: `insertTodas`,
       `getByTransaccion`, `getPendientesPorContacto`, `resumenDeudasPorContacto` (Σ pendientes,
       ORDER BY monto desc), `marcarPagada(parteId, fechaPagoIso)` con `WHERE ... estado='pendiente'`,

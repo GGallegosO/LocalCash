@@ -117,7 +117,7 @@ movimientos y contactos: cada fila es "el contacto X debe Y pesos por el egreso 
 | `transaccion_id` | `INTEGER` | FK → transacciones(id) · obligatorio | No | Egreso compartido del que nace la parte. Una parte sin gasto no significa nada. |
 | `contacto_id` | `INTEGER` | FK → contactos(id) · obligatorio · borrado restringido | No | Contacto deudor. Es siempre un tercero, nunca el usuario principal. |
 | `monto_asignado` | `INTEGER` | obligatorio · positivo · pesos CLP | No | Parte del egreso que debe este contacto. |
-| `estado` | `INTEGER`/`TEXTO` en dominio cerrado | obligatorio · `pendiente` / `pagado` | No | Ciclo de vida de la parte. `pagado` es terminal. |
+| `estado` | `TEXT` (dominio cerrado) | obligatorio · `pendiente` / `pagado` | No | Ciclo de vida de la parte. `pagado` es terminal. |
 | `fecha_creacion` | `TEXT` ISO-8601 | obligatorio | No | Momento en que se registró el reparto. |
 | `fecha_pago` | `TEXT` ISO-8601 | — | Sí | Momento en que el usuario marcó la parte como cobrada. `NULL` mientras esté pendiente. |
 

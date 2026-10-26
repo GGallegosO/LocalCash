@@ -128,8 +128,13 @@ lo que los tests de T8 pueden escribir desde ya, sin conocer Room ni Android):
      índices, `IF NOT EXISTS`), sin `DROP TABLE` ni `fallbackToDestructiveMigration()` (`.agent.md` §6.11).
      Room valida el esquema: los índices se declaran también en `@Entity(indices=...)`
      (`ux_gastos_compartidos_transaccion_contacto` único sobre `(transaccion_id, contacto_id)`;
-     `idx_gastos_compartidos_contacto_estado`; `idx_gastos_compartidos_transaccion_id`). Ninguna columna
-     involucrada es nullable, así que los índices pueden declararse completos sin `WHERE`.
+     `idx_gastos_compartidos_contacto_estado`). Ninguna columna involucrada es nullable, así que los
+     índices pueden declararse completos sin `WHERE`.
+   - **Corrección de T2 (2026-10-26):** se descarta el tercer índice
+     `idx_gastos_compartidos_transaccion_id` que figuraba en el borrador. El único compuesto
+     `(transaccion_id, contacto_id)` ya tiene `transaccion_id` como columna izquierda y sirve
+     `WHERE transaccion_id = ?`; un índice adicional duplicaría escrituras sin añadir plan de consulta.
+     `data-model.md` §3.12 lo prohíbe expresamente ("no se crean índices por si acaso").
 
 7. **Reglas que el motor impone y reglas que solo valida el dominio** (Room no permite `CHECK` en
    `@Entity` — precedente documentado §3.9):
