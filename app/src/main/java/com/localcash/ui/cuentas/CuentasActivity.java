@@ -40,6 +40,8 @@ import com.localcash.data.entities.Cuenta;
 import com.localcash.databinding.ActivityCuentasBinding;
 import com.localcash.databinding.BottomSheetLugaresBinding;
 import com.localcash.databinding.BottomSheetTransaccionBinding;
+import com.localcash.databinding.DialogContactoBinding;
+import com.localcash.databinding.ViewContactosBinding;
 import com.localcash.databinding.ViewCuentasBinding;
 import com.localcash.databinding.ViewHistorialBinding;
 import com.localcash.databinding.ViewMapaBinding;
@@ -49,7 +51,10 @@ import com.localcash.domain.model.TipoCuenta;
 import com.localcash.domain.model.TipoTransaccion;
 import com.localcash.domain.model.Transaccion;
 import com.localcash.domain.model.Ubicacion;
+import com.localcash.domain.model.Contacto;
 import com.localcash.ui.BaseActivity;
+import com.localcash.ui.contactos.ContactoAdapter;
+import com.localcash.ui.contactos.ContactosViewModel;
 import com.localcash.ui.mapa.LugarDetalleSheet;
 import com.localcash.ui.mapa.LugarFormSheet;
 import com.localcash.ui.mapa.LugaresAdapter;
@@ -87,6 +92,9 @@ public class CuentasActivity extends BaseActivity
     /** Binding de la Vista 1 (Historial/Movimientos), inflado dentro del ViewFlipper. */
     private ViewHistorialBinding vistaHistorial;
 
+    /** Binding de la Vista 3 (Contactos), inflado dentro del ViewFlipper. */
+    private ViewContactosBinding vistaContactos;
+
     /** Binding del BottomSheet de transacción, mientras está abierto ({@code null} si cerrado). */
     private BottomSheetTransaccionBinding sheetTransaccionBinding;
 
@@ -101,6 +109,9 @@ public class CuentasActivity extends BaseActivity
 
     /** ViewModel del historial (Movimientos): observa Room y expone el dominio. */
     private HistorialViewModel historialViewModel;
+
+    /** ViewModel de la Vista 4 (Contactos): observa Room y expone el dominio. */
+    private ContactosViewModel contactosViewModel;
 
     /** Cuentas activas asociadas, en el mismo orden que el adapter del spinner. */
     private final List<Cuenta> cuentasSpinner = new ArrayList<>();
@@ -222,8 +233,9 @@ public class CuentasActivity extends BaseActivity
                 getLayoutInflater(), binding.viewFlipper, true);
         // Vista 2: Mapa (binding propio para conectar MapLibre y sus controles)
         vistaMapa = ViewMapaBinding.inflate(getLayoutInflater(), binding.viewFlipper, true);
-        // Vista 3: Contactos
-        getLayoutInflater().inflate(R.layout.view_contactos, binding.viewFlipper);
+        // Vista 3: Contactos (Feature 011)
+        vistaContactos = ViewContactosBinding.inflate(
+                getLayoutInflater(), binding.viewFlipper, true);
 
         // Restaurar el índice del ViewFlipper desde el estado guardado (preserva la vista actual al cambiar tema)
         if (savedInstanceState != null) {
@@ -267,6 +279,9 @@ public class CuentasActivity extends BaseActivity
 
         // Conectar la Vista 3 (Mapa) con MapLibre y Room
         configurarVistaMapa(savedInstanceState);
+
+        // Conectar la Vista 4 (Contactos) con Room (ViewModel + Adapter)
+        configurarVistaContactos();
 
         // Preparar el ViewModel de transacciones (alimenta el BottomSheet del FAB)
         configurarTransaccionViewModel();
@@ -454,6 +469,143 @@ public class CuentasActivity extends BaseActivity
             lugaresAdapter.setLugares(lugaresActivos);
             refrescarEstadoListaLugares();
         });
+    }
+
+    /**
+     * Conecta la Vista 4 (Contactos) con Room (ViewModel + Adapter).
+     * <p>
+     * Observa la lista de contactos desde {@link ContactosViewModel} y pinta el
+     * {@code RecyclerView} de {@code view_contactos.xml}; controla el estado
+     * vacío y el FAB de alta (Feature 011).
+     * </p>
+     */
+    private void configurarVistaContactos() {
+        contactosViewModel = new ViewModelProvider(this,
+                new ViewModelProvider.Factory() {
+                    @NonNull
+                    @Override
+                    @SuppressWarnings("unchecked")
+                    public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
+                        return (T) new ContactosViewModel(
+                                AppDatabase.getInstance(getApplicationContext()));
+                    }
+                }).get(ContactosViewModel.class);
+
+        ContactoAdapter adapter = new ContactoAdapter();
+        adapter.setOnContactoClickListener(contacto -> mostrarDialogoDetalleContacto(contacto));
+        vistaContactos.recyclerContactos.setLayoutManager(new LinearLayoutManager(this));
+        vistaContactos.recyclerContactos.setAdapter(adapter);
+
+        // La lista y el estado vacío reaccionan a la base de datos (LiveData).
+        contactosViewModel.getContactos().observe(this, entidades -> {
+            List<Contacto> dominio = ContactosViewModel.aDominio(entidades);
+            adapter.setContactos(dominio);
+            boolean hayContactos = dominio != null && !dominio.isEmpty();
+            vistaContactos.recyclerContactos.setVisibility(
+                    hayContactos ? View.VISIBLE : View.GONE);
+            vistaContactos.layoutEmpty.setVisibility(hayContactos ? View.GONE : View.VISIBLE);
+        });
+
+        // FAB: abrir el diálogo de alta de contacto.
+        vistaContactos.fabAgregar.setOnClickListener(v -> mostrarDialogoContacto(null));
+
+        // Errores de negocio (contacto en uso, duplicados, nombre vacío).
+        contactosViewModel.getResultado().observe(this, error -> {
+            if (error != null) {
+                mostrarErrorContacto(error);
+            }
+        });
+    }
+
+    /** Muestra el diálogo de agregar o editar contacto. */
+    private void mostrarDialogoContacto(Contacto contactoExistente) {
+        DialogContactoBinding dbinding =
+                DialogContactoBinding.inflate(getLayoutInflater());
+
+        String titulo = contactoExistente == null
+                ? getString(R.string.aContacto_dialog_titulo)
+                : getString(R.string.aContacto_dialog_editar_titulo);
+
+        if (contactoExistente != null) {
+            dbinding.etNombre.setText(contactoExistente.getNombre());
+            dbinding.etTelefono.setText(contactoExistente.getTelefono());
+            dbinding.etEmail.setText(contactoExistente.getEmail());
+            dbinding.etNotas.setText(contactoExistente.getNotas());
+        }
+
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(titulo)
+                .setView(dbinding.getRoot())
+                .setPositiveButton(R.string.aContacto_btn_guardar,
+                        (d, w) -> {
+                            String nombre = textoDe(dbinding.etNombre);
+                            String telefono = textoDe(dbinding.etTelefono);
+                            String email = textoDe(dbinding.etEmail);
+                            String notas = textoDe(dbinding.etNotas);
+
+                            Contacto nuevo = new Contacto(
+                                    contactoExistente != null ? contactoExistente.getId() : 0L,
+                                    nombre, telefono, email, notas);
+                            if (contactoExistente == null) {
+                                contactosViewModel.agregarContacto(nuevo);
+                            } else {
+                                contactosViewModel.actualizarContacto(nuevo);
+                            }
+                        })
+                .setNegativeButton(R.string.aContacto_btn_cancelar, null)
+                .show();
+    }
+
+    /** Muestra el diálogo de detalle de un contacto (editar/eliminar). */
+    private void mostrarDialogoDetalleContacto(Contacto contacto) {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(contacto.getNombre())
+                .setMessage(contacto.getTelefono() != null ? contacto.getTelefono() : "")
+                .setPositiveButton(R.string.aContacto_btn_editar, (d, w) ->
+                        mostrarDialogoContacto(contacto))
+                .setNegativeButton(R.string.aContacto_btn_eliminar, (d, w) ->
+                        confirmarEliminacionContacto(contacto))
+                .setNeutralButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    /** Pide confirmación antes de eliminar un contacto. */
+    private void confirmarEliminacionContacto(Contacto contacto) {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.aContacto_btn_eliminar)
+                .setMessage("¿Eliminar el contacto \"" + contacto.getNombre() + "\"?")
+                .setPositiveButton(R.string.aContacto_btn_eliminar, (d, w) ->
+                        contactosViewModel.eliminarContacto(contacto.getId()))
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    /** Muestra un toast con el error de negocio de contactos. */
+    private void mostrarErrorContacto(ErrorCode error) {
+        int mensaje;
+        switch (error) {
+            case CONTACTO_NOMBRE_VACIO:
+                mensaje = R.string.aContacto_error_nombre_vacio;
+                break;
+            case CONTACTO_TELEFONO_DUPLICADO:
+                mensaje = R.string.aContacto_error_telefono_duplicado;
+                break;
+            case CONTACTO_EMAIL_DUPLICADO:
+                mensaje = R.string.aContacto_error_email_duplicado;
+                break;
+            case CONTACTO_EN_USO:
+                mensaje = R.string.aContacto_error_en_uso;
+                break;
+            default:
+                mensaje = R.string.aContacto_error_nombre_vacio;
+        }
+        Toast.makeText(this, mensaje, Toast.LENGTH_LONG).show();
+    }
+
+    /** Devuelve el texto de un EditText, o {@code null} si está vacío. */
+    private String textoDe(com.google.android.material.textfield.TextInputEditText editText) {
+        String texto = editText.getText() != null ? editText.getText().toString().trim() : null;
+        return texto == null || texto.isEmpty() ? null : texto;
     }
 
     /**

@@ -122,6 +122,20 @@ Validación del archivo real: `LugarDaoTest.testForeignKeysActivasEnLaConexion` 
 `PRAGMA foreign_keys` por conexión y `MigracionV2V3Test` siembra el esquema v2 real, aplica la
 migración y verifica `PRAGMA foreign_key_check` limpio y `user_version = 3`.
 
+### 2. El bug del Main Thread (corregido en 2026-10-26)
+
+`ContactosActivity` fue la primera pestaña conectada dentro del `ViewFlipper` de `CuentasActivity`
+(vista 3, reemplazando el placeholder `view_contactos.xml`). En esa integración se detectó un bug
+real: `ContactosViewModel.agregarContacto` validaba la unicidad con `existeTelefono`/`existeEmail`
+en el **hilo principal**, y Room 2.6.1 con `RoomDatabase` en dispositivo real lanza
+`IllegalStateException: Cannot access database on the main thread`. El contacto nunca se insertaba
+(la UI no crasheaba visiblemente, pero el guardado era silenciosamente nulo).
+
+**Fix:** toda la validación (nombre, duplicados) se movió dentro de `db.getExecutor().execute(...)`
+en `ContactosViewModel`. Verificado en emulador: insertar "Juan" persiste en `CONTACTOS` (id=1) y
+aparece en la lista. LECCIÓN: ninguna consulta síncrona de Room puede ejecutarse en el hilo
+principal aunque en tests in-memory con `allowMainThreadQueries()` no falle.
+
 ### Nota de numeración
 
 Al cerrar la Feature 009 este registro se movió a `doc/010-actualizacion-diagrama.md` para liberar
