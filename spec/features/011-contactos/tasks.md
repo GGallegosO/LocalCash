@@ -49,14 +49,14 @@
 
 ## Fase 3 — Integración
 
-- [ ] **T6. Crear UI: Activity, ViewModel, layouts, adaptador.**
+- [x] **T6. Crear UI: Activity, ViewModel, layouts, adaptador.**
       `ContactosActivity`, `ContactosViewModel`, `activity_contactos.xml`, `item_contacto.xml`,
       `dialog_contacto.xml`, `detalle_contacto.xml`, `ContactoAdapter`.
       Conectar con ViewModel y DAO; manejar estados de carga/vacío/error.
       *Criterio de salida:* flujo completo funciona en emulador con `./gradlew installDebug`.
       Responsable: Agente SDD | Estimación: 120 min
 
-- [ ] **T7. Agregar strings y verificar lint.**
+- [x] **T7. Agregar strings y verificar lint.**
       `res/values/strings.xml` con textos de contacto.
       `./gradlew lint` sin advertencias.
       *Criterio de salida:* lint limpio.
